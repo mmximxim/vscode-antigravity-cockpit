@@ -1,9 +1,13 @@
 /**
  * Antigravity Cockpit - Stats Aggregator
- * Persists usage records and computes analytics for the stats dashboard.
+ * Persists usage records and computes analytics for the stats dashboard
+ * by reading directly from quota_history cache and deduplicating shared pools.
  */
 
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 import { ModelQuotaInfo } from '../shared/types';
 import {
     UsageRecord,
@@ -15,90 +19,67 @@ import {
 } from './types';
 import { logger } from '../shared/log_service';
 
-// Max records to keep in storage (~6 months of 2-minute polls = ~130k; cap at 50k)
-const MAX_RECORDS = 50_000;
-const STORAGE_KEY = 'agCockpit.statsHistory';
+const HISTORY_ROOT = path.join(os.homedir(), '.antigravity_cockpit', 'cache', 'quota_history');
 
-// Model color palette (HSL rotation)
-const MODEL_COLORS = [
+// Palette for model families
+const FAMILY_COLORS: Record<string, string> = {
+    Claude: '#2f81f7',
+    Gemini: '#3fb950',
+    OpenAI: '#f78166',
+    DeepSeek: '#d2a8ff',
+};
+
+const DEFAULT_COLORS = [
     '#2f81f7', '#3fb950', '#f78166', '#d2a8ff',
     '#ffa657', '#79c0ff', '#56d364', '#ff7b72',
-    '#bc8cff', '#ffb86c', '#58a6ff', '#7ee787',
 ];
+
+interface QuotaHistoryPoint {
+    timestamp: number;
+    remainingPercentage: number;
+    isReset?: boolean;
+    isStart?: boolean;
+}
+
+interface QuotaHistoryModelRecord {
+    modelId: string;
+    label: string;
+    points: QuotaHistoryPoint[];
+}
+
+interface QuotaHistoryFileRecord {
+    email: string;
+    updatedAt: number;
+    models: Record<string, QuotaHistoryModelRecord>;
+}
 
 export class StatsAggregator {
     private context: vscode.ExtensionContext;
-    /** Previous model fractions for delta computation */
     private prevFractions: Map<string, number> = new Map();
-    /** Latest seen model display labels */
-    private latestLabels: Map<string, string> = new Map();
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
     }
 
     /**
-     * Called after each successful quota poll.
-     * Computes delta from previous poll and appends records.
+     * Called after each successful quota poll (for real-time delta tracking).
      */
     public appendFromModels(models: ModelQuotaInfo[]): void {
-        if (!models || models.length === 0) {return;}
-
+        if (!models || models.length === 0) {
+            return;
+        }
         for (const model of models) {
-            if (model.modelId && model.label) {
-                this.latestLabels.set(model.modelId, model.label);
+            if (model.remainingFraction !== undefined && model.remainingFraction !== null) {
+                this.prevFractions.set(model.modelId, model.remainingFraction);
             }
-        }
-
-        const now = Date.now();
-        const newRecords: UsageRecord[] = [];
-
-        for (const model of models) {
-            const fraction = model.remainingFraction;
-            if (fraction === undefined || fraction === null) {continue;}
-
-
-            const prev = this.prevFractions.get(model.modelId);
-            this.prevFractions.set(model.modelId, fraction);
-
-            if (prev === undefined) {continue;} // No previous value to delta against
-
-            const delta = prev - fraction; // Positive = consumed
-            if (delta <= 0) {continue;}      // No consumption or reset happened
-
-            // Cap delta at 0.5 to avoid counting quota resets as consumption
-            const consumed = Math.min(delta, 0.5) * 1000;
-            if (consumed < 0.01) {continue;}
-
-            newRecords.push({
-                ts: now,
-                model: model.modelId,
-                label: model.label,
-                consumed: Math.round(consumed * 10) / 10,
-                remainingFraction: fraction,
-            });
-        }
-
-        if (newRecords.length === 0) {return;}
-
-        try {
-            const existing = this.loadRecords();
-            const merged = [...existing, ...newRecords];
-            // Trim to MAX_RECORDS (keep newest)
-            const trimmed = merged.length > MAX_RECORDS
-                ? merged.slice(merged.length - MAX_RECORDS)
-                : merged;
-            this.context.globalState.update(STORAGE_KEY, trimmed);
-        } catch (err) {
-            logger.warn(`[StatsAggregator] Failed to persist records: ${err}`);
         }
     }
 
     /**
-     * Compute the full stats payload for a given range.
+     * Compute the full stats payload for a given range by reading quota_history.
      */
     public getStatsPayload(range: '7d' | '30d'): StatsPayload {
-        const records = this.loadRecords();
+        const records = this.extractRecordsFromQuotaHistory();
         const rangeDays = range === '7d' ? 7 : 30;
 
         return {
@@ -112,16 +93,128 @@ export class StatsAggregator {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // Private helpers
+    // Extraction from Quota History Cache
     // ─────────────────────────────────────────────────────────────
 
-    private loadRecords(): UsageRecord[] {
+    private extractRecordsFromQuotaHistory(): UsageRecord[] {
+        const historyFiles = this.loadAllHistoryFiles();
+        if (historyFiles.length === 0) {
+            return [];
+        }
+
+        // Map: timestamp -> family -> max drop (in units)
+        // Taking max per timestamp ensures that shared pools (e.g. g3-pro and g3-flash)
+        // are only counted once per interval instead of duplicated 8 times!
+        const timeDrops = new Map<number, Map<string, number>>();
+
+        for (const historyRecord of historyFiles) {
+            for (const [modelId, model] of Object.entries(historyRecord.models || {})) {
+                const label = model.label || modelId;
+                const family = this.resolveModelFamily(modelId, label);
+
+                const points = model.points || [];
+                for (let i = 1; i < points.length; i++) {
+                    const p1 = points[i - 1];
+                    const p2 = points[i];
+
+                    // Check for consumption drop
+                    if (
+                        typeof p1.remainingPercentage === 'number' &&
+                        typeof p2.remainingPercentage === 'number' &&
+                        p2.remainingPercentage < p1.remainingPercentage &&
+                        !p2.isReset &&
+                        !p2.isStart
+                    ) {
+                        const dropPct = p1.remainingPercentage - p2.remainingPercentage;
+                        // Filter out quota resets (anything over 50% drop in one interval)
+                        if (dropPct > 0 && dropPct <= 50) {
+                            const dropUnits = dropPct * 10;
+                            const ts = p2.timestamp;
+
+                            if (!timeDrops.has(ts)) {
+                                timeDrops.set(ts, new Map<string, number>());
+                            }
+                            const entry = timeDrops.get(ts)!;
+                            const current = entry.get(family) || 0;
+                            entry.set(family, Math.max(current, Math.round(dropUnits * 10) / 10));
+                        }
+                    }
+                }
+            }
+        }
+
+        const usageRecords: UsageRecord[] = [];
+        for (const [ts, drops] of timeDrops.entries()) {
+            for (const [family, consumed] of drops.entries()) {
+                if (consumed > 0) {
+                    usageRecords.push({
+                        ts,
+                        model: family,
+                        label: family,
+                        consumed,
+                        remainingFraction: 0,
+                    });
+                }
+            }
+        }
+
+        usageRecords.sort((a, b) => a.ts - b.ts);
+        return usageRecords;
+    }
+
+    private resolveModelFamily(modelId: string, label: string): string {
+        const lowerId = (modelId || '').toLowerCase();
+        const lowerLabel = (label || '').toLowerCase();
+
+        if (lowerId.includes('claude') || lowerLabel.includes('claude')) {
+            return 'Claude';
+        }
+        if (
+            lowerId.includes('gemini') ||
+            lowerId.startsWith('g3-') ||
+            lowerLabel.includes('gemini')
+        ) {
+            return 'Gemini';
+        }
+        if (lowerId.includes('gpt') || lowerLabel.includes('gpt') || lowerLabel.includes('openai')) {
+            return 'OpenAI';
+        }
+        if (lowerId.includes('deepseek') || lowerLabel.includes('deepseek')) {
+            return 'DeepSeek';
+        }
+
+        return label || modelId;
+    }
+
+    private loadAllHistoryFiles(): QuotaHistoryFileRecord[] {
         try {
-            return this.context.globalState.get<UsageRecord[]>(STORAGE_KEY, []);
-        } catch {
+            if (!fs.existsSync(HISTORY_ROOT)) {
+                return [];
+            }
+            const files = fs.readdirSync(HISTORY_ROOT).filter(f => f.endsWith('.json'));
+            const list: QuotaHistoryFileRecord[] = [];
+            for (const file of files) {
+                try {
+                    const filePath = path.join(HISTORY_ROOT, file);
+                    const content = fs.readFileSync(filePath, 'utf8');
+                    const parsed = JSON.parse(content) as QuotaHistoryFileRecord;
+                    if (parsed && parsed.models) {
+                        list.push(parsed);
+                    }
+                } catch (e) {
+                    logger.warn(`[StatsAggregator] Error parsing history file ${file}: ${e}`);
+                }
+            }
+            return list;
+        } catch (err) {
+            logger.warn(`[StatsAggregator] Failed to read history directory: ${err}`);
             return [];
         }
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // Metrics & Charts Calculation
+    // ─────────────────────────────────────────────────────────────
 
     private toDateStr(ts: number): string {
         const d = new Date(ts);
@@ -142,7 +235,7 @@ export class StatsAggregator {
             dailyMap.set(d, (dailyMap.get(d) ?? 0) + r.consumed);
         }
 
-        const peakDailyConsumed = Math.max(...dailyMap.values());
+        const peakDailyConsumed = Math.max(...Array.from(dailyMap.values()));
 
         // Streak computation
         const { current, longest } = this.computeStreaks(Array.from(dailyMap.keys()));
@@ -156,7 +249,9 @@ export class StatsAggregator {
     }
 
     private computeStreaks(activeDates: string[]): { current: number; longest: number } {
-        if (activeDates.length === 0) {return { current: 0, longest: 0 };}
+        if (activeDates.length === 0) {
+            return { current: 0, longest: 0 };
+        }
 
         const sorted = [...new Set(activeDates)].sort();
         let longest = 1;
@@ -167,9 +262,11 @@ export class StatsAggregator {
             const prev = new Date(sorted[i - 1]);
             const curr = new Date(sorted[i]);
             const diff = (curr.getTime() - prev.getTime()) / 86_400_000;
-            if (Math.abs(diff - 1) < 0.01) {
+            if (Math.abs(diff - 1) < 0.05) {
                 runLen++;
-                if (runLen > longest) {longest = runLen;}
+                if (runLen > longest) {
+                    longest = runLen;
+                }
             } else {
                 runLen = 1;
             }
@@ -217,7 +314,9 @@ export class StatsAggregator {
         const map = new Map<string, Map<string, number>>();
         for (const r of filtered) {
             const d = this.toDateStr(r.ts);
-            if (!map.has(d)) {map.set(d, new Map());}
+            if (!map.has(d)) {
+                map.set(d, new Map());
+            }
             const m = map.get(d)!;
             m.set(r.model, (m.get(r.model) ?? 0) + r.consumed);
         }
@@ -241,7 +340,7 @@ export class StatsAggregator {
         const cutoff = Date.now() - days * 86_400_000;
         const filtered = records.filter(r => r.ts >= cutoff);
 
-        // Aggregate by model
+        // Aggregate by model family
         const modelMap = new Map<string, { label: string; consumed: number }>();
         for (const r of filtered) {
             const entry = modelMap.get(r.model) ?? { label: r.label, consumed: 0 };
@@ -250,17 +349,20 @@ export class StatsAggregator {
         }
 
         const total = Array.from(modelMap.values()).reduce((s, e) => s + e.consumed, 0);
-        if (total === 0) {return [];}
+        if (total === 0) {
+            return [];
+        }
 
         const entries: DonutEntry[] = [];
         let colorIdx = 0;
         for (const [modelId, entry] of modelMap) {
+            const color = FAMILY_COLORS[modelId] || DEFAULT_COLORS[colorIdx % DEFAULT_COLORS.length];
             entries.push({
                 modelId,
                 label: entry.label,
                 consumed: Math.round(entry.consumed),
                 pct: Math.round((entry.consumed / total) * 1000) / 10,
-                color: MODEL_COLORS[colorIdx % MODEL_COLORS.length],
+                color,
             });
             colorIdx++;
         }
@@ -277,10 +379,6 @@ export class StatsAggregator {
                 labels[r.model] = r.label;
             }
         }
-        for (const [m, l] of this.latestLabels.entries()) {
-            labels[m] = l;
-        }
         return labels;
     }
 }
-
