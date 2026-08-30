@@ -153,10 +153,31 @@
 
 /* ============ Heatmap ============ */
 
-.stats-heatmap-mode-group {
+.stats-heatmap-legend {
     display: flex;
+    align-items: center;
     gap: 4px;
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground, #8b949e);
 }
+
+.stats-heatmap-legend-label {
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground, #8b949e);
+    padding: 0 2px;
+}
+
+.stats-heatmap-legend-cell {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.stats-heatmap-legend-cell[data-level="1"] { background: rgba(59, 130, 246, 0.35); }
+.stats-heatmap-legend-cell[data-level="2"] { background: rgba(59, 130, 246, 0.60); }
+.stats-heatmap-legend-cell[data-level="3"] { background: rgba(59, 130, 246, 0.80); }
+.stats-heatmap-legend-cell[data-level="4"] { background: rgba(59, 130, 246, 1.00); }
 
 .stats-heatmap-wrapper {
     display: flex;
@@ -168,40 +189,41 @@
 
 .stats-heatmap-day-labels {
     display: grid;
-    grid-template-rows: repeat(7, 13px);
+    grid-template-rows: repeat(7, 10px);
     gap: 3px;
     flex-shrink: 0;
-    margin-right: 4px;
+    margin-right: 2px;
 }
 
 .stats-heatmap-day-label {
-    font-size: 10px;
+    font-size: 9px;
     color: var(--vscode-descriptionForeground, #8b949e);
     display: flex;
     align-items: center;
     justify-content: center;
-    line-height: 13px;
-    height: 13px;
+    line-height: 10px;
+    height: 10px;
 }
 
 .stats-heatmap-scroll {
     flex: 1;
-    width: 100%;
-    overflow: hidden; /* No scrollbar! */
+    overflow: hidden;
+    display: flex;
 }
 
 .stats-heatmap-grid {
     display: grid;
-    grid-template-rows: repeat(7, 12px);
+    grid-template-rows: repeat(7, 10px);
     grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-columns: 10px;
     gap: 3px;
+    justify-content: space-between;
     width: 100%;
 }
 
 .stats-heatmap-cell {
-    width: 100%;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     border-radius: 2px;
     background: rgba(255, 255, 255, 0.06);
     cursor: pointer;
@@ -221,19 +243,6 @@
 .stats-heatmap-cell[data-level="3"] { background: rgba(59, 130, 246, 0.80); }
 .stats-heatmap-cell[data-level="4"] { background: rgba(59, 130, 246, 1.00); box-shadow: 0 0 6px rgba(59, 130, 246, 0.5); }
 
-.stats-heatmap-month-labels {
-    display: flex;
-    gap: 3px;
-    margin-bottom: 6px;
-    min-width: min-content;
-}
-
-.stats-heatmap-month-label {
-    font-size: 10px;
-    color: var(--vscode-descriptionForeground, #8b949e);
-    text-align: left;
-    white-space: nowrap;
-}
 
 /* ============ Trend Chart ============ */
 

@@ -8,7 +8,6 @@
     // ─── State ───────────────────────────────────────────────────
     let vscode = window.__vscodeApi || (window.__vscodeApi = acquireVsCodeApi());
     let currentRange = '7d';
-    let currentHeatmapMode = 'daily'; // 'daily' | 'weekly' | 'cumulative'
     let statsData = null;
     let trendChart = null;
     let donutChart = null;
@@ -90,33 +89,11 @@
     }
 
     // ─── Heatmap ─────────────────────────────────────────────────
-    function renderHeatmap(heatmap, mode) {
+    function renderHeatmap(heatmap) {
         let container = document.getElementById('stats-heatmap-container');
         if (!container || !heatmap || heatmap.length === 0) { return; }
 
-        // Compute display data based on mode
-        let data = [];
-        if (mode === 'daily') {
-            data = heatmap.slice();
-        } else if (mode === 'weekly') {
-            let weekBuckets = [];
-            let currentWeek = null;
-            for (let i = 0; i < heatmap.length; i++) {
-                if (i % 7 === 0) {
-                    if (currentWeek) { weekBuckets.push(currentWeek); }
-                    currentWeek = { date: heatmap[i].date, value: 0 };
-                }
-                if (currentWeek) { currentWeek.value += heatmap[i].value; }
-            }
-            if (currentWeek) { weekBuckets.push(currentWeek); }
-            data = weekBuckets;
-        } else if (mode === 'cumulative') {
-            let sum = 0;
-            data = heatmap.map(function (d) {
-                sum += d.value;
-                return { date: d.date, value: sum };
-            });
-        }
+        let data = heatmap.slice();
 
         // Compute quartile thresholds for coloring
         let nonZero = data.map(function (d) { return d.value; }).filter(function (v) { return v > 0; }).sort(function (a, b) { return a - b; });
@@ -405,13 +382,13 @@
     }
 
     // ─── Update All ───────────────────────────────────────────────
-    function renderAll(data) {
-        if (!data) { return; }
-        renderSummaryCards(data.summaryCards);
-        renderHeatmap(data.heatmap, currentHeatmapMode);
-        renderTrendChart(data.trendLines, data.modelLabels);
-        renderDonutChart(data.donut);
-    }
+        function renderAll(data) {
+            if (!data) { return; }
+            renderSummaryCards(data.summaryCards);
+            renderHeatmap(data.heatmap);
+            renderTrendChart(data.trendLines, data.modelLabels);
+            renderDonutChart(data.donut);
+        }
 
 
     // ─── Message listener ─────────────────────────────────────────
@@ -451,21 +428,6 @@
                 requestStats();
             });
         }
-
-        // Heatmap mode buttons
-        ['daily', 'weekly', 'cumulative'].forEach(function (mode) {
-            let btn = document.getElementById('stats-heatmap-' + mode);
-            if (btn) {
-                btn.addEventListener('click', function () {
-                    currentHeatmapMode = mode;
-                    ['daily', 'weekly', 'cumulative'].forEach(function (m) {
-                        let b = document.getElementById('stats-heatmap-' + m);
-                        if (b) { b.classList.toggle('active', m === mode); }
-                    });
-                    if (statsData) { renderHeatmap(statsData.heatmap, currentHeatmapMode); }
-                });
-            }
-        });
 
         // Tab click → request stats
         document.querySelectorAll('[data-tab="stats"]').forEach(function (btn) {

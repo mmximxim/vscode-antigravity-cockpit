@@ -1130,10 +1130,14 @@ export class CockpitHUD {
                         <span class="stats-panel-title-icon">🗓️</span>
                         活跃度热力图
                     </div>
-                    <div class="stats-filter-group">
-                        <button class="stats-filter-btn active" id="stats-heatmap-daily">每日</button>
-                        <button class="stats-filter-btn" id="stats-heatmap-weekly">每周</button>
-                        <button class="stats-filter-btn" id="stats-heatmap-cumulative">累计</button>
+                    <div class="stats-heatmap-legend">
+                        <span class="stats-heatmap-legend-label">少</span>
+                        <div class="stats-heatmap-legend-cell" data-level="0"></div>
+                        <div class="stats-heatmap-legend-cell" data-level="1"></div>
+                        <div class="stats-heatmap-legend-cell" data-level="2"></div>
+                        <div class="stats-heatmap-legend-cell" data-level="3"></div>
+                        <div class="stats-heatmap-legend-cell" data-level="4"></div>
+                        <span class="stats-heatmap-legend-label">多</span>
                     </div>
                 </div>
                 <div id="stats-heatmap-container">
