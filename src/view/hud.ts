@@ -1105,15 +1105,15 @@ export class CockpitHUD {
             <div class="stats-summary-grid">
                 <div class="stats-card stats-card-tokens">
                     <span class="stats-card-icon">⚡</span>
-                    <div class="stats-card-label">累计消耗配额</div>
+                    <div class="stats-card-label">累计消耗</div>
                     <div class="stats-card-value" id="stats-total-tokens">–</div>
-                    <div class="stats-card-sub">单位 / 总计</div>
+                    <div class="stats-card-sub">历史总计</div>
                 </div>
                 <div class="stats-card stats-card-peak">
                     <span class="stats-card-icon">🏔️</span>
                     <div class="stats-card-label">单日峰值</div>
                     <div class="stats-card-value" id="stats-peak-tokens">–</div>
-                    <div class="stats-card-sub">单位 / 天</div>
+                    <div class="stats-card-sub">最高记录</div>
                 </div>
                 <div class="stats-card stats-card-streak">
                     <span class="stats-card-icon">🔥</span>
