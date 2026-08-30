@@ -32,8 +32,33 @@
         let tooltip = getTooltip();
         tooltip.innerHTML = text;
         tooltip.classList.add('visible');
-        tooltip.style.left = (e.clientX + 12) + 'px';
-        tooltip.style.top = (e.clientY + 12) + 'px';
+
+        let tooltipWidth = tooltip.offsetWidth || 140;
+        let tooltipHeight = tooltip.offsetHeight || 50;
+        let winWidth = window.innerWidth;
+        let winHeight = window.innerHeight;
+
+        let left = e.clientX + 12;
+        let top = e.clientY + 12;
+
+        // If overflowing right edge, flip to left of cursor
+        if (left + tooltipWidth > winWidth - 12) {
+            left = e.clientX - tooltipWidth - 12;
+        }
+        if (left < 8) {
+            left = 8;
+        }
+
+        // If overflowing bottom edge, flip above cursor
+        if (top + tooltipHeight > winHeight - 12) {
+            top = e.clientY - tooltipHeight - 12;
+        }
+        if (top < 8) {
+            top = 8;
+        }
+
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
     }
 
     function hideTooltip() {
