@@ -38,6 +38,7 @@ import {
 } from './services/cockpitToolsWs';
 import { cockpitToolsSyncEvents } from './services/cockpitToolsSync';
 import { accountSwitchService, AccountSwitchMode, AccountSwitchModeInput } from './services/accountSwitchService';
+import { StatsAggregator } from './stats/aggregator';
 
 // 全局模块实例
 let hunter: ProcessHunter;
@@ -45,6 +46,7 @@ let reactor: ReactorCore;
 let hud: CockpitHUD;
 let quickPickView: QuickPickView;
 let accountsRefreshService: AccountsRefreshService;
+let statsAggregator: StatsAggregator;
 
 // Controllers
 let statusBar: StatusBarController;
@@ -192,8 +194,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     };
 
     // 初始化其他控制器
-    _telemetryController = new TelemetryController(reactor, statusBar, hud, quickPickView, onRetry);
-    _messageController = new MessageController(context, hud, reactor, onRetry, accountsRefreshService);
+    statsAggregator = new StatsAggregator(context);
+    _telemetryController = new TelemetryController(reactor, statusBar, hud, quickPickView, onRetry, statsAggregator);
+    _messageController = new MessageController(context, hud, reactor, onRetry, accountsRefreshService, statsAggregator);
     _commandController = new CommandController(context, hud, quickPickView, reactor, onRetry);
 
     // 初始化自动触发控制器

@@ -12,6 +12,7 @@ import { QUOTA_THRESHOLDS, TIMING } from '../shared/constants';
 import { credentialStorage } from '../auto_trigger';
 import { announcementService } from '../announcement';
 import { recordQuotaHistory } from '../services/quota_history';
+import { StatsAggregator } from '../stats/aggregator';
 
 
 export class TelemetryController {
@@ -25,9 +26,11 @@ export class TelemetryController {
         private hud: CockpitHUD,
         private quickPickView: QuickPickView,
         private onRetry: () => Promise<void>,
+        private statsAggregator?: StatsAggregator,
     ) {
         this.setupTelemetryHandling();
     }
+
 
     public resetNotifications(): void {
         this.notifiedModels.clear();
@@ -44,8 +47,18 @@ export class TelemetryController {
             // 成功获取数据，重置错误状态
             this.statusBar.reset();
 
+            // 记录 Stats 聚合数据（追加本次快照的配额消耗）
+            if (this.statsAggregator && snapshot.isConnected && snapshot.models.length > 0) {
+                try {
+                    this.statsAggregator.appendFromModels(snapshot.models);
+                } catch (err) {
+                    logger.warn(`[TelemetryCtrl] StatsAggregator appendFromModels error: ${err}`);
+                }
+            }
+
             // 检查配额并发送通知
             this.checkAndNotifyQuota(snapshot, config);
+
 
             // 首次安装分组默认启用时，自动生成分组映射并重新渲染
             if (config.groupingEnabled && Object.keys(config.groupMappings).length === 0 && snapshot.models.length > 0) {

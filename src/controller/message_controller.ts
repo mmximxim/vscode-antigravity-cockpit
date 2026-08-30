@@ -18,6 +18,7 @@ import { oauthService } from '../auto_trigger';
 import { AccountsRefreshService } from '../services/accountsRefreshService';
 import { accountSwitchService, AccountSwitchMode, AccountSwitchModeInput, AccountSwitchResult } from '../services/accountSwitchService';
 import { openCockpitToolsDesktop } from '../shared/cockpit_tools_launcher';
+import { StatsAggregator } from '../stats/aggregator';
 
 export interface AccountSwitchExecutionRequest {
     requestId?: string;
@@ -56,6 +57,7 @@ export class MessageController {
         private reactor: ReactorCore,
         private onRetry: () => Promise<void>,
         private refreshService?: AccountsRefreshService,
+        private statsAggregator?: StatsAggregator,
     ) {
         this.context = context;
         this.setupMessageHandling();
@@ -1370,6 +1372,23 @@ export class MessageController {
                         }
                     }
                     break;
+
+                case 'stats_request': {
+                    // Webview is requesting updated stats data for the analytics dashboard
+                    const range = message.range === '30d' ? '30d' : '7d';
+                    logger.info(`[MsgCtrl] stats_request received, range=${range}`);
+                    if (this.statsAggregator) {
+                        try {
+                            const payload = this.statsAggregator.getStatsPayload(range);
+                            this.hud.sendMessage({ type: 'stats_update', data: payload });
+                        } catch (err) {
+                            logger.warn(`[MsgCtrl] stats_request error: ${err}`);
+                        }
+                    } else {
+                        logger.warn('[MsgCtrl] stats_request received but StatsAggregator not initialized');
+                    }
+                    break;
+                }
 
             }
         });

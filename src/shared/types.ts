@@ -390,7 +390,9 @@ export type WebviewMessageType =
     | 'importFromLocal'
     | 'importFromTools'
     | 'exportAccounts'
-    | 'openDashboard';
+    | 'openDashboard'
+    // Stats Dashboard
+    | 'stats_request';
 
 /** Webview 消息 */
 export interface WebviewMessage {
@@ -467,10 +469,12 @@ export interface WebviewMessage {
     overwrite?: boolean;
     /** 导入内容 (importTokens) */
     content?: string;
-    /**邮箱列表 (deleteAccounts, exportAccounts) */
+    /** 邮箱列表 (deleteAccounts, exportAccounts) */
     emails?: string[];
     /** 模式 (addAccount) */
     mode?: string;
+    /** Stats 时间范围 (stats_request) */
+    range?: '7d' | '30d';
 }
 
 /** 调度配置 */

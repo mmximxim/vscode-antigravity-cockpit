@@ -685,6 +685,10 @@ export class CockpitHUD {
         const autoTriggerScriptUri = this.getWebviewUri(webview, 'out', 'view', 'webview', 'auto_trigger.js');
         const authUiScriptUri = this.getWebviewUri(webview, 'out', 'view', 'webview', 'auth_ui.js');
         const accountsOverviewScriptUri = this.getWebviewUri(webview, 'out', 'view', 'webview', 'accounts_overview.js');
+        // Stats Dashboard assets
+        const chartJsUri = this.getWebviewUri(webview, 'media', 'chart.min.js');
+        const statsTabStyleUri = this.getWebviewUri(webview, 'out', 'view', 'webview', 'stats_tab.css');
+        const statsTabScriptUri = this.getWebviewUri(webview, 'out', 'view', 'webview', 'stats_tab.js');
 
         // 获取国际化文本
         const translations = i18n.getAllTranslations();
@@ -727,6 +731,7 @@ export class CockpitHUD {
     <link rel="stylesheet" href="${accountsOverviewStyleUri}">
     <link rel="stylesheet" href="${sharedModalStyleUri}">
     <link rel="stylesheet" href="${autoTriggerStyleUri}">
+    <link rel="stylesheet" href="${statsTabStyleUri}">
 </head>
 <body>
     <header class="header">
@@ -767,6 +772,7 @@ export class CockpitHUD {
         </button>
         <button class="tab-btn" data-tab="accounts">👥 ${t('accountsOverview.title') || 'Accounts'}</button>
         <button class="tab-btn" data-tab="history">📈 ${t('history.tabTitle')}</button>
+        <button class="tab-btn" data-tab="stats">📉 Stats</button>
         <div id="quota-source-info" class="quota-source-info hidden"></div>
         <div class="tab-spacer"></div>
     </nav>
@@ -1091,7 +1097,108 @@ export class CockpitHUD {
         </div>
     </div>
 
+    <!-- Stats Tab Content -->
+    <div id="tab-stats" class="tab-content">
+        <div class="stats-container">
+
+            <!-- Summary Cards -->
+            <div class="stats-summary-grid">
+                <div class="stats-card stats-card-tokens">
+                    <span class="stats-card-icon">⚡</span>
+                    <div class="stats-card-label">累计消耗配额</div>
+                    <div class="stats-card-value" id="stats-total-tokens">–</div>
+                    <div class="stats-card-sub">单位 / 总计</div>
+                </div>
+                <div class="stats-card stats-card-peak">
+                    <span class="stats-card-icon">🏔️</span>
+                    <div class="stats-card-label">单日峰值</div>
+                    <div class="stats-card-value" id="stats-peak-tokens">–</div>
+                    <div class="stats-card-sub">单位 / 天</div>
+                </div>
+                <div class="stats-card stats-card-streak">
+                    <span class="stats-card-icon">🔥</span>
+                    <div class="stats-card-label">当前连续活跃</div>
+                    <div class="stats-card-value" id="stats-streak">–</div>
+                    <div class="stats-card-sub" id="stats-record-streak">最长 – 天</div>
+                </div>
+            </div>
+
+            <!-- Heatmap Panel -->
+            <div class="stats-chart-panel">
+                <div class="stats-panel-header">
+                    <div class="stats-panel-title">
+                        <span class="stats-panel-title-icon">🗓️</span>
+                        活跃度热力图
+                    </div>
+                    <div class="stats-filter-group">
+                        <button class="stats-filter-btn active" id="stats-heatmap-daily">每日</button>
+                        <button class="stats-filter-btn" id="stats-heatmap-weekly">每周</button>
+                        <button class="stats-filter-btn" id="stats-heatmap-cumulative">累计</button>
+                    </div>
+                </div>
+                <div id="stats-heatmap-container">
+                    <div class="stats-empty">
+                        <span class="stats-empty-icon">📅</span>
+                        <div class="stats-empty-title">暂无活跃数据</div>
+                        <div class="stats-empty-desc">每次配额轮询后将自动记录数据，请稍后查看。</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Multi-Model Trend Chart -->
+            <div class="stats-chart-panel">
+                <div class="stats-panel-header">
+                    <div class="stats-panel-title">
+                        <span class="stats-panel-title-icon">📈</span>
+                        各模型使用趋势
+                    </div>
+                    <div class="stats-filter-group">
+                        <button class="stats-filter-btn active" id="stats-range-7d">近7日</button>
+                        <button class="stats-filter-btn" id="stats-range-30d">近30日</button>
+                    </div>
+                </div>
+                <div id="stats-trend-legend" class="stats-trend-legend"></div>
+                <div class="stats-trend-canvas-container">
+                    <canvas id="stats-trend-canvas"></canvas>
+                    <div id="stats-trend-empty" class="stats-empty hidden">
+                        <span class="stats-empty-icon">📊</span>
+                        <div class="stats-empty-title">暂无趋势数据</div>
+                        <div class="stats-empty-desc">使用各模型后将自动生成趋势图。</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Distribution Donut -->
+            <div class="stats-chart-panel">
+                <div class="stats-panel-header">
+                    <div class="stats-panel-title">
+                        <span class="stats-panel-title-icon">🍩</span>
+                        模型用量占比
+                    </div>
+                </div>
+                <div class="stats-donut-layout">
+                    <div class="stats-donut-canvas-container">
+                        <canvas id="stats-donut-canvas"></canvas>
+                        <div class="stats-donut-center">
+                            <div class="stats-donut-center-value" id="stats-donut-center-value">–</div>
+                            <div class="stats-donut-center-label" id="stats-donut-center-label">消耗量</div>
+                        </div>
+                    </div>
+                    <div id="stats-donut-legend" class="stats-donut-legend-list"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Floating Tooltip -->
+    <div class="stats-tooltip" id="stats-global-tooltip">
+        <div class="stats-tooltip-date" id="stats-tooltip-date"></div>
+        <div class="stats-tooltip-value" id="stats-tooltip-value"></div>
+    </div>
+
     <!-- Config Modal -->
+
     <div id="at-config-modal" class="modal hidden">
         <div class="modal-content modal-content-medium">
             <div class="modal-header">
@@ -1613,6 +1720,8 @@ export class CockpitHUD {
     <script nonce="${nonce}" src="${scriptUri}"></script>
     <script nonce="${nonce}" src="${autoTriggerScriptUri}"></script>
     <script nonce="${nonce}" src="${accountsOverviewScriptUri}"></script>
+    <script nonce="${nonce}" src="${chartJsUri}"></script>
+    <script nonce="${nonce}" src="${statsTabScriptUri}"></script>
 </body>
 </html>`;
     }

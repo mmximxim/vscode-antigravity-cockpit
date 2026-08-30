@@ -1,0 +1,428 @@
+/**
+ * Antigravity Cockpit - Stats Tab Styles
+ * ZCode-style analytics dashboard with frosted-glass dark UI
+ */
+
+/* ============ Stats Tab Layout ============ */
+
+.stats-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 16px 0;
+}
+
+/* ============ Summary Cards ============ */
+
+.stats-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.stats-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 20px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: border-color 0.2s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--stats-card-accent, #2f81f7), transparent);
+    opacity: 0.8;
+}
+
+.stats-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.stats-card-icon {
+    font-size: 24px;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.stats-card-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--vscode-descriptionForeground, #8b949e);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.stats-card-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--vscode-editor-foreground, #e6edf3);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-card-sub {
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground, #8b949e);
+    margin-top: 4px;
+}
+
+/* Card accent colors */
+.stats-card-tokens { --stats-card-accent: #2f81f7; }
+.stats-card-peak   { --stats-card-accent: #f78166; }
+.stats-card-streak { --stats-card-accent: #3fb950; }
+.stats-card-record { --stats-card-accent: #d2a8ff; }
+
+/* ============ Chart Panels ============ */
+
+.stats-chart-panel {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    padding: 20px 24px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.stats-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.stats-panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vscode-editor-foreground, #e6edf3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stats-panel-title-icon {
+    font-size: 16px;
+}
+
+/* ============ Filter Pills ============ */
+
+.stats-filter-group {
+    display: flex;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 3px;
+}
+
+.stats-filter-btn {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--vscode-descriptionForeground, #8b949e);
+    transition: background 0.15s, color 0.15s;
+    font-family: var(--vscode-font-family, inherit);
+}
+
+.stats-filter-btn.active {
+    background: var(--vscode-button-background, #2f81f7);
+    color: var(--vscode-button-foreground, #ffffff);
+}
+
+.stats-filter-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--vscode-editor-foreground, #e6edf3);
+}
+
+/* ============ Heatmap ============ */
+
+.stats-heatmap-mode-group {
+    display: flex;
+    gap: 4px;
+}
+
+.stats-heatmap-scroll {
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.stats-heatmap-grid {
+    display: grid;
+    grid-template-rows: repeat(7, 14px);
+    grid-auto-flow: column;
+    grid-auto-columns: 14px;
+    gap: 3px;
+    min-width: min-content;
+}
+
+.stats-heatmap-cell {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+    transition: transform 0.1s;
+    position: relative;
+}
+
+.stats-heatmap-cell:hover {
+    transform: scale(1.3);
+    z-index: 1;
+}
+
+/* Heatmap intensity levels (0-4) */
+.stats-heatmap-cell[data-level="1"] { background: rgba(99, 179, 237, 0.25); }
+.stats-heatmap-cell[data-level="2"] { background: rgba(99, 179, 237, 0.45); }
+.stats-heatmap-cell[data-level="3"] { background: rgba(99, 179, 237, 0.70); }
+.stats-heatmap-cell[data-level="4"] { background: rgba(99, 179, 237, 0.90); }
+
+.stats-heatmap-month-labels {
+    display: flex;
+    gap: 3px;
+    margin-bottom: 6px;
+    min-width: min-content;
+    padding-left: 0;
+}
+
+.stats-heatmap-month-label {
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground, #8b949e);
+    min-width: 14px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.stats-heatmap-day-labels {
+    display: grid;
+    grid-template-rows: repeat(7, 14px);
+    gap: 3px;
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+
+.stats-heatmap-day-label {
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground, #8b949e);
+    line-height: 14px;
+}
+
+.stats-heatmap-wrapper {
+    display: flex;
+    align-items: flex-start;
+}
+
+/* ============ Trend Chart ============ */
+
+.stats-trend-canvas-container {
+    position: relative;
+    height: 220px;
+}
+
+.stats-trend-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.stats-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground, #8b949e);
+    cursor: pointer;
+    padding: 3px 8px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.stats-legend-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.stats-legend-item.dimmed {
+    opacity: 0.35;
+}
+
+.stats-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ============ Donut + Legend Layout ============ */
+
+.stats-donut-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 24px;
+    align-items: center;
+}
+
+@media (max-width: 600px) {
+    .stats-donut-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.stats-donut-canvas-container {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 0 auto;
+}
+
+.stats-donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.stats-donut-center-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--vscode-editor-foreground, #e6edf3);
+    line-height: 1.2;
+}
+
+.stats-donut-center-label {
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground, #8b949e);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.stats-donut-legend-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.stats-donut-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+
+.stats-donut-legend-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.stats-donut-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.stats-donut-legend-name {
+    flex: 1;
+    font-size: 13px;
+    color: var(--vscode-editor-foreground, #e6edf3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stats-donut-legend-tokens {
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground, #8b949e);
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-donut-legend-pct {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--vscode-editor-foreground, #e6edf3);
+    min-width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ============ Empty State ============ */
+
+.stats-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px 24px;
+    color: var(--vscode-descriptionForeground, #8b949e);
+    text-align: center;
+}
+
+.stats-empty-icon {
+    font-size: 48px;
+    opacity: 0.4;
+}
+
+.stats-empty-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--vscode-editor-foreground, #e6edf3);
+}
+
+.stats-empty-desc {
+    font-size: 13px;
+    max-width: 320px;
+    line-height: 1.5;
+}
+
+/* ============ Tooltip ============ */
+
+.stats-tooltip {
+    position: fixed;
+    background: var(--vscode-editorWidget-background, #1e1e1e);
+    border: 1px solid var(--vscode-editorWidget-border, #454545);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--vscode-editorWidget-foreground, #cccccc);
+    pointer-events: none;
+    z-index: 9999;
+    display: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    max-width: 220px;
+}
+
+.stats-tooltip.visible {
+    display: block;
+}
+
+.stats-tooltip-date {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--vscode-editor-foreground, #e6edf3);
+}
+
+.stats-tooltip-value {
+    color: var(--vscode-descriptionForeground, #8b949e);
+}
