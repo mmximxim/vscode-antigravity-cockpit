@@ -10,7 +10,7 @@
 
 VS Code 扩展，用于监控 Google Antigravity AI 模型配额。
 
-**功能**：Webview 仪表盘 · QuickPick 模式 · 配额分组 · 自动分组 · 重命名 · 卡片视图 · 拖拽排序 · 状态栏监控 · 阈值通知 · 隐私模式
+**功能**：Webview 仪表盘 · QuickPick 模式 · **📊 统计看板** · 配额分组 · 自动分组 · 重命名 · 卡片视图 · 拖拽排序 · 状态栏监控 · 阈值通知 · 隐私模式
 
 **语言**：跟随 VS Code 语言设置，支持 16 种语言
 
@@ -110,6 +110,23 @@ VS Code 扩展，用于监控 Google Antigravity AI 模型配额。
 
 ---
 
+### 📊 统计看板（Stats Dashboard）
+
+> 本 fork 新增功能
+
+点击顶部 **📉 Stats** 标签页，查看 AI 模型使用数据的可视化分析：
+
+| 面板 | 功能 |
+|------|------|
+| **指标卡** | 累计消耗量 · 单日峰值 · 当前/最长连续活跃天数 |
+| **活跃度热力图** | GitHub 风格 365 天网格，支持每日 / 每周 / 累计三种视图 |
+| **多模型趋势折线图** | Chart.js 平滑曲线，近 7 日 / 30 日筛选，可点击图例切换模型 |
+| **模型用量环形图** | 各模型消耗占比，中心显示总量，右侧含详细列表 |
+
+> **说明**：数据基于配额剩余比例的变化量估算（非真实 token 数），从安装后首次刷新起开始积累，历史记录持久化存储于 VS Code 全局状态。
+
+---
+
 ### 设置面板
 
 ![Settings Modal](assets/settings_modal.png)
@@ -202,12 +219,12 @@ code --install-extension antigravity-cockpit-x.y.z.vsix
 ## 从源码构建
 
 ```bash
-# 克隆仓库
-git clone https://github.com/jlcodes99/vscode-antigravity-cockpit.git
+# 克隆仓库（本 fork）
+git clone https://github.com/mmximxim/vscode-antigravity-cockpit.git
 cd vscode-antigravity-cockpit
 
-# 安装依赖
-npm install
+# 安装依赖（Windows 需加 --ignore-scripts）
+npm install --ignore-scripts
 
 # 编译
 npm run compile
