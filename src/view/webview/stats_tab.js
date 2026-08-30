@@ -113,7 +113,6 @@
                 return { date: d.date, value: d.value, desc: formatTokens(d.value) };
             });
         } else if (mode === 'weekly') {
-            // Group into 7-day week chunks, compute sum, assign sum to each cell in the week
             let weekSums = [];
             for (let i = 0; i < rawSlice.length; i += 7) {
                 let sum = 0;

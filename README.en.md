@@ -3,9 +3,9 @@ English · [简体中文](README.md)
 
 [![Version](https://img.shields.io/open-vsx/v/jlcodes/antigravity-cockpit)](https://open-vsx.org/extension/jlcodes/antigravity-cockpit)
 [![Downloads](https://img.shields.io/open-vsx/dt/jlcodes/antigravity-cockpit?color=success)](https://open-vsx.org/extension/jlcodes/antigravity-cockpit)
-[![GitHub stars](https://img.shields.io/github/stars/jlcodes99/vscode-antigravity-cockpit?style=flat&color=gold)](https://github.com/jlcodes99/vscode-antigravity-cockpit)
-[![GitHub issues](https://img.shields.io/github/issues/jlcodes99/vscode-antigravity-cockpit)](https://github.com/jlcodes99/vscode-antigravity-cockpit/issues)
-[![License](https://img.shields.io/github/license/jlcodes99/vscode-antigravity-cockpit)](https://github.com/jlcodes99/vscode-antigravity-cockpit)
+[![GitHub stars](https://img.shields.io/github/stars/mmximxim/vscode-antigravity-cockpit?style=flat&color=gold)](https://github.com/mmximxim/vscode-antigravity-cockpit)
+[![GitHub issues](https://img.shields.io/github/issues/mmximxim/vscode-antigravity-cockpit)](https://github.com/mmximxim/vscode-antigravity-cockpit/issues)
+[![License](https://img.shields.io/github/license/mmximxim/vscode-antigravity-cockpit)](https://github.com/mmximxim/vscode-antigravity-cockpit)
 
 VS Code extension for monitoring Google Antigravity AI model quotas.
 
@@ -213,7 +213,7 @@ code --install-extension antigravity-cockpit-x.y.z.vsix
 
 ```bash
 # Clone repository
-git clone https://github.com/jlcodes99/vscode-antigravity-cockpit.git
+git clone https://github.com/mmximxim/vscode-antigravity-cockpit.git
 cd vscode-antigravity-cockpit
 
 # Install dependencies
@@ -248,8 +248,8 @@ Thanks to all the above project authors for their open-source contributions! If 
 
 ## Support
 
-- ⭐ [GitHub Star](https://github.com/jlcodes99/vscode-antigravity-cockpit)
-- 💬 [Report Issues](https://github.com/jlcodes99/vscode-antigravity-cockpit/issues)
+- ⭐ [GitHub Star](https://github.com/mmximxim/vscode-antigravity-cockpit)
+- 💬 [Report Issues](https://github.com/mmximxim/vscode-antigravity-cockpit/issues)
 
 ---
 
@@ -263,7 +263,7 @@ If you find this extension helpful, consider buying me a coffee! Your support ke
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=jlcodes99/vscode-antigravity-cockpit&type=Date)](https://star-history.com/#jlcodes99/vscode-antigravity-cockpit&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=mmximxim/vscode-antigravity-cockpit&type=Date)](https://star-history.com/#mmximxim/vscode-antigravity-cockpit&Date)
 
 ---
 

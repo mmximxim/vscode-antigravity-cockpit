@@ -9,8 +9,8 @@ import { logger } from '../shared/log_service';
 import { i18n } from '../shared/i18n';
 
 // 公告源 URL（当前仓库 GitHub Raw URL）
-const ANNOUNCEMENT_URL_PROD = 'https://raw.githubusercontent.com/jlcodes99/vscode-antigravity-cockpit/main/announcements.json';
-const ANNOUNCEMENT_URL_DEV = 'https://raw.githubusercontent.com/jlcodes99/vscode-antigravity-cockpit/main/announcements_dev.json';
+const ANNOUNCEMENT_URL_PROD = 'https://raw.githubusercontent.com/mmximxim/vscode-antigravity-cockpit/main/announcements.json';
+const ANNOUNCEMENT_URL_DEV = 'https://raw.githubusercontent.com/mmximxim/vscode-antigravity-cockpit/main/announcements_dev.json';
 
 const READ_IDS_KEY = 'announcement_read_ids';
 const CACHE_KEY = 'announcement_cache';

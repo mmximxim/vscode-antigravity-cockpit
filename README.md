@@ -4,9 +4,9 @@
 
 [![Version](https://img.shields.io/open-vsx/v/jlcodes/antigravity-cockpit)](https://open-vsx.org/extension/jlcodes/antigravity-cockpit)
 [![Downloads](https://img.shields.io/open-vsx/dt/jlcodes/antigravity-cockpit?color=success)](https://open-vsx.org/extension/jlcodes/antigravity-cockpit)
-[![GitHub stars](https://img.shields.io/github/stars/jlcodes99/vscode-antigravity-cockpit?style=flat&color=gold)](https://github.com/jlcodes99/vscode-antigravity-cockpit)
-[![GitHub issues](https://img.shields.io/github/issues/jlcodes99/vscode-antigravity-cockpit)](https://github.com/jlcodes99/vscode-antigravity-cockpit/issues)
-[![License](https://img.shields.io/github/license/jlcodes99/vscode-antigravity-cockpit)](https://github.com/jlcodes99/vscode-antigravity-cockpit)
+[![GitHub stars](https://img.shields.io/github/stars/mmximxim/vscode-antigravity-cockpit?style=flat&color=gold)](https://github.com/mmximxim/vscode-antigravity-cockpit)
+[![GitHub issues](https://img.shields.io/github/issues/mmximxim/vscode-antigravity-cockpit)](https://github.com/mmximxim/vscode-antigravity-cockpit/issues)
+[![License](https://img.shields.io/github/license/mmximxim/vscode-antigravity-cockpit)](https://github.com/mmximxim/vscode-antigravity-cockpit)
 
 VS Code 扩展，用于监控 Google Antigravity AI 模型配额。
 
@@ -253,8 +253,8 @@ npm run package
 
 ## 支持
 
-- ⭐ [GitHub Star](https://github.com/jlcodes99/vscode-antigravity-cockpit)
-- 💬 [反馈问题](https://github.com/jlcodes99/vscode-antigravity-cockpit/issues)
+- ⭐ [GitHub Star](https://github.com/mmximxim/vscode-antigravity-cockpit)
+- 💬 [反馈问题](https://github.com/mmximxim/vscode-antigravity-cockpit/issues)
 
 ---
 
@@ -278,7 +278,7 @@ QQ交流群 或者加我微信 拉微信群
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=jlcodes99/vscode-antigravity-cockpit&type=Date)](https://star-history.com/#jlcodes99/vscode-antigravity-cockpit&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=mmximxim/vscode-antigravity-cockpit&type=Date)](https://star-history.com/#mmximxim/vscode-antigravity-cockpit&Date)
 
 ---
 
