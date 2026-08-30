@@ -4,7 +4,7 @@
   "icon": "assets/icon.png",
   "description": "A premium, dashboard-style quota monitor for Antigravity AI with GitHub Contribution Style statistics.",
   "version": "2.1.52",
-  "publisher": "jlcodes",
+  "publisher": "mmximxim",
   "engines": {
     "vscode": "^1.90.0"
   },
