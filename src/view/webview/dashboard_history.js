@@ -166,7 +166,7 @@ export function createHistoryModule({
     }
 
     function requestQuotaHistory() {
-        if (!historyCanvas || !isHistoryTabActive()) {
+        if (!isHistoryTabActive()) {
             return;
         }
         const rangeDays = normalizeHistoryRange(historyState.rangeDays);

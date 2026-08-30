@@ -1157,11 +1157,11 @@ export class CockpitHUD {
                 </div>
             </div>
 
-            <!-- Historical Quota Details & Timeline -->
+            <!-- Historical Quota Details Table -->
             <div class="stats-chart-panel">
                 <div class="history-card" style="background: transparent; border: none; padding: 0; backdrop-filter: none;">
                     <div class="history-header">
-                        <div class="history-title">📉 ${t('history.title')}</div>
+                        <div class="history-title">📋 ${t('history.tableTitle') || '配额变动明细'}</div>
                         <div class="history-controls">
                             <label class="history-label" for="history-model-select">${t('history.modelLabel')}</label>
                             <select id="history-model-select" class="history-select"></select>
@@ -1173,12 +1173,7 @@ export class CockpitHUD {
                             </div>
                         </div>
                     </div>
-                    <div class="history-body">
-                        <canvas id="history-chart" class="history-canvas"></canvas>
-                        <div id="history-empty" class="history-empty hidden">${t('history.noData')}</div>
-                    </div>
-                    <div class="history-details">
-                        <div class="history-details-title">${t('history.tableTitle')}</div>
+                    <div class="history-details" style="margin-top: 14px;">
                         <div class="history-table-wrapper">
                             <table class="history-table">
                                 <thead>
@@ -1199,10 +1194,6 @@ export class CockpitHUD {
                             <span id="history-page-info" class="history-page-info"></span>
                             <button id="history-next" class="history-page-btn">${t('history.paginationNext')}</button>
                         </div>
-                    </div>
-                    <div class="history-footer">
-                        <div id="history-metric-label" class="history-metric"></div>
-                        <div id="history-summary" class="history-summary"></div>
                     </div>
                 </div>
             </div>
