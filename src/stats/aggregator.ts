@@ -40,26 +40,26 @@ export class StatsAggregator {
      * Computes delta from previous poll and appends records.
      */
     public appendFromModels(models: ModelQuotaInfo[]): void {
-        if (!models || models.length === 0) return;
+        if (!models || models.length === 0) {return;}
 
         const now = Date.now();
         const newRecords: UsageRecord[] = [];
 
         for (const model of models) {
             const fraction = model.remainingFraction;
-            if (fraction === undefined || fraction === null) continue;
+            if (fraction === undefined || fraction === null) {continue;}
 
             const prev = this.prevFractions.get(model.modelId);
             this.prevFractions.set(model.modelId, fraction);
 
-            if (prev === undefined) continue; // No previous value to delta against
+            if (prev === undefined) {continue;} // No previous value to delta against
 
             const delta = prev - fraction; // Positive = consumed
-            if (delta <= 0) continue;      // No consumption or reset happened
+            if (delta <= 0) {continue;}      // No consumption or reset happened
 
             // Cap delta at 0.5 to avoid counting quota resets as consumption
             const consumed = Math.min(delta, 0.5) * 1000;
-            if (consumed < 0.01) continue;
+            if (consumed < 0.01) {continue;}
 
             newRecords.push({
                 ts: now,
@@ -70,7 +70,7 @@ export class StatsAggregator {
             });
         }
 
-        if (newRecords.length === 0) return;
+        if (newRecords.length === 0) {return;}
 
         try {
             const existing = this.loadRecords();
@@ -146,7 +146,7 @@ export class StatsAggregator {
     }
 
     private computeStreaks(activeDates: string[]): { current: number; longest: number } {
-        if (activeDates.length === 0) return { current: 0, longest: 0 };
+        if (activeDates.length === 0) {return { current: 0, longest: 0 };}
 
         const sorted = [...new Set(activeDates)].sort();
         let longest = 1;
@@ -159,7 +159,7 @@ export class StatsAggregator {
             const diff = (curr.getTime() - prev.getTime()) / 86_400_000;
             if (Math.abs(diff - 1) < 0.01) {
                 runLen++;
-                if (runLen > longest) longest = runLen;
+                if (runLen > longest) {longest = runLen;}
             } else {
                 runLen = 1;
             }
@@ -207,7 +207,7 @@ export class StatsAggregator {
         const map = new Map<string, Map<string, number>>();
         for (const r of filtered) {
             const d = this.toDateStr(r.ts);
-            if (!map.has(d)) map.set(d, new Map());
+            if (!map.has(d)) {map.set(d, new Map());}
             const m = map.get(d)!;
             m.set(r.model, (m.get(r.model) ?? 0) + r.consumed);
         }
@@ -240,7 +240,7 @@ export class StatsAggregator {
         }
 
         const total = Array.from(modelMap.values()).reduce((s, e) => s + e.consumed, 0);
-        if (total === 0) return [];
+        if (total === 0) {return [];}
 
         const entries: DonutEntry[] = [];
         let colorIdx = 0;
