@@ -161,10 +161,10 @@
         let wrapper = document.createElement('div');
         wrapper.className = 'stats-heatmap-wrapper';
 
-        // Day labels (Mon–Sun abbreviated, show every other)
+        // Day labels (Mon, Wed, Fri like GitHub)
         let dayLabels = document.createElement('div');
         dayLabels.className = 'stats-heatmap-day-labels';
-        let days = ['M', '', 'W', '', 'F', '', 'S'];
+        let days = ['Mon', '', 'Wed', '', 'Fri', '', ''];
         days.forEach(function (d) {
             let el = document.createElement('div');
             el.className = 'stats-heatmap-day-label';

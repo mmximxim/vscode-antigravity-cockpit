@@ -1158,12 +1158,10 @@ export class CockpitHUD {
             </div>
 
             <!-- Historical Quota Details Table -->
-            <div class="stats-chart-panel">
                 <div class="history-card" style="background: transparent; border: none; padding: 0; backdrop-filter: none;">
                     <div class="history-header">
                         <div class="history-title">📋 ${t('history.tableTitle') || '配额变动明细'}</div>
                         <div class="history-controls">
-                            <label class="history-label" for="history-model-select">${t('history.modelLabel')}</label>
                             <select id="history-model-select" class="history-select"></select>
                             <div class="history-range">
                                 <button class="history-range-btn" data-range="1">${t('history.range24h')}</button>
@@ -1181,7 +1179,6 @@ export class CockpitHUD {
                                         <th>${t('history.tableTime')}</th>
                                         <th>${t('history.tablePercent')}</th>
                                         <th>${t('history.tableDelta')}</th>
-                                        <th>${t('history.tableResetTime')}</th>
                                         <th>${t('history.tableCountdown')}</th>
                                     </tr>
                                 </thead>

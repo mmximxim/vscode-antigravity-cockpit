@@ -243,7 +243,7 @@
     grid-template-rows: repeat(7, 10px);
     gap: 3px;
     flex-shrink: 0;
-    margin-right: 2px;
+    margin-right: 4px;
 }
 
 .stats-heatmap-day-label {
@@ -251,9 +251,10 @@
     color: var(--vscode-descriptionForeground, #8b949e);
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     line-height: 10px;
     height: 10px;
+    white-space: nowrap;
 }
 
 .stats-heatmap-scroll {
