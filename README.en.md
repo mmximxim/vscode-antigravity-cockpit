@@ -241,38 +241,6 @@ Requirements: Node.js v18+, npm v9+
 - [CHANGELOG.md](CHANGELOG.md) (English)
 - [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md) (Chinese)
 
----
-
-## Acknowledgements
-
-- The initial process detection logic of this project was referenced from [Antigravity Quota](https://github.com/Henrik-3/AntigravityQuota).
-- [Antigravity Quota](https://github.com/Henrik-3/AntigravityQuota)'s process detection logic originated from [AntigravityQuotaWatcher](https://github.com/wusimpl/AntigravityQuotaWatcher).
-
-Thanks to all the above project authors for their open-source contributions! If these projects are helpful to you, please give them a ⭐ Star too!
-
----
-
-## Support
-
-- ⭐ [GitHub Star](https://github.com/mmximxim/vscode-antigravity-cockpit)
-- 💬 [Report Issues](https://github.com/mmximxim/vscode-antigravity-cockpit/issues)
-
----
-
-## ☕ Buy Me a Coffee
-
-If you find this extension helpful, consider buying me a coffee! Your support keeps me motivated to continue improving ❤️
-
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-orange?style=for-the-badge&logo=buy-me-a-coffee)](docs/DONATE.en.md)
-
----
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=mmximxim/vscode-antigravity-cockpit&type=Date)](https://star-history.com/#mmximxim/vscode-antigravity-cockpit&Date)
-
----
-
 ## License
 
 [MIT](LICENSE)

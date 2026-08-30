@@ -244,48 +244,6 @@ npm run package
 - [CHANGELOG.md](CHANGELOG.md)（英文）
 - [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)（中文）
 
----
-
-## 致谢
-
-- 本项目最初的进程检测逻辑参考了 [Antigravity Quota](https://github.com/Henrik-3/AntigravityQuota)。
-- [Antigravity Quota](https://github.com/Henrik-3/AntigravityQuota) 的进程检测逻辑源自 [AntigravityQuotaWatcher](https://github.com/wusimpl/AntigravityQuotaWatcher)。
-
-感谢以上项目作者的开源贡献！如果这些项目对你有帮助，也请给他们点个 ⭐ Star 支持一下！
-
----
-
-## 支持
-
-- ⭐ [GitHub Star](https://github.com/mmximxim/vscode-antigravity-cockpit)
-- 💬 [反馈问题](https://github.com/mmximxim/vscode-antigravity-cockpit/issues)
-
----
-
-## 💬 交流群
-
-QQ交流群 或者加我微信 拉微信群
-
-| QQ 群 | 微信（个人） |
-| :---: | :---: |
-| <img src="docs/qq_group_20260404_183718.png" width="200" /> | <img src="docs/wechat_info.jpg" width="200" /> |
-
----
-
-## ☕ 请作者喝杯咖啡
-
-如果这个插件对你有帮助，欢迎请作者喝杯咖啡！你的支持是我持续更新的最大动力 ❤️
-
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-支持作者-orange?style=for-the-badge&logo=buy-me-a-coffee)](docs/DONATE.md)
-
----
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=mmximxim/vscode-antigravity-cockpit&type=Date)](https://star-history.com/#mmximxim/vscode-antigravity-cockpit&Date)
-
----
-
 ## 许可证
 
 [MIT](LICENSE)

@@ -10,6 +10,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.53] - 2026-08-30
+
+### Added
+- **GitHub Contribution-Style Heatmap**: Visualizes token consumption over a 365-day calendar grid with `Mon` / `Wed` / `Fri` standard weekday labels and interactive tooltips.
+- **Top Account Toolbar with Global Aggregation**: Added an account selector on top of the Stats dashboard supporting switching between specific accounts and `All` accounts aggregate view.
+- **ChatGPT Pro Scale & Estimated API Value**: Token drops are computed at `1% = 10,000 Tokens` (100% full quota bucket = 1M Tokens) with real-time USD value estimation (`≈ $X.XX`).
+- **Quota Change Details**: Interactive quota change logs table with timestamps and delta tracking.
+
+### Improved
+- **Non-blocking Async I/O in Analytics**: Replaced synchronous file reads in `StatsAggregator` with asynchronous non-blocking file streaming to prevent Extension Host lag.
+- **WSL Cross-Platform Path Handling**: Unified data directory resolution across WSL and Windows host via `getCockpitToolsSharedDir()`.
+- **IPC Protocol & State Hardening**: Added whitelist authorization checks to `executeCommand`, protected Webview global state during sub-tab switching, and aligned message lifecycle events (`ready` / `back`).
+
+### Fixed
+- **Account Re-authorization Dead Code**: Resolved unreachable code in `MessageController` so account re-authorization executes smoothly.
+- **Account Modal Deadlock**: Added missing `context: 'add'` to IPC response payloads, fixing modal freeze during account addition and token import.
+- **Wake-up Trigger Testing Lock**: Fixed unhandled exceptions leaving the wake-up test button permanently in disabled loading state.
+- **Lifecycle & Zombie Timers**: Fixed timer resurrection in `AccountsRefreshService` and registered `AutoTriggerController` / `AccountTreeProvider` disposables in extension subscriptions.
+
 ## [2.1.52] - 2026-04-19
 
 ### Added
