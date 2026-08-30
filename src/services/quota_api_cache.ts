@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { createHash } from 'crypto';
+import { getCockpitToolsSharedDir } from '../shared/antigravity_paths';
 
 export type QuotaApiCacheSource = 'authorized';
 
@@ -16,7 +16,9 @@ export interface QuotaApiCacheRecord {
 }
 
 // 插件端在同一根目录下使用独立子目录，避免与桌面端共享/覆盖
-const CACHE_ROOT = path.join(os.homedir(), '.antigravity_cockpit', 'cache', 'quota_api_v1_plugin');
+function getCacheRoot(): string {
+    return path.join(getCockpitToolsSharedDir(), 'cache', 'quota_api_v1_plugin');
+}
 
 function normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
@@ -28,11 +30,11 @@ function hashKey(email: string): string {
 
 function getCacheFilePath(source: QuotaApiCacheSource, email: string): string {
     const filename = `${hashKey(email)}.json`;
-    return path.join(CACHE_ROOT, source, filename);
+    return path.join(getCacheRoot(), source, filename);
 }
 
 async function ensureCacheDir(source: QuotaApiCacheSource): Promise<void> {
-    const dir = path.join(CACHE_ROOT, source);
+    const dir = path.join(getCacheRoot(), source);
     await fs.mkdir(dir, { recursive: true });
 }
 

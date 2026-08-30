@@ -1,10 +1,10 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { createHash } from 'crypto';
 import { QuotaSnapshot } from '../shared/types';
 import { logger } from '../shared/log_service';
 import { AUTH_RECOMMENDED_MODEL_IDS } from '../shared/recommended_models';
+import { getCockpitToolsSharedDir } from '../shared/antigravity_paths';
 
 export interface QuotaHistoryPoint {
     timestamp: number;
@@ -43,7 +43,9 @@ export interface QuotaHistoryResult {
 
 const HISTORY_DAYS_LIMIT = 30;
 const HISTORY_MAX_POINTS_PER_MODEL = 5000;
-const HISTORY_ROOT = path.join(os.homedir(), '.antigravity_cockpit', 'cache', 'quota_history');
+function getHistoryRoot(): string {
+    return path.join(getCockpitToolsSharedDir(), 'cache', 'quota_history');
+}
 const RECOMMENDED_MODEL_ID_SET = new Set(AUTH_RECOMMENDED_MODEL_IDS);
 
 type HistoryGroupMatchInput = {
@@ -139,7 +141,7 @@ function hashEmail(email: string): string {
 }
 
 function getHistoryFilePath(email: string): string {
-    return path.join(HISTORY_ROOT, `${hashEmail(email)}.json`);
+    return path.join(getHistoryRoot(), `${hashEmail(email)}.json`);
 }
 
 function normalizeRangeDays(rangeDays?: number): number {
@@ -467,15 +469,16 @@ export async function recordQuotaHistory(email: string | null | undefined, snaps
 }
 
 export async function getAllQuotaHistories(): Promise<QuotaHistoryRecord[]> {
+    const historyRoot = getHistoryRoot();
     try {
-        const files = await fs.readdir(HISTORY_ROOT);
+        const files = await fs.readdir(historyRoot);
         const records: QuotaHistoryRecord[] = [];
         for (const file of files) {
             if (!file.endsWith('.json')) {
                 continue;
             }
             try {
-                const content = await fs.readFile(path.join(HISTORY_ROOT, file), 'utf8');
+                const content = await fs.readFile(path.join(historyRoot, file), 'utf8');
                 const parsed = JSON.parse(content) as QuotaHistoryRecord;
                 if (parsed && parsed.models && typeof parsed.models === 'object') {
                     records.push(parsed);

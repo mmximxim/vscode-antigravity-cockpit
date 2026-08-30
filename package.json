@@ -118,6 +118,16 @@
         "title": "Debug Local Account (state.vscdb)",
         "category": "Antigravity",
         "icon": "$(bug)"
+      },
+      {
+        "command": "agCockpit.openAccountsOverview",
+        "title": "Open Accounts Overview",
+        "category": "Antigravity"
+      },
+      {
+        "command": "agCockpit.backToDashboard",
+        "title": "Back to Dashboard",
+        "category": "Antigravity"
       }
     ],
     "keybindings": [

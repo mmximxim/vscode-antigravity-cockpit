@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { createHash } from 'crypto';
+import { getCockpitToolsSharedDir } from '../shared/antigravity_paths';
 
 export type QuotaCacheSource = 'authorized' | 'local';
 
@@ -27,7 +27,9 @@ export interface QuotaCacheRecord {
     models: QuotaCacheModel[];
 }
 
-const CACHE_ROOT = path.join(os.homedir(), '.antigravity_cockpit', 'cache', 'quota_v2');
+function getCacheRoot(): string {
+    return path.join(getCockpitToolsSharedDir(), 'cache', 'quota_v2');
+}
 
 function normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
@@ -39,11 +41,11 @@ function hashEmail(email: string): string {
 
 function getCacheFilePath(source: QuotaCacheSource, email: string): string {
     const filename = `${hashEmail(email)}.json`;
-    return path.join(CACHE_ROOT, source, filename);
+    return path.join(getCacheRoot(), source, filename);
 }
 
 async function ensureCacheDir(source: QuotaCacheSource): Promise<void> {
-    const dir = path.join(CACHE_ROOT, source);
+    const dir = path.join(getCacheRoot(), source);
     await fs.mkdir(dir, { recursive: true });
 }
 

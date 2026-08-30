@@ -4,7 +4,6 @@
  */
 
 import * as fs from 'fs/promises';
-import * as os from 'os';
 import * as path from 'path';
 import { oauthService, AccessTokenResult } from './oauth_service';
 import { credentialStorage } from './credential_storage';
@@ -12,6 +11,7 @@ import { TriggerRecord, ModelInfo } from './types';
 import { logger } from '../shared/log_service';
 import { cloudCodeClient } from '../shared/cloudcode_client';
 import { t } from '../shared/i18n';
+import { getCockpitToolsSharedDir } from '../shared/antigravity_paths';
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
 const RESET_TRIGGER_COOLDOWN_MS = 10 * 60 * 1000;
@@ -21,12 +21,13 @@ const DEFAULT_MAX_OUTPUT_TOKENS = 0;  // 0 means no limit
 const ANTIGRAVITY_SYSTEM_PROMPT = 'You are Antigravity, a powerful agentic AI coding assistant designed by the Google Deepmind team working on Advanced Agentic Coding.You are pair programming with a USER to solve their coding task. The task may require creating a new codebase, modifying or debugging an existing codebase, or simply answering a question.**Absolute paths only****Proactiveness**';
 const AVAILABLE_MODELS_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 const AVAILABLE_MODELS_CACHE_VERSION = 1;
-const AVAILABLE_MODELS_CACHE_FILE = path.join(
-    os.homedir(),
-    '.antigravity_cockpit',
-    'cache',
-    'available_models.json',
-);
+function getAvailableModelsCacheFile(): string {
+    return path.join(
+        getCockpitToolsSharedDir(),
+        'cache',
+        'available_models.json',
+    );
+}
 
 interface AvailableModelsCache {
     version: number;
@@ -496,7 +497,8 @@ class TriggerService {
 
     private async readAvailableModelsCache(): Promise<AvailableModelsCache | null> {
         try {
-            const content = await fs.readFile(AVAILABLE_MODELS_CACHE_FILE, 'utf8');
+            const cacheFile = getAvailableModelsCacheFile();
+            const content = await fs.readFile(cacheFile, 'utf8');
             const parsed = JSON.parse(content) as AvailableModelsCache;
             if (!parsed || parsed.version !== AVAILABLE_MODELS_CACHE_VERSION) {
                 return null;
@@ -512,15 +514,16 @@ class TriggerService {
 
     private async writeAvailableModelsCache(models: ModelInfo[]): Promise<void> {
         try {
-            await fs.mkdir(path.dirname(AVAILABLE_MODELS_CACHE_FILE), { recursive: true });
+            const cacheFile = getAvailableModelsCacheFile();
+            await fs.mkdir(path.dirname(cacheFile), { recursive: true });
             const record: AvailableModelsCache = {
                 version: AVAILABLE_MODELS_CACHE_VERSION,
                 updatedAt: Date.now(),
                 models,
             };
-            const tempPath = `${AVAILABLE_MODELS_CACHE_FILE}.tmp`;
+            const tempPath = `${cacheFile}.tmp`;
             await fs.writeFile(tempPath, JSON.stringify(record, null, 2), 'utf8');
-            await fs.rename(tempPath, AVAILABLE_MODELS_CACHE_FILE);
+            await fs.rename(tempPath, cacheFile);
         } catch (error) {
             logger.debug(`[TriggerService] Failed to write available models cache: ${error instanceof Error ? error.message : String(error)}`);
         }

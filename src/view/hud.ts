@@ -4,8 +4,6 @@
  */
 
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
 import { QuotaSnapshot, DashboardConfig, WebviewMessage } from '../shared/types';
 import { logger } from '../shared/log_service';
 import { configService } from '../shared/config_service';
@@ -92,6 +90,7 @@ export class CockpitHUD {
                 if (this.cachedTelemetry) {
                     await this.refreshWithCachedData();
                 }
+                this.syncAccountsToWebview();
                 if (webviewPanel.visible) {
                     this.notifyPanelRevealed(webviewPanel, 250);
                 }
@@ -106,10 +105,10 @@ export class CockpitHUD {
      */
     public async revealHud(initialTab?: string): Promise<boolean> {
         const localeChanged = i18n.applyLanguageSetting(configService.getConfig().language);
-        const column = vscode.window.activeTextEditor?.viewColumn;
 
         // 如果已经有 panel，直接显示
         if (this.panel) {
+            const column = vscode.window.activeTextEditor?.viewColumn;
             const wasVisible = this.panel.visible;
             if (localeChanged) {
                 this.panel.webview.html = this.generateHtml(this.panel.webview);
@@ -133,10 +132,11 @@ export class CockpitHUD {
         await this.closeOrphanTabs();
 
         try {
+            const targetColumn = vscode.window.activeTextEditor?.viewColumn || vscode.ViewColumn.One;
             const panel = vscode.window.createWebviewPanel(
                 CockpitHUD.viewType,
                 t('dashboard.title'),
-                column || vscode.ViewColumn.One,
+                targetColumn,
                 {
                     enableScripts: true,
                     localResourceRoots: [this.extensionUri],
@@ -442,19 +442,6 @@ export class CockpitHUD {
         return webview.asWebviewUri(
             vscode.Uri.joinPath(this.extensionUri, ...pathSegments),
         );
-    }
-
-    /**
-     * 读取外部资源文件内容
-     */
-    private readResourceFile(...pathSegments: string[]): string {
-        try {
-            const filePath = path.join(this.extensionUri.fsPath, ...pathSegments);
-            return fs.readFileSync(filePath, 'utf8');
-        } catch (e) {
-            logger.error(`Failed to read resource file: ${pathSegments.join('/')}`, e);
-            return '';
-        }
     }
 
     /**
@@ -1064,18 +1051,14 @@ export class CockpitHUD {
                 <div class="stats-card stats-card-tokens" style="cursor: help;">
                     <span class="stats-card-icon">⚡</span>
                     <div class="stats-card-label">累计消耗 Tokens <span style="opacity: 0.6; font-size: 10px;">ℹ️</span></div>
-                    <div class="stats-card-value" id="stats-total-tokens">–</div>
                     <div class="stats-card-sub" id="stats-total-value">≈ $0.00 价值</div>
                 </div>
-                <div class="stats-card stats-card-peak" style="cursor: help;">
                     <span class="stats-card-icon">🏔️</span>
                     <div class="stats-card-label">单日峰值 Tokens <span style="opacity: 0.6; font-size: 10px;">ℹ️</span></div>
                     <div class="stats-card-value" id="stats-peak-tokens">–</div>
                     <div class="stats-card-sub">最高单日消耗</div>
-                </div>
                 <div class="stats-card stats-card-streak" style="cursor: help;">
                     <span class="stats-card-icon">🔥</span>
-                    <div class="stats-card-label">当前连续活跃 <span style="opacity: 0.6; font-size: 10px;">ℹ️</span></div>
                     <div class="stats-card-value" id="stats-streak">–</div>
                     <div class="stats-card-sub" id="stats-record-streak">最长 – 天</div>
                 </div>

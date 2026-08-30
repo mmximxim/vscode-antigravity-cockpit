@@ -117,16 +117,20 @@ class AnnouncementService {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 10000);
 
-            // 添加时间戳参数绕过 HTTP 缓存
-            const urlWithTimestamp = `${this.announcementUrl}?t=${Date.now()}`;
-            const response = await fetch(urlWithTimestamp, {
-                headers: { 
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache',
-                },
-                signal: controller.signal,
-            });
-            clearTimeout(timeout);
+            let response: Response;
+            try {
+                // 添加时间戳参数绕过 HTTP 缓存
+                const urlWithTimestamp = `${this.announcementUrl}?t=${Date.now()}`;
+                response = await fetch(urlWithTimestamp, {
+                    headers: { 
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache',
+                    },
+                    signal: controller.signal,
+                });
+            } finally {
+                clearTimeout(timeout);
+            }
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);

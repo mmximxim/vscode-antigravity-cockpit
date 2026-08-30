@@ -40,6 +40,7 @@ export class AccountsRefreshService {
     private initialized = false;
     private initError: string | null = null;
     private toolsAvailable = false;
+    private isDisposed = false;
 
     private refreshTimer?: ReturnType<typeof setTimeout>;
     private lastManualRefresh = 0;
@@ -61,6 +62,7 @@ export class AccountsRefreshService {
     }
 
     dispose(): void {
+        this.isDisposed = true;
         if (this.refreshTimer) {
             clearTimeout(this.refreshTimer);
             this.refreshTimer = undefined;
@@ -458,6 +460,9 @@ export class AccountsRefreshService {
      * 使用动态 setTimeout 替代固定 setInterval，每次刷新后重新计算下一次间隔
      */
     private scheduleNextAutoRefresh(): void {
+        if (this.isDisposed) {
+            return;
+        }
         if (this.refreshTimer) {
             clearTimeout(this.refreshTimer);
         }
@@ -468,8 +473,10 @@ export class AccountsRefreshService {
 
         this.refreshTimer = setTimeout(() => {
             void this.refreshQuotas().finally(() => {
-                // 刷新完成后调度下一次
-                this.scheduleNextAutoRefresh();
+                if (!this.isDisposed) {
+                    // 刷新完成后调度下一次
+                    this.scheduleNextAutoRefresh();
+                }
             });
         }, nextIntervalMs);
     }

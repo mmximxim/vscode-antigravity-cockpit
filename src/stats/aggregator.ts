@@ -7,7 +7,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { ModelQuotaInfo } from '../shared/types';
 import {
     UsageRecord,
@@ -18,8 +17,11 @@ import {
     StatsSummaryCards,
 } from './types';
 import { logger } from '../shared/log_service';
+import { getCockpitToolsSharedDir } from '../shared/antigravity_paths';
 
-const HISTORY_ROOT = path.join(os.homedir(), '.antigravity_cockpit', 'cache', 'quota_history');
+function getHistoryRoot(): string {
+    return path.join(getCockpitToolsSharedDir(), 'cache', 'quota_history');
+}
 
 // Palette for model families
 const FAMILY_COLORS: Record<string, string> = {
@@ -76,10 +78,10 @@ export class StatsAggregator {
     }
 
     /**
-     * Compute the full stats payload for a given range by reading quota_history.
+     * Compute the full stats payload for a given range by reading quota_history asynchronously.
      */
-    public getStatsPayload(range: '7d' | '30d', filterEmail?: string): StatsPayload {
-        const records = this.extractRecordsFromQuotaHistory(filterEmail);
+    public async getStatsPayload(range: '7d' | '30d', filterEmail?: string): Promise<StatsPayload> {
+        const records = await this.extractRecordsFromQuotaHistory(filterEmail);
         const rangeDays = range === '7d' ? 7 : 30;
 
         return {
@@ -96,8 +98,8 @@ export class StatsAggregator {
     // Extraction from Quota History Cache
     // ─────────────────────────────────────────────────────────────
 
-    private extractRecordsFromQuotaHistory(filterEmail?: string): UsageRecord[] {
-        const historyFiles = this.loadAllHistoryFiles(filterEmail);
+    private async extractRecordsFromQuotaHistory(filterEmail?: string): Promise<UsageRecord[]> {
+        const historyFiles = await this.loadAllHistoryFiles(filterEmail);
         if (historyFiles.length === 0) {
             return [];
         }
@@ -130,7 +132,7 @@ export class StatsAggregator {
                         if (dropPct > 0 && dropPct <= 50) {
                             // 1% quota drop = 10,000 Tokens (100% full quota window ≈ 1,000,000 Tokens, standard ChatGPT / Claude Pro scale)
                             const dropUnits = dropPct * 10000;
-                            const ts = p2.timestamp;
+                            const ts = Math.floor(p2.timestamp / 120000) * 120000;
 
                             if (!timeDrops.has(ts)) {
                                 timeDrops.set(ts, new Map<string, number>());
@@ -187,17 +189,21 @@ export class StatsAggregator {
         return label || modelId;
     }
 
-    private loadAllHistoryFiles(filterEmail?: string): QuotaHistoryFileRecord[] {
+    private async loadAllHistoryFiles(filterEmail?: string): Promise<QuotaHistoryFileRecord[]> {
+        const historyRoot = getHistoryRoot();
         try {
-            if (!fs.existsSync(HISTORY_ROOT)) {
+            try {
+                await fs.promises.access(historyRoot);
+            } catch {
                 return [];
             }
-            const files = fs.readdirSync(HISTORY_ROOT).filter(f => f.endsWith('.json'));
+            const dirEntries = await fs.promises.readdir(historyRoot);
+            const files = dirEntries.filter(f => f.endsWith('.json'));
             const list: QuotaHistoryFileRecord[] = [];
             for (const file of files) {
                 try {
-                    const filePath = path.join(HISTORY_ROOT, file);
-                    const content = fs.readFileSync(filePath, 'utf8');
+                    const filePath = path.join(historyRoot, file);
+                    const content = await fs.promises.readFile(filePath, 'utf8');
                     const parsed = JSON.parse(content) as QuotaHistoryFileRecord;
                     if (parsed && parsed.models) {
                         if (!filterEmail || filterEmail === 'all' || parsed.email === filterEmail) {

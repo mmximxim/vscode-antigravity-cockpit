@@ -77,6 +77,7 @@ class ConfigService {
         'visibleModels',
         'quotaSource',  // 使用 globalState 存储，避免 VS Code 配置 API 写入失败问题
         'language',     // 语言设置使用 globalState 存储
+        'showPromptCredits',
     ]);
     private static readonly stateKeyPrefix = 'state';
     private static readonly migrationKey = `${ConfigService.stateKeyPrefix}.migratedToGlobalState.v171`;

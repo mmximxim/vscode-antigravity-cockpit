@@ -391,6 +391,8 @@ export type WebviewMessageType =
     | 'importFromTools'
     | 'exportAccounts'
     | 'openDashboard'
+    | 'ready'
+    | 'back'
     // Stats Dashboard
     | 'stats_request';
 

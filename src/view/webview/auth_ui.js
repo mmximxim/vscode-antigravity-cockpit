@@ -6,6 +6,16 @@
 (function () {
     'use strict';
 
+    function escapeHtml(value) {
+        if (!value) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
     // 国际化辅助
     const i18n = window.__i18n || {};
     const t = (key) => i18n[key] || key;
@@ -75,7 +85,7 @@
 
                 container.innerHTML = `
                     <div class="quota-auth-info quota-auth-info-clickable" title="${t('autoTrigger.manageAccounts')}">
-                        <span class="quota-auth-email">${activeEmail}</span>
+                        <span class="quota-auth-email">${escapeHtml(activeEmail)}</span>
                         ${accountCountBadge}
                         ${overviewBtn}
                         ${switchToClientBtn}
@@ -201,18 +211,18 @@
                 ].join('');
 
                 // 切换登录按钮（所有账号都显示）
-                const switchLoginBtn = `<button class="at-btn at-btn-small at-btn-primary account-switch-login-btn" data-email="${acc.email}">${t('autoTrigger.switchLoginBtn') || '切换登录'}</button>`;
+                const switchLoginBtn = `<button class="at-btn at-btn-small at-btn-primary account-switch-login-btn" data-email="${escapeHtml(acc.email)}">${t('autoTrigger.switchLoginBtn') || '切换登录'}</button>`;
 
                 return `
-                    <div class="account-manage-item ${isActive ? 'active' : ''} ${isInvalid ? 'expired' : ''}" data-email="${acc.email}">
+                    <div class="account-manage-item ${isActive ? 'active' : ''} ${isInvalid ? 'expired' : ''}" data-email="${escapeHtml(acc.email)}">
                         <div class="account-manage-info">
                             <span class="account-manage-icon">${icon}</span>
-                            <span class="account-manage-email">${acc.email}</span>
+                            <span class="account-manage-email">${escapeHtml(acc.email)}</span>
                             ${badges}
                         </div>
                         <div class="account-manage-actions">
                             ${switchLoginBtn}
-                            <button class="at-btn at-btn-small at-btn-danger account-remove-btn" data-email="${acc.email}">${t('autoTrigger.deleteBtn') || '删除'}</button>
+                            <button class="at-btn at-btn-small at-btn-danger account-remove-btn" data-email="${escapeHtml(acc.email)}">${t('autoTrigger.deleteBtn') || '删除'}</button>
                         </div>
                     </div>
                 `;

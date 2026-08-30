@@ -49,12 +49,14 @@ let pendingLocalCredential: PendingLocalCredential | null = null;
 
 async function readStateValueByKey(dbPath: string, key: string): Promise<string> {
     // 检查数据库文件是否存在
-    if (!fs.existsSync(dbPath)) {
+    try {
+        await fs.promises.access(dbPath);
+    } catch {
         throw new Error(`Database file not found: ${dbPath}`);
     }
 
     const SQL = await getSqlJs();
-    const fileBuffer = fs.readFileSync(dbPath);
+    const fileBuffer = await fs.promises.readFile(dbPath);
     let db: Database | null = null;
 
     try {

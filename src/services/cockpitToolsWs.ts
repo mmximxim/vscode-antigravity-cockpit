@@ -46,7 +46,12 @@ export function readServerConfig(): ServerConfig | null {
     return null;
 }
 
+let cachedWslWindowsHost: string | null = null;
+
 function resolveWslWindowsHost(): string {
+    if (cachedWslWindowsHost) {
+        return cachedWslWindowsHost;
+    }
     try {
         const defaultRoute = childProcess.execFileSync(
             'ip',
@@ -55,6 +60,7 @@ function resolveWslWindowsHost(): string {
         ).trim();
         const gatewayMatch = defaultRoute.match(/\bdefault\s+via\s+([^\s]+)\b/i);
         if (gatewayMatch?.[1]) {
+            cachedWslWindowsHost = gatewayMatch[1];
             return gatewayMatch[1];
         }
     } catch (error) {

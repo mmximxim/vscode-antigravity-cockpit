@@ -206,6 +206,7 @@ export class AccountTreeProvider implements vscode.TreeDataProvider<AccountTreeI
 
     dispose(): void {
         this.refreshSubscription.dispose();
+        this._onDidChangeTreeData.dispose();
     }
 
     /**

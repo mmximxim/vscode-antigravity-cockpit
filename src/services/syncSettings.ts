@@ -13,12 +13,14 @@
  */
 
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { logger } from '../shared/log_service';
+import { getCockpitToolsSharedDir } from '../shared/antigravity_paths';
 
 /** 共享配置目录 */
-const SHARED_DIR = path.join(os.homedir(), '.antigravity_cockpit');
+function getSharedDir(): string {
+    return getCockpitToolsSharedDir();
+}
 
 /** 同步配置文件名 */
 const SYNC_SETTINGS_FILE = 'sync_settings.json';
@@ -44,15 +46,16 @@ export interface SyncSettings {
  * 获取同步配置文件路径
  */
 function getSyncSettingsPath(): string {
-    return path.join(SHARED_DIR, SYNC_SETTINGS_FILE);
+    return path.join(getSharedDir(), SYNC_SETTINGS_FILE);
 }
 
 /**
  * 确保共享目录存在
  */
 function ensureSharedDir(): void {
-    if (!fs.existsSync(SHARED_DIR)) {
-        fs.mkdirSync(SHARED_DIR, { recursive: true });
+    const sharedDir = getSharedDir();
+    if (!fs.existsSync(sharedDir)) {
+        fs.mkdirSync(sharedDir, { recursive: true });
     }
 }
 

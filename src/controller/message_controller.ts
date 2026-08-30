@@ -909,6 +909,15 @@ export class MessageController {
                         }
                     } catch (error) {
                         const err = error instanceof Error ? error : new Error(String(error));
+                        try {
+                            const state = await autoTriggerController.getState();
+                            this.hud.sendMessage({
+                                type: 'autoTriggerState',
+                                data: state,
+                            });
+                        } catch {
+                            // ignore secondary error
+                        }
                         vscode.window.showErrorMessage(
                             t('autoTrigger.triggerFailed').replace('{message}', err.message),
                         );
@@ -1035,8 +1044,28 @@ export class MessageController {
                     break;
 
                 case 'autoTrigger.reauthorizeAccount':
-                    // Re-authorize logic... (keep existing if any code follows, but here it was just the case label)
-                    // ... existing logic ...
+                    if (message.email) {
+                        logger.info(`User reauthorizing account: ${message.email}`);
+                        try {
+                            // 重新走授权流程，会覆盖该账号的 token
+                            await autoTriggerController.reauthorizeAccount(message.email);
+                            const state = await autoTriggerController.getState();
+                            this.hud.sendMessage({
+                                type: 'autoTriggerState',
+                                data: state,
+                            });
+                            if (configService.getConfig().quotaSource === 'authorized') {
+                                this.reactor.syncTelemetry();
+                            }
+                            vscode.window.showInformationMessage(t('autoTrigger.reauthorizeSuccess'));
+                        } catch (error) {
+                            const err = error instanceof Error ? error : new Error(String(error));
+                            logger.error(`Reauthorize account failed: ${err.message}`);
+                            vscode.window.showErrorMessage(`Reauthorize failed: ${err.message}`);
+                        }
+                    } else {
+                        logger.warn('reauthorizeAccount missing email');
+                    }
                     break; 
 
                     // ============ Accounts Overview Handlers ============
@@ -1167,12 +1196,12 @@ export class MessageController {
                                     if (this.refreshService) {await this.refreshService.refresh();}
                                     this.hud.sendMessage({
                                         type: 'actionResult',
-                                        data: { status: 'success', message: t('accountsOverview.addSuccess'), closeModal: true },
+                                        data: { status: 'success', message: t('accountsOverview.addSuccess'), closeModal: true, context: 'add' },
                                     });
                                 } else {
                                     this.hud.sendMessage({
                                         type: 'actionResult',
-                                        data: { status: 'error', message: t('accountsOverview.addFailed', { error: 'Unknown' }) },
+                                        data: { status: 'error', message: t('accountsOverview.addFailed', { error: 'Unknown' }), context: 'add' },
                                     });
                                 }
                             }
@@ -1180,7 +1209,7 @@ export class MessageController {
                             const err = e instanceof Error ? e : new Error(String(e));
                             this.hud.sendMessage({
                                 type: 'actionResult',
-                                data: { status: 'error', message: err.message },
+                                data: { status: 'error', message: err.message, context: 'add' },
                             });
                         }
                     }
@@ -1241,12 +1270,12 @@ export class MessageController {
 
                             this.hud.sendMessage({
                                 type: 'actionResult',
-                                data: { status, message: messageText, closeModal: count > 0 },
+                                data: { status, message: messageText, closeModal: count > 0, context: 'add' },
                             });
                         } catch (e) {
                             this.hud.sendMessage({
                                 type: 'actionResult',
-                                data: { status: 'error', message: 'Invalid JSON format' },
+                                data: { status: 'error', message: 'Invalid JSON format', context: 'add' },
                             });
                         }
                     }
@@ -1287,31 +1316,13 @@ export class MessageController {
                     }
                     break;
 
-                    // 重新授权指定账号（先删除再重新授权）
-                    if (message.email) {
-                        logger.info(`User reauthorizing account: ${message.email}`);
-                        try {
-                            // 重新走授权流程，会覆盖该账号的 token
-                            await autoTriggerController.reauthorizeAccount(message.email);
-                            const state = await autoTriggerController.getState();
-                            this.hud.sendMessage({
-                                type: 'autoTriggerState',
-                                data: state,
-                            });
-                            if (configService.getConfig().quotaSource === 'authorized') {
-                                this.reactor.syncTelemetry();
-                            }
-                            vscode.window.showInformationMessage(t('autoTrigger.reauthorizeSuccess'));
-                        } catch (error) {
-                            const err = error instanceof Error ? error : new Error(String(error));
-                            logger.error(`Reauthorize account failed: ${err.message}`);
-                            vscode.window.showErrorMessage(`Reauthorize failed: ${err.message}`);
-                        }
-                    } else {
-                        logger.warn('reauthorizeAccount missing email');
-                    }
+                case 'ready':
+                    this.hud.syncAccountsToWebview();
                     break;
 
+                case 'back':
+                    this.hud.sendMessage({ type: 'switchTab', tab: 'quota' });
+                    break;
 
                 // ============ Announcements ============
                 case 'announcement.getState':
@@ -1366,6 +1377,11 @@ export class MessageController {
 
                 case 'executeCommand':
                     if (message.commandId) {
+                        const isAllowed = message.commandId.startsWith('agCockpit.') || ['vscode.open', 'workbench.action.reloadWindow'].includes(message.commandId);
+                        if (!isAllowed) {
+                            logger.warn(`[MsgCtrl] Rejected unauthorized executeCommand: ${message.commandId}`);
+                            break;
+                        }
                         const args = message.commandArgs;
                         if (args && Array.isArray(args) && args.length > 0) {
                             await vscode.commands.executeCommand(message.commandId, ...args);
@@ -1382,7 +1398,7 @@ export class MessageController {
                     logger.info(`[MsgCtrl] stats_request received, range=${range}, account=${account}`);
                     if (this.statsAggregator) {
                         try {
-                            const payload = this.statsAggregator.getStatsPayload(range, account);
+                            const payload = await this.statsAggregator.getStatsPayload(range, account);
                             this.hud.sendMessage({ type: 'stats_update', data: payload });
                         } catch (err) {
                             logger.warn(`[MsgCtrl] stats_request error: ${err}`);

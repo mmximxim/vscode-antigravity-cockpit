@@ -395,7 +395,7 @@
         elements.viewListBtn?.classList.toggle('active', viewMode === 'list');
         elements.viewGridBtn?.classList.toggle('active', viewMode === 'grid');
         elements.viewCompactBtn?.classList.toggle('active', viewMode === 'compact');
-        vscode.setState({ viewMode });
+        vscode.setState({ ...vscode.getState(), viewMode });
         render();
     }
 

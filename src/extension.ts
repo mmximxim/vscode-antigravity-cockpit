@@ -82,7 +82,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // 记录当前实例的 user-data-dir（用于读取正确的 state.vscdb）
     try {
-        const userDataDir = path.resolve(context.globalStorageUri.fsPath, '..', '..', '..');
+        const isFileScheme = context.globalStorageUri.scheme === 'file';
+        const userDataDir = isFileScheme
+            ? path.resolve(context.globalStorageUri.fsPath, '..', '..', '..')
+            : null;
         setAntigravityRemoteName(vscode.env.remoteName ?? null);
         setAntigravityUserDataDir(userDataDir);
         logger.info(`[Startup] Resolved user-data-dir: ${userDataDir}, remote=${vscode.env.remoteName ?? 'local'}`);
@@ -201,6 +204,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // 初始化自动触发控制器
     autoTriggerController.initialize(context);
+    context.subscriptions.push({ dispose: () => autoTriggerController.dispose() });
 
     // 启动时自动同步到客户端当前登录账户
     // 必须同步等待完成，避免与后续操作产生竞态条件
@@ -218,6 +222,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // 初始化 Account Tree View
     const accountTreeProvider = new AccountTreeProvider(accountsRefreshService);
+    context.subscriptions.push(accountTreeProvider);
     const accountTreeView = vscode.window.createTreeView('agCockpit.accountTree', {
         treeDataProvider: accountTreeProvider,
         showCollapseAll: true,
@@ -639,8 +644,10 @@ function handleOfflineState(): void {
 export async function deactivate(): Promise<void> {
     logger.info('Antigravity Cockpit: Shutting down...');
 
-    // 断开 WebSocket 连接
+    // 断开 WebSocket 连接并移除所有事件监听
     cockpitToolsWs.disconnect();
+    cockpitToolsWs.removeAllListeners();
+    cockpitToolsSyncEvents.removeAllListeners();
 
     reactor?.shutdown();
     hud?.dispose();
