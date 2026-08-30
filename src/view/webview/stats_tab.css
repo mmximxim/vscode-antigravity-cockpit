@@ -158,64 +158,110 @@
     gap: 4px;
 }
 
+.stats-heatmap-wrapper {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.stats-heatmap-day-labels {
+    display: grid;
+    grid-template-rows: repeat(7, 13px);
+    gap: 3px;
+    flex-shrink: 0;
+    margin-right: 4px;
+}
+
+.stats-heatmap-day-label {
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground, #8b949e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 13px;
+    height: 13px;
+}
+
 .stats-heatmap-scroll {
     flex: 1;
-    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+}
+
 .stats-heatmap-grid {
     display: grid;
-    grid-template-rows: repeat(7, 1fr);
+    grid-template-rows: repeat(7, 13px);
     grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
-    width: 100%;
+    grid-auto-columns: 13px;
+    gap: 3px;
+    min-width: min-content;
 }
 
 .stats-heatmap-cell {
+    width: 13px;
+    height: 13px;
+    border-radius: 3px;
     background: rgba(255, 255, 255, 0.06);
     cursor: pointer;
     transition: transform 0.15s ease, background-color 0.15s ease;
     position: relative;
+    box-sizing: border-box;
 }
 
+.stats-heatmap-cell:hover {
+    transform: scale(1.4);
+    z-index: 10;
 }
 
 /* Heatmap intensity levels (0-4) */
+.stats-heatmap-cell[data-level="1"] { background: rgba(59, 130, 246, 0.35); }
 .stats-heatmap-cell[data-level="2"] { background: rgba(59, 130, 246, 0.60); }
 .stats-heatmap-cell[data-level="3"] { background: rgba(59, 130, 246, 0.80); }
 .stats-heatmap-cell[data-level="4"] { background: rgba(59, 130, 246, 1.00); box-shadow: 0 0 6px rgba(59, 130, 246, 0.5); }
 
 .stats-heatmap-month-labels {
     display: flex;
-    width: 100%;
+    gap: 3px;
+    margin-bottom: 6px;
+    min-width: min-content;
 }
 
 .stats-heatmap-month-label {
     font-size: 10px;
     color: var(--vscode-descriptionForeground, #8b949e);
     text-align: left;
-
-.stats-trend-canvas-container {
-    position: relative;
-    height: 220px;
+    white-space: nowrap;
 }
 
+/* ============ Trend Chart ============ */
+
 .stats-trend-legend {
-    margin-bottom: 12px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
 }
 
 .stats-legend-item {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
     font-size: 12px;
-    color: var(--vscode-descriptionForeground, #8b949e);
+    color: var(--vscode-editor-foreground, #e6edf3);
     cursor: pointer;
-    padding: 3px 8px;
+    padding: 4px 10px;
     border-radius: 6px;
-    transition: background 0.15s;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background 0.15s, opacity 0.15s;
 }
 
 .stats-legend-item:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .stats-legend-item.dimmed {
@@ -223,32 +269,43 @@
 }
 
 .stats-legend-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
+    display: inline-block;
     flex-shrink: 0;
+}
+
+.stats-trend-canvas-container {
+    position: relative;
+    height: 220px;
+    width: 100%;
 }
 
 /* ============ Donut + Legend Layout ============ */
 
 .stats-donut-layout {
-    display: grid;
-    grid-template-columns: 240px 1fr;
-    gap: 24px;
+    display: flex;
+    flex-direction: row;
     align-items: center;
+    justify-content: flex-start;
+    gap: 36px;
+    min-height: 220px;
+    padding: 8px 0;
 }
 
 @media (max-width: 600px) {
     .stats-donut-layout {
-        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: center;
     }
 }
 
 .stats-donut-canvas-container {
     position: relative;
-    width: 220px;
-    height: 220px;
-    margin: 0 auto;
+    width: 200px;
+    height: 200px;
+    flex-shrink: 0;
 }
 
 .stats-donut-center {
@@ -277,7 +334,8 @@
 .stats-donut-legend-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    flex: 1;
     max-height: 220px;
     overflow-y: auto;
 }
@@ -285,14 +343,16 @@
 .stats-donut-legend-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 6px 10px;
+    gap: 12px;
+    padding: 8px 14px;
     border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     transition: background 0.15s;
 }
 
 .stats-donut-legend-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.07);
 }
 
 .stats-donut-legend-dot {
@@ -306,6 +366,7 @@
     flex: 1;
     font-size: 13px;
     color: var(--vscode-editor-foreground, #e6edf3);
+    font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -321,7 +382,7 @@
     font-size: 12px;
     font-weight: 600;
     color: var(--vscode-editor-foreground, #e6edf3);
-    min-width: 36px;
+    min-width: 42px;
     text-align: right;
     font-variant-numeric: tabular-nums;
 }

@@ -172,6 +172,11 @@
         wrapper.appendChild(dayLabels);
         wrapper.appendChild(scrollArea);
         container.appendChild(wrapper);
+
+        // Auto-scroll to the right so latest activity is immediately in view
+        requestAnimationFrame(function () {
+            scrollArea.scrollLeft = scrollArea.scrollWidth;
+        });
     }
 
     // ─── Trend Chart (Chart.js line chart) ───────────────────────
