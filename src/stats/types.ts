@@ -53,4 +53,6 @@ export interface StatsPayload {
     trendLines: DailyModelStat[];    // Last N days (7 or 30)
     donut: DonutEntry[];             // All-time or range
     range: '7d' | '30d';            // Selected range
+    modelLabels?: Record<string, string>; // modelId -> human readable label
 }
+

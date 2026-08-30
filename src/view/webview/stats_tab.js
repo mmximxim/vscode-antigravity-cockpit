@@ -150,7 +150,7 @@
     }
 
     // ─── Trend Chart (Chart.js line chart) ───────────────────────
-    function renderTrendChart(trendLines) {
+    function renderTrendChart(trendLines, modelLabels) {
         let canvas = document.getElementById('stats-trend-canvas');
         let emptyState = document.getElementById('stats-trend-empty');
         let legendContainer = document.getElementById('stats-trend-legend');
@@ -198,9 +198,10 @@
         let datasets = modelIds.map(function (modelId, i) {
             let color = palette[i % palette.length];
             let data = trendLines.map(function (row) { return (row.models && row.models[modelId]) || 0; });
+            let displayName = (modelLabels && modelLabels[modelId]) || modelId;
 
             return {
-                label: modelId,
+                label: displayName,
                 data: data,
                 borderColor: color,
                 backgroundColor: 'rgba(128,128,128,0.1)',
@@ -223,7 +224,14 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { mode: 'index', intersect: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        filter: function (tooltipItem) {
+                            // Only show lines with non-zero consumption on that day to prevent tooltip clutter
+                            return tooltipItem.raw > 0;
+                        },
+                    },
                 },
                 scales: {
                     x: {
@@ -245,6 +253,8 @@
             legendContainer.innerHTML = '';
             modelIds.forEach(function (modelId, i) {
                 let color = palette[i % palette.length];
+                let displayName = (modelLabels && modelLabels[modelId]) || modelId;
+
                 let item = document.createElement('div');
                 item.className = 'stats-legend-item' + (hiddenModels.has(modelId) ? ' dimmed' : '');
 
@@ -253,7 +263,7 @@
                 dot.style.backgroundColor = color;
 
                 let label = document.createElement('span');
-                label.textContent = modelId;
+                label.textContent = displayName;
 
                 item.appendChild(dot);
                 item.appendChild(label);
@@ -374,9 +384,10 @@
         if (!data) { return; }
         renderSummaryCards(data.summaryCards);
         renderHeatmap(data.heatmap, currentHeatmapMode);
-        renderTrendChart(data.trendLines);
+        renderTrendChart(data.trendLines, data.modelLabels);
         renderDonutChart(data.donut);
     }
+
 
     // ─── Message listener ─────────────────────────────────────────
     window.addEventListener('message', function (event) {

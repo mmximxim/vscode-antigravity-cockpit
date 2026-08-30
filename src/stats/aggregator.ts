@@ -30,6 +30,8 @@ export class StatsAggregator {
     private context: vscode.ExtensionContext;
     /** Previous model fractions for delta computation */
     private prevFractions: Map<string, number> = new Map();
+    /** Latest seen model display labels */
+    private latestLabels: Map<string, string> = new Map();
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
@@ -42,12 +44,19 @@ export class StatsAggregator {
     public appendFromModels(models: ModelQuotaInfo[]): void {
         if (!models || models.length === 0) {return;}
 
+        for (const model of models) {
+            if (model.modelId && model.label) {
+                this.latestLabels.set(model.modelId, model.label);
+            }
+        }
+
         const now = Date.now();
         const newRecords: UsageRecord[] = [];
 
         for (const model of models) {
             const fraction = model.remainingFraction;
             if (fraction === undefined || fraction === null) {continue;}
+
 
             const prev = this.prevFractions.get(model.modelId);
             this.prevFractions.set(model.modelId, fraction);
@@ -98,6 +107,7 @@ export class StatsAggregator {
             trendLines: this.computeTrendLines(records, rangeDays),
             donut: this.computeDonut(records, rangeDays),
             range,
+            modelLabels: this.computeModelLabels(records),
         };
     }
 
@@ -259,4 +269,18 @@ export class StatsAggregator {
         entries.sort((a, b) => b.consumed - a.consumed);
         return entries;
     }
+
+    private computeModelLabels(records: UsageRecord[]): Record<string, string> {
+        const labels: Record<string, string> = {};
+        for (const r of records) {
+            if (r.model && r.label) {
+                labels[r.model] = r.label;
+            }
+        }
+        for (const [m, l] of this.latestLabels.entries()) {
+            labels[m] = l;
+        }
+        return labels;
+    }
 }
+

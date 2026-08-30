@@ -1,7 +1,5 @@
 {
   "name": "antigravity-cockpit-github-style",
-  "displayName": "Antigravity Cockpit - GitHub Style",
-  "icon": "assets/icon.png",
   "description": "A premium, dashboard-style quota monitor for Antigravity AI with GitHub Contribution Style statistics.",
   "version": "2.1.52",
   "publisher": "mmxmxm",
