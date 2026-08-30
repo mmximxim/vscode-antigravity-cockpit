@@ -158,74 +158,79 @@
     gap: 4px;
 }
 
-.stats-heatmap-scroll {
-    overflow-x: auto;
-    padding-bottom: 8px;
-}
-
-.stats-heatmap-grid {
-    display: grid;
-    grid-template-rows: repeat(7, 14px);
-    grid-auto-flow: column;
-    grid-auto-columns: 14px;
-    gap: 3px;
-    min-width: min-content;
-}
-
-.stats-heatmap-cell {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.06);
-    cursor: pointer;
-    transition: transform 0.1s;
-    position: relative;
-}
-
-.stats-heatmap-cell:hover {
-    transform: scale(1.3);
-    z-index: 1;
-}
-
-/* Heatmap intensity levels (0-4) */
-.stats-heatmap-cell[data-level="1"] { background: rgba(99, 179, 237, 0.25); }
-.stats-heatmap-cell[data-level="2"] { background: rgba(99, 179, 237, 0.45); }
-.stats-heatmap-cell[data-level="3"] { background: rgba(99, 179, 237, 0.70); }
-.stats-heatmap-cell[data-level="4"] { background: rgba(99, 179, 237, 0.90); }
-
-.stats-heatmap-month-labels {
+.stats-heatmap-wrapper {
     display: flex;
-    gap: 3px;
-    margin-bottom: 6px;
-    min-width: min-content;
-    padding-left: 0;
-}
-
-.stats-heatmap-month-label {
-    font-size: 10px;
-    color: var(--vscode-descriptionForeground, #8b949e);
-    min-width: 14px;
-    text-align: left;
-    white-space: nowrap;
+    align-items: center;
+    width: 100%;
+    gap: 6px;
 }
 
 .stats-heatmap-day-labels {
     display: grid;
-    grid-template-rows: repeat(7, 14px);
-    gap: 3px;
-    margin-right: 6px;
+    grid-template-rows: repeat(7, 1fr);
+    gap: 2.5px;
+    margin-right: 2px;
     flex-shrink: 0;
+    height: 100%;
 }
 
 .stats-heatmap-day-label {
     font-size: 10px;
     color: var(--vscode-descriptionForeground, #8b949e);
-    line-height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
-.stats-heatmap-wrapper {
+.stats-heatmap-scroll {
+    flex: 1;
+    width: 100%;
+    overflow: hidden; /* Zero horizontal scrollbar! */
+}
+
+.stats-heatmap-grid {
+    display: grid;
+    grid-template-rows: repeat(7, 1fr);
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 2.5px;
+    width: 100%;
+}
+
+.stats-heatmap-cell {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+    position: relative;
+}
+
+.stats-heatmap-cell:hover {
+    transform: scale(1.4);
+    z-index: 10;
+}
+
+/* Heatmap intensity levels (0-4) */
+.stats-heatmap-cell[data-level="1"] { background: rgba(59, 130, 246, 0.35); }
+.stats-heatmap-cell[data-level="2"] { background: rgba(59, 130, 246, 0.60); }
+.stats-heatmap-cell[data-level="3"] { background: rgba(59, 130, 246, 0.80); }
+.stats-heatmap-cell[data-level="4"] { background: rgba(59, 130, 246, 1.00); box-shadow: 0 0 6px rgba(59, 130, 246, 0.5); }
+
+.stats-heatmap-month-labels {
     display: flex;
-    align-items: flex-start;
+    gap: 2.5px;
+    margin-bottom: 4px;
+    width: 100%;
+}
+
+.stats-heatmap-month-label {
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground, #8b949e);
+    text-align: left;
+    white-space: nowrap;
 }
 
 /* ============ Trend Chart ============ */
