@@ -19,16 +19,22 @@ VS Code extension for monitoring Google Antigravity AI model quotas.
 
 ## Features
 
-### 📊 Statistics Dashboard (Stats Tab) 🔥
+### 📊 Statistics & Quota History Dashboard 🔥
 
-> **Key Fork Feature**: Click the **📉 Stats** tab in the dashboard for deep insights into your AI model consumption and activity trends!
+<img width="688" height="443" alt="Stats Dashboard Preview" src="https://github.com/user-attachments/assets/196c0229-0d2f-4710-a96b-d225c2b86a7f" />
+
+> **Key Feature**: Click the **📈 Stats & History** tab in the dashboard for deep insights into your AI model consumption, activity trends, and detailed per-model quota logs!
 
 | Panel | Description |
 |-------|-------------|
-| ⚡ **Summary Cards** | Total Quota Consumed · Daily Peak · Current Active Streak · Longest Streak Record |
-| 🗓️ **Activity Heatmap** | **GitHub Contribution Graph Style** 365-day green commit grid with **Daily / Weekly / Cumulative** views and tooltip inspection |
-| 📈 **Multi-Model Usage Trends** | Chart.js smooth line chart with **Last 7 Days / 30 Days** filters and toggleable model legends |
+| ⚡ **Summary Cards** | Total Quota Consumed · Daily Peak · Current Active Streak (Hover to view calculation details) |
+| 🗓️ **Activity Heatmap** | **GitHub Contribution Graph Style** strict 1:1 square grid with **Daily / Weekly / Cumulative** views, auto-fitting width, and responsive tooltips |
+| 📈 **Multi-Model Usage Trends** | Smooth line chart for **Last 7 Days / 30 Days**, with intelligent pool deduplication for Claude and Gemini models |
 | 🍩 **Model Distribution Donut** | Doughnut breakdown of consumption per model with center total and detailed legend list |
+| 📉 **Per-Model Quota History** | Quota remaining percentage timeline (24h / 7d / 30d) with account and model selectors |
+| 📋 **Quota Change Detail Log** | Step-by-step table of quota drops, reset timestamps, and countdown timers with pagination |
+
+> **Data Extraction**: Automatically computed from cached quota history and poll deltas, with deduplicated pools for Gemini and Claude.
 
 ### Display Modes
 
