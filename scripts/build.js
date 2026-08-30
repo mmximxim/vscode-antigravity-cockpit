@@ -61,6 +61,17 @@ async function build() {
         format: 'iife',
     });
 
+    // 2e. Bundle Stats Tab Webview JS
+    const statsTabContext = await esbuild.context({
+        entryPoints: ['./src/view/webview/stats_tab.js'],
+        bundle: true,
+        outfile: './out/view/webview/stats_tab.js',
+        minify: isProduction,
+        sourcemap: !isProduction,
+        target: 'es2020',
+        format: 'iife',
+    });
+
     if (isWatch) {
         await Promise.all([
             extensionContext.watch(),
@@ -68,6 +79,7 @@ async function build() {
             autoTriggerContext.watch(),
             authUiContext.watch(),
             accountsOverviewContext.watch(),
+            statsTabContext.watch(),
         ]);
         console.log('Watching for changes...');
     } else {
@@ -77,12 +89,14 @@ async function build() {
             autoTriggerContext.rebuild(),
             authUiContext.rebuild(),
             accountsOverviewContext.rebuild(),
+            statsTabContext.rebuild(),
         ]);
         await extensionContext.dispose();
         await webviewContext.dispose();
         await autoTriggerContext.dispose();
         await authUiContext.dispose();
         await accountsOverviewContext.dispose();
+        await statsTabContext.dispose();
         console.log('Build finished successfully.');
     }
 
@@ -98,6 +112,7 @@ async function build() {
     fs.copyFileSync('./src/view/webview/shared_modals.css', './out/view/webview/shared_modals.css');
     fs.copyFileSync('./src/view/webview/auto_trigger.css', './out/view/webview/auto_trigger.css');
     fs.copyFileSync('./src/view/webview/accounts_overview.css', './out/view/webview/accounts_overview.css');
+    fs.copyFileSync('./src/view/webview/stats_tab.css', './out/view/webview/stats_tab.css');
 
     const sqlWasmSrc = path.join(__dirname, '../node_modules/sql.js/dist/sql-wasm.wasm');
     const sqlWasmDest = path.join(__dirname, '../out/sql-wasm.wasm');
