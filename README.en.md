@@ -20,6 +20,21 @@ VS Code extension for monitoring Google Antigravity AI model quotas.
 
 ## Features
 
+### 📊 Statistics Dashboard (Stats Tab) 🔥
+
+> **Key Fork Feature**: Click the **📉 Stats** tab in the dashboard for deep insights into your AI model consumption and activity trends!
+
+| Panel | Description |
+|-------|-------------|
+| ⚡ **Summary Cards** | Total Quota Consumed · Daily Peak · Current Active Streak · Longest Streak Record |
+| 🗓️ **Activity Heatmap** | GitHub-style 365-day grid with **Daily / Weekly / Cumulative** views and tooltip inspection |
+| 📈 **Multi-Model Usage Trends** | Chart.js smooth line chart with **Last 7 Days / 30 Days** filters and toggleable model legends |
+| 🍩 **Model Distribution Donut** | Doughnut breakdown of consumption per model with center total and detailed legend list |
+
+> **Note**: Metrics are calculated and persisted to VS Code global state from quota polls starting from the first run.
+
+---
+
 ### Display Modes
 
 Two display modes available, configurable via `agCockpit.displayMode`:
