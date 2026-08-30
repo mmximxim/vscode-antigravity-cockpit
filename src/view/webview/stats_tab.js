@@ -96,22 +96,33 @@
         let container = document.getElementById('stats-heatmap-container');
         if (!container || !heatmap || heatmap.length === 0) { return; }
 
+        let containerWidth = container.clientWidth || 600;
+        let dayLabelsWidth = 20;
+        let availableWidth = Math.max(containerWidth - dayLabelsWidth - 16, 200);
+        let cellStep = 13; // 10px cell + 3px gap
+        let maxWeeks = Math.floor(availableWidth / cellStep);
+        let numWeeks = Math.min(Math.max(maxWeeks, 10), 53);
+        let numDays = numWeeks * 7;
+
+        // Take the most recent numDays so today is always rightmost and visible!
+        let rawSlice = heatmap.slice(Math.max(0, heatmap.length - numDays));
+
         let data = [];
         if (mode === 'daily') {
-            data = heatmap.map(function (d) {
+            data = rawSlice.map(function (d) {
                 return { date: d.date, value: d.value, desc: formatTokens(d.value) };
             });
         } else if (mode === 'weekly') {
             // Group into 7-day week chunks, compute sum, assign sum to each cell in the week
             let weekSums = [];
-            for (let i = 0; i < heatmap.length; i += 7) {
+            for (let i = 0; i < rawSlice.length; i += 7) {
                 let sum = 0;
-                for (let j = i; j < Math.min(i + 7, heatmap.length); j++) {
-                    sum += (heatmap[j].value || 0);
+                for (let j = i; j < Math.min(i + 7, rawSlice.length); j++) {
+                    sum += (rawSlice[j].value || 0);
                 }
                 weekSums.push(sum);
             }
-            data = heatmap.map(function (d, idx) {
+            data = rawSlice.map(function (d, idx) {
                 let weekIdx = Math.floor(idx / 7);
                 let wVal = weekSums[weekIdx] || 0;
                 return {
@@ -122,7 +133,7 @@
             });
         } else if (mode === 'cumulative') {
             let sum = 0;
-            data = heatmap.map(function (d) {
+            data = rawSlice.map(function (d) {
                 sum += (d.value || 0);
                 return {
                     date: d.date,
@@ -506,6 +517,13 @@
                 requestStats();
             }
         }
+
+        // On window resize, re-render heatmap to adjust weeks
+        window.addEventListener('resize', function () {
+            if (statsData) {
+                renderHeatmap(statsData.heatmap, currentHeatmapMode);
+            }
+        });
     }
 
     // Run init when DOM is ready
