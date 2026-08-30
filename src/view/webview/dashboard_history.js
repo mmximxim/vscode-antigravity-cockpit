@@ -143,7 +143,7 @@ export function createHistoryModule({
     }
 
     function isHistoryTabActive() {
-        const tab = document.getElementById('tab-history');
+        const tab = document.getElementById('tab-stats') || document.getElementById('tab-history');
         return Boolean(tab && tab.classList.contains('active'));
     }
 

@@ -412,7 +412,7 @@ import { createAnnouncementModule } from './dashboard_announcements';
 
                 // 通知扩展 Tab 切换（可用于状态同步）
                 vscode.postMessage({ command: 'tabChanged', tab: targetTab });
-                if (targetTab === 'history') {
+                if (targetTab === 'history' || targetTab === 'stats') {
                     historyModule.activateHistoryTab();
                 }
             });
