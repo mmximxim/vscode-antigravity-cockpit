@@ -23,9 +23,10 @@ export function createHistoryModule({
     function initHistoryTab() {
         if (historyAccountSelect) {
             historyAccountSelect.addEventListener('change', () => {
-                historyState.selectedEmail = historyAccountSelect.value || null;
+                historyState.selectedEmail = historyAccountSelect.value || 'all';
                 historyState.page = 1;
                 requestQuotaHistory();
+                window.dispatchEvent(new CustomEvent('stats_account_changed', { detail: { account: historyState.selectedEmail } }));
             });
         }
 
@@ -217,20 +218,19 @@ export function createHistoryModule({
         }
         historyAccountSelect.innerHTML = '';
 
-        const accounts = Array.isArray(historyState.accounts) ? historyState.accounts : [];
-        if (accounts.length === 0) {
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = i18n['history.noAccounts'] || 'No accounts';
-            historyAccountSelect.appendChild(option);
-            historyAccountSelect.disabled = true;
-            historyState.selectedEmail = null;
-            return;
-        }
+        const allOption = document.createElement('option');
+        allOption.value = 'all';
+        allOption.textContent = '🌐 全部账号 (All)';
+        historyAccountSelect.appendChild(allOption);
 
+        const accounts = Array.isArray(historyState.accounts) ? historyState.accounts : [];
         const activeEmail = authorizationStatusGetter?.()?.activeAccount;
         historyAccountSelect.disabled = false;
+
         accounts.forEach(email => {
+            if (email === 'all') {
+                return;
+            }
             const option = document.createElement('option');
             option.value = email;
             const isCurrent = activeEmail && email === activeEmail;
@@ -238,14 +238,14 @@ export function createHistoryModule({
             historyAccountSelect.appendChild(option);
         });
 
-        if (historyState.selectedEmail && accounts.includes(historyState.selectedEmail)) {
+        if (historyState.selectedEmail && (historyState.selectedEmail === 'all' || accounts.includes(historyState.selectedEmail))) {
             historyAccountSelect.value = historyState.selectedEmail;
         } else if (activeEmail && accounts.includes(activeEmail)) {
             historyAccountSelect.value = activeEmail;
             historyState.selectedEmail = activeEmail;
         } else {
-            historyState.selectedEmail = accounts[0];
-            historyAccountSelect.value = accounts[0];
+            historyAccountSelect.value = 'all';
+            historyState.selectedEmail = 'all';
         }
     }
 

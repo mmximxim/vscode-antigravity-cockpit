@@ -447,13 +447,21 @@
     });
 
     // ─── Request Data ─────────────────────────────────────────────
-    function requestStats() {
+    function requestStats(account) {
+        let accountSelect = document.getElementById('history-account-select');
+        let selectedAccount = account || (accountSelect ? accountSelect.value : 'all') || 'all';
         // WebviewMessage uses 'command' field (not 'type') for host-bound messages
-        vscode.postMessage({ command: 'stats_request', range: currentRange });
+        vscode.postMessage({ command: 'stats_request', range: currentRange, account: selectedAccount });
     }
 
     // ─── Init & DOM Events ────────────────────────────────────────
     function init() {
+        // Listen for account dropdown switch
+        window.addEventListener('stats_account_changed', function (e) {
+            let account = e.detail && e.detail.account;
+            requestStats(account);
+        });
+
         // Range filter buttons
         let btn7d  = document.getElementById('stats-range-7d');
         let btn30d = document.getElementById('stats-range-30d');

@@ -466,16 +466,84 @@ export async function recordQuotaHistory(email: string | null | undefined, snaps
     }
 }
 
+export async function getAllQuotaHistories(): Promise<QuotaHistoryRecord[]> {
+    try {
+        const files = await fs.readdir(HISTORY_ROOT);
+        const records: QuotaHistoryRecord[] = [];
+        for (const file of files) {
+            if (!file.endsWith('.json')) {
+                continue;
+            }
+            try {
+                const content = await fs.readFile(path.join(HISTORY_ROOT, file), 'utf8');
+                const parsed = JSON.parse(content) as QuotaHistoryRecord;
+                if (parsed && parsed.models && typeof parsed.models === 'object') {
+                    records.push(parsed);
+                }
+            } catch {
+                // Ignore individual file parse errors
+            }
+        }
+        return records;
+    } catch {
+        return [];
+    }
+}
+
 export async function getQuotaHistory(
     email: string | null | undefined,
     rangeDays?: number,
     modelId?: string,
 ): Promise<QuotaHistoryResult | null> {
+    const normalizedRange = normalizeRangeDays(rangeDays);
+
+    if (email === 'all') {
+        const allRecords = await getAllQuotaHistories();
+        const modelMap = new Map<string, string>();
+        for (const r of allRecords) {
+            for (const [mId, mRec] of Object.entries(r.models || {})) {
+                if (!modelMap.has(mId)) {
+                    modelMap.set(mId, mRec.label || mId);
+                }
+            }
+        }
+        const models: QuotaHistoryModelOption[] = Array.from(modelMap.entries()).map(([mId, label]) => ({
+            modelId: mId,
+            label,
+        }));
+        models.sort((a, b) => a.label.localeCompare(b.label));
+
+        const availableModelIds = new Set(models.map(model => model.modelId));
+        const selectedModelId = modelId && availableModelIds.has(modelId)
+            ? modelId
+            : (models[0]?.modelId ?? null);
+
+        let points: QuotaHistoryPoint[] = [];
+        if (selectedModelId) {
+            const now = Date.now();
+            const cutoff = now - normalizedRange * 24 * 60 * 60 * 1000;
+            const collected: QuotaHistoryPoint[] = [];
+            for (const r of allRecords) {
+                if (r.models[selectedModelId]) {
+                    collected.push(...r.models[selectedModelId].points.filter(point => point.timestamp >= cutoff));
+                }
+            }
+            points = collected.sort((a, b) => a.timestamp - b.timestamp);
+        }
+
+        return {
+            email: 'all',
+            rangeDays: normalizedRange,
+            modelId: selectedModelId,
+            models,
+            points,
+        };
+    }
+
     if (!isValidEmail(email)) {
         return null;
     }
     const normalizedEmail = normalizeEmail(email);
-    const normalizedRange = normalizeRangeDays(rangeDays);
     const record = await readHistory(normalizedEmail);
 
     if (!record) {

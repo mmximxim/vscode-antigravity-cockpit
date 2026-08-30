@@ -78,8 +78,8 @@ export class StatsAggregator {
     /**
      * Compute the full stats payload for a given range by reading quota_history.
      */
-    public getStatsPayload(range: '7d' | '30d'): StatsPayload {
-        const records = this.extractRecordsFromQuotaHistory();
+    public getStatsPayload(range: '7d' | '30d', filterEmail?: string): StatsPayload {
+        const records = this.extractRecordsFromQuotaHistory(filterEmail);
         const rangeDays = range === '7d' ? 7 : 30;
 
         return {
@@ -96,8 +96,8 @@ export class StatsAggregator {
     // Extraction from Quota History Cache
     // ─────────────────────────────────────────────────────────────
 
-    private extractRecordsFromQuotaHistory(): UsageRecord[] {
-        const historyFiles = this.loadAllHistoryFiles();
+    private extractRecordsFromQuotaHistory(filterEmail?: string): UsageRecord[] {
+        const historyFiles = this.loadAllHistoryFiles(filterEmail);
         if (historyFiles.length === 0) {
             return [];
         }
@@ -186,7 +186,7 @@ export class StatsAggregator {
         return label || modelId;
     }
 
-    private loadAllHistoryFiles(): QuotaHistoryFileRecord[] {
+    private loadAllHistoryFiles(filterEmail?: string): QuotaHistoryFileRecord[] {
         try {
             if (!fs.existsSync(HISTORY_ROOT)) {
                 return [];
@@ -199,7 +199,9 @@ export class StatsAggregator {
                     const content = fs.readFileSync(filePath, 'utf8');
                     const parsed = JSON.parse(content) as QuotaHistoryFileRecord;
                     if (parsed && parsed.models) {
-                        list.push(parsed);
+                        if (!filterEmail || filterEmail === 'all' || parsed.email === filterEmail) {
+                            list.push(parsed);
+                        }
                     }
                 } catch (e) {
                     logger.warn(`[StatsAggregator] Error parsing history file ${file}: ${e}`);

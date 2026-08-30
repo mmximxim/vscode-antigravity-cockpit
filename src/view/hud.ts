@@ -1048,6 +1048,17 @@ export class CockpitHUD {
     <div id="tab-stats" class="tab-content">
         <div class="stats-container">
 
+            <!-- Top Account Filter Toolbar -->
+            <div class="stats-top-toolbar">
+                <div class="stats-account-filter-group">
+                    <span class="stats-account-filter-icon">👥</span>
+                    <label class="stats-account-filter-label" for="history-account-select">选择账号：</label>
+                    <select id="history-account-select" class="stats-account-select">
+                        <option value="all">🌐 全部账号 (All)</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- Summary Cards -->
             <div class="stats-summary-grid">
                 <div class="stats-card stats-card-tokens" style="cursor: help;">
@@ -1152,8 +1163,6 @@ export class CockpitHUD {
                     <div class="history-header">
                         <div class="history-title">📉 ${t('history.title')}</div>
                         <div class="history-controls">
-                            <label class="history-label" for="history-account-select">${t('history.accountLabel')}</label>
-                            <select id="history-account-select" class="history-select"></select>
                             <label class="history-label" for="history-model-select">${t('history.modelLabel')}</label>
                             <select id="history-model-select" class="history-select"></select>
                             <div class="history-range">

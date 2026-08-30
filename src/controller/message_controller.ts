@@ -734,18 +734,20 @@ export class MessageController {
                     break;
 
                 case 'quotaHistory.get': {
-                    const isValidEmail = (value?: string | null): value is string => typeof value === 'string' && value.includes('@');
+                    const isValidEmail = (value?: string | null): value is string => typeof value === 'string' && (value.includes('@') || value === 'all');
                     const requestedEmail = message.email;
                     const activeEmail = await credentialStorage.getActiveAccount();
                     const latestSnapshot = this.reactor.getLatestSnapshot();
                     const snapshotEmail = latestSnapshot?.userInfo?.email || latestSnapshot?.localAccountEmail || null;
-                    const resolvedEmail = isValidEmail(requestedEmail)
-                        ? requestedEmail
-                        : (isValidEmail(activeEmail) ? activeEmail : (isValidEmail(snapshotEmail) ? snapshotEmail : null));
+                    const resolvedEmail = requestedEmail === 'all'
+                        ? 'all'
+                        : (isValidEmail(requestedEmail)
+                            ? requestedEmail
+                            : (isValidEmail(activeEmail) ? activeEmail : (isValidEmail(snapshotEmail) ? snapshotEmail : 'all')));
 
                     const credentials = await credentialStorage.getAllCredentials();
                     const accounts = Object.keys(credentials);
-                    if (isValidEmail(snapshotEmail) && !accounts.includes(snapshotEmail)) {
+                    if (isValidEmail(snapshotEmail) && snapshotEmail !== 'all' && !accounts.includes(snapshotEmail)) {
                         accounts.push(snapshotEmail);
                     }
                     accounts.sort();
@@ -1376,10 +1378,11 @@ export class MessageController {
                 case 'stats_request': {
                     // Webview is requesting updated stats data for the analytics dashboard
                     const range = message.range === '30d' ? '30d' : '7d';
-                    logger.info(`[MsgCtrl] stats_request received, range=${range}`);
+                    const account = typeof message.account === 'string' ? message.account : undefined;
+                    logger.info(`[MsgCtrl] stats_request received, range=${range}, account=${account}`);
                     if (this.statsAggregator) {
                         try {
-                            const payload = this.statsAggregator.getStatsPayload(range);
+                            const payload = this.statsAggregator.getStatsPayload(range, account);
                             this.hud.sendMessage({ type: 'stats_update', data: payload });
                         } catch (err) {
                             logger.warn(`[MsgCtrl] stats_request error: ${err}`);
