@@ -10,7 +10,7 @@ English · [简体中文](README.md)
 
 VS Code extension for monitoring Google Antigravity AI model quotas.
 
-**Features**: Webview Dashboard · QuickPick Mode · Quota Grouping · Auto-Grouping · Rename · Card View · Drag-and-Drop Sorting · Status Bar Monitor · Threshold Notifications · Privacy Mode
+**Features**: Webview Dashboard · QuickPick Mode · **📊 Stats Dashboard (GitHub Contribution Graph Style)** · Quota Grouping · Auto-Grouping · Rename · Card View · Drag-and-Drop Sorting · Status Bar Monitor · Threshold Notifications · Privacy Mode
 
 **Languages**: Follows VS Code language setting, supports 16 languages
 
@@ -27,13 +27,9 @@ VS Code extension for monitoring Google Antigravity AI model quotas.
 | Panel | Description |
 |-------|-------------|
 | ⚡ **Summary Cards** | Total Quota Consumed · Daily Peak · Current Active Streak · Longest Streak Record |
-| 🗓️ **Activity Heatmap** | GitHub-style 365-day grid with **Daily / Weekly / Cumulative** views and tooltip inspection |
+| 🗓️ **Activity Heatmap** | **GitHub Contribution Graph Style** 365-day green commit grid with **Daily / Weekly / Cumulative** views and tooltip inspection |
 | 📈 **Multi-Model Usage Trends** | Chart.js smooth line chart with **Last 7 Days / 30 Days** filters and toggleable model legends |
 | 🍩 **Model Distribution Donut** | Doughnut breakdown of consumption per model with center total and detailed legend list |
-
-> **Note**: Metrics are calculated and persisted to VS Code global state from quota polls starting from the first run.
-
----
 
 ### Display Modes
 
