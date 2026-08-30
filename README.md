@@ -20,7 +20,8 @@ VS Code 扩展，用于监控 Google Antigravity AI 模型配额。
 
 ## 功能概览
 
-### 📊 统计看板（Stats Dashboard）🔥
+### 📊 统计看板（Stats Dashboard）🔥<img width="688" height="443" alt="image" src="https://github.com/user-attachments/assets/196c0229-0d2f-4710-a96b-d225c2b86a7f" />
+
 
 > **本 Fork 新功能**：点击仪表盘顶部 **📉 Stats** 标签页，随时掌握你的 AI 模型用量与活跃趋势！
 
