@@ -1,8 +1,8 @@
 {
   "name": "antigravity-cockpit",
-  "displayName": "Antigravity Cockpit",
+  "displayName": "Antigravity Cockpit (GitHub Contribution Style)",
   "icon": "assets/icon.png",
-  "description": "A premium, dashboard-style quota monitor for Antigravity AI.",
+  "description": "A premium, dashboard-style quota monitor for Antigravity AI with GitHub Contribution Style statistics.",
   "version": "2.1.52",
   "publisher": "jlcodes",
   "engines": {
@@ -17,11 +17,13 @@
     "ai",
     "quota",
     "dashboard",
-    "monitor"
+    "monitor",
+    "heatmap",
+    "github-contribution"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/jlcodes99/vscode-antigravity-cockpit.git"
+    "url": "https://github.com/mmximxim/vscode-antigravity-cockpit.git"
   },
   "activationEvents": [
     "onStartupFinished"

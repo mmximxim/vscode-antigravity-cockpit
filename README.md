@@ -1,4 +1,4 @@
-# Antigravity Cockpit
+# Antigravity Cockpit (GitHub Contribution Style)
 
 [English](README.en.md) · 简体中文
 
