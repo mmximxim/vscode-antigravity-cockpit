@@ -431,16 +431,17 @@
     background: var(--vscode-editorWidget-background, #1e1e1e);
     border: 1px solid var(--vscode-editorWidget-border, #454545);
     border-radius: 8px;
-    padding: 8px 14px;
+    padding: 10px 14px;
     font-size: 12px;
     color: var(--vscode-editorWidget-foreground, #cccccc);
     pointer-events: none;
     z-index: 9999;
     display: none;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
-    white-space: nowrap;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    max-width: 280px;
+    line-height: 1.5;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .stats-tooltip.visible {

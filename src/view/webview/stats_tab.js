@@ -517,6 +517,31 @@
             }
         }
 
+        // Summary cards tooltips (explain quota calculation)
+        let cardTokens = document.querySelector('.stats-card-tokens');
+        if (cardTokens) {
+            cardTokens.addEventListener('mouseenter', function (e) {
+                showTooltip(e, '<strong>💡 累计消耗估算说明</strong><br>此数据基于配额历史消耗估算：<br>• 模型配额每下降 1% 计为 10 点估算单位（满额 100% = 1,000 点）。<br>• 已自动合并 Gemini 与 Claude 共享模型池并过滤重置波动。');
+            });
+            cardTokens.addEventListener('mouseleave', hideTooltip);
+        }
+
+        let cardPeak = document.querySelector('.stats-card-peak');
+        if (cardPeak) {
+            cardPeak.addEventListener('mouseenter', function (e) {
+                showTooltip(e, '<strong>🏔️ 单日峰值说明</strong><br>历史记录中单个自然日内消耗配额估算单位的最高值。');
+            });
+            cardPeak.addEventListener('mouseleave', hideTooltip);
+        }
+
+        let cardStreak = document.querySelector('.stats-card-streak');
+        if (cardStreak) {
+            cardStreak.addEventListener('mouseenter', function (e) {
+                showTooltip(e, '<strong>🔥 连续活跃说明</strong><br>连续产生配额消耗的天数。当日或前一日有使用记录即保持连续活跃。');
+            });
+            cardStreak.addEventListener('mouseleave', hideTooltip);
+        }
+
         // On window resize, re-render heatmap to adjust weeks
         window.addEventListener('resize', function () {
             if (statsData) {

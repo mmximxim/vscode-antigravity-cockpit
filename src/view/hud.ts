@@ -1050,21 +1050,21 @@ export class CockpitHUD {
 
             <!-- Summary Cards -->
             <div class="stats-summary-grid">
-                <div class="stats-card stats-card-tokens">
+                <div class="stats-card stats-card-tokens" style="cursor: help;">
                     <span class="stats-card-icon">⚡</span>
-                    <div class="stats-card-label">累计消耗</div>
+                    <div class="stats-card-label">累计消耗 <span style="opacity: 0.6; font-size: 10px;">ℹ️</span></div>
                     <div class="stats-card-value" id="stats-total-tokens">–</div>
                     <div class="stats-card-sub">历史总计</div>
                 </div>
-                <div class="stats-card stats-card-peak">
+                <div class="stats-card stats-card-peak" style="cursor: help;">
                     <span class="stats-card-icon">🏔️</span>
-                    <div class="stats-card-label">单日峰值</div>
+                    <div class="stats-card-label">单日峰值 <span style="opacity: 0.6; font-size: 10px;">ℹ️</span></div>
                     <div class="stats-card-value" id="stats-peak-tokens">–</div>
                     <div class="stats-card-sub">最高记录</div>
                 </div>
-                <div class="stats-card stats-card-streak">
+                <div class="stats-card stats-card-streak" style="cursor: help;">
                     <span class="stats-card-icon">🔥</span>
-                    <div class="stats-card-label">当前连续活跃</div>
+                    <div class="stats-card-label">当前连续活跃 <span style="opacity: 0.6; font-size: 10px;">ℹ️</span></div>
                     <div class="stats-card-value" id="stats-streak">–</div>
                     <div class="stats-card-sub" id="stats-record-streak">最长 – 天</div>
                 </div>
