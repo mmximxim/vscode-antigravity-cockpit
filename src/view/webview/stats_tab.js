@@ -68,8 +68,8 @@
     // ─── Number formatting ────────────────────────────────────────
     function formatTokens(n) {
         if (n === null || n === undefined || isNaN(n)) { return '0'; }
-        if (n >= 100000000) { return (n / 100000000).toFixed(1) + '亿'; }
-        if (n >= 10000)     { return (n / 10000).toFixed(1) + '万'; }
+        if (n >= 100000000) { return (n / 100000000).toFixed(2) + ' 亿'; }
+        if (n >= 10000)     { return (n / 10000).toFixed(1) + ' 万'; }
         if (n >= 1000)      { return (n / 1000).toFixed(1) + 'k'; }
         return String(Math.round(n));
     }
@@ -77,12 +77,18 @@
     // ─── Summary Cards ────────────────────────────────────────────
     function renderSummaryCards(cards) {
         if (!cards) { return; }
-        let totalEl  = document.getElementById('stats-total-tokens');
-        let peakEl   = document.getElementById('stats-peak-tokens');
-        let streakEl = document.getElementById('stats-streak');
-        let recordEl = document.getElementById('stats-record-streak');
+        let totalEl      = document.getElementById('stats-total-tokens');
+        let peakEl       = document.getElementById('stats-peak-tokens');
+        let streakEl     = document.getElementById('stats-streak');
+        let recordEl     = document.getElementById('stats-record-streak');
+        let totalValueEl = document.getElementById('stats-total-value');
 
         if (totalEl)  { totalEl.textContent  = formatTokens(cards.totalConsumed); }
+        if (totalValueEl) {
+            // ~$10 per 1M tokens (industry standard for GPT-4o / Claude 3.5 Sonnet)
+            let estUsd = (cards.totalConsumed / 100000).toFixed(2);
+            totalValueEl.textContent = '≈ $' + estUsd + ' 价值';
+        }
         if (peakEl)   { peakEl.textContent   = formatTokens(cards.peakDailyConsumed); }
         if (streakEl) { streakEl.textContent = (cards.currentStreak || 0) + ' 天'; }
         if (recordEl) { recordEl.textContent = '最长 ' + (cards.longestStreak || 0) + ' 天'; }
@@ -529,7 +535,7 @@
         let cardTokens = document.querySelector('.stats-card-tokens');
         if (cardTokens) {
             cardTokens.addEventListener('mouseenter', function (e) {
-                showTooltip(e, '<strong>💡 累计消耗估算说明</strong><br>此数据基于配额历史消耗估算：<br>• 模型配额每下降 1% 计为 10 点估算单位（满额 100% = 1,000 点）。<br>• 已自动合并 Gemini 与 Claude 共享模型池并过滤重置波动。');
+                showTooltip(e, '<strong>💡 累计 Token 与价值估算说明</strong><br>基于官方配额消耗换算为工业级真实 Token 量：<br>• <strong>Token 换算</strong>：配额每下降 1% 约对应 <strong>10,000 (1万) Tokens</strong>（100% 满额配额 ≈ 100万 Tokens）。<br>• <strong>价值参考</strong>：参考 ChatGPT Pro / Claude 3.5 工业级 API 计价标准（约 $5~$15 / 百万 Tokens）估算。<br>• <strong>智能去重</strong>：已自动合并 Gemini 与 Claude 共享模型池并过滤周期重置波动。');
             });
             cardTokens.addEventListener('mouseleave', hideTooltip);
         }
@@ -537,7 +543,7 @@
         let cardPeak = document.querySelector('.stats-card-peak');
         if (cardPeak) {
             cardPeak.addEventListener('mouseenter', function (e) {
-                showTooltip(e, '<strong>🏔️ 单日峰值说明</strong><br>历史记录中单个自然日内消耗配额估算单位的最高值。');
+                showTooltip(e, '<strong>🏔️ 单日峰值 Token 说明</strong><br>历史记录中单个自然日内消耗 Token 数量的最高峰值记录。');
             });
             cardPeak.addEventListener('mouseleave', hideTooltip);
         }

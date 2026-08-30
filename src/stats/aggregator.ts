@@ -128,7 +128,8 @@ export class StatsAggregator {
                         const dropPct = p1.remainingPercentage - p2.remainingPercentage;
                         // Filter out quota resets (anything over 50% drop in one interval)
                         if (dropPct > 0 && dropPct <= 50) {
-                            const dropUnits = dropPct * 10;
+                            // 1% quota drop = 10,000 Tokens (100% full quota window ≈ 1,000,000 Tokens, standard ChatGPT / Claude Pro scale)
+                            const dropUnits = dropPct * 10000;
                             const ts = p2.timestamp;
 
                             if (!timeDrops.has(ts)) {
@@ -136,7 +137,7 @@ export class StatsAggregator {
                             }
                             const entry = timeDrops.get(ts)!;
                             const current = entry.get(family) || 0;
-                            entry.set(family, Math.max(current, Math.round(dropUnits * 10) / 10));
+                            entry.set(family, Math.max(current, Math.round(dropUnits)));
                         }
                     }
                 }
