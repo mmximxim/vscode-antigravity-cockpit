@@ -88,12 +88,49 @@
         if (recordEl) { recordEl.textContent = '最长 ' + (cards.longestStreak || 0) + ' 天'; }
     }
 
+    let currentHeatmapMode = 'daily';
+
     // ─── Heatmap ─────────────────────────────────────────────────
-    function renderHeatmap(heatmap) {
+    function renderHeatmap(heatmap, mode) {
+        mode = mode || currentHeatmapMode || 'daily';
         let container = document.getElementById('stats-heatmap-container');
         if (!container || !heatmap || heatmap.length === 0) { return; }
 
-        let data = heatmap.slice();
+        let data = [];
+        if (mode === 'daily') {
+            data = heatmap.map(function (d) {
+                return { date: d.date, value: d.value, desc: formatTokens(d.value) };
+            });
+        } else if (mode === 'weekly') {
+            // Group into 7-day week chunks, compute sum, assign sum to each cell in the week
+            let weekSums = [];
+            for (let i = 0; i < heatmap.length; i += 7) {
+                let sum = 0;
+                for (let j = i; j < Math.min(i + 7, heatmap.length); j++) {
+                    sum += (heatmap[j].value || 0);
+                }
+                weekSums.push(sum);
+            }
+            data = heatmap.map(function (d, idx) {
+                let weekIdx = Math.floor(idx / 7);
+                let wVal = weekSums[weekIdx] || 0;
+                return {
+                    date: d.date,
+                    value: wVal,
+                    desc: '周计 ' + formatTokens(wVal) + (d.value > 0 ? (' (当日 ' + formatTokens(d.value) + ')') : ''),
+                };
+            });
+        } else if (mode === 'cumulative') {
+            let sum = 0;
+            data = heatmap.map(function (d) {
+                sum += (d.value || 0);
+                return {
+                    date: d.date,
+                    value: sum,
+                    desc: '累计 ' + formatTokens(sum) + (d.value > 0 ? (' (当日 ' + formatTokens(d.value) + ')') : ''),
+                };
+            });
+        }
 
         // Compute quartile thresholds for coloring
         let nonZero = data.map(function (d) { return d.value; }).filter(function (v) { return v > 0; }).sort(function (a, b) { return a - b; });
@@ -139,7 +176,7 @@
             cell.setAttribute('data-value', d.value);
 
             cell.addEventListener('mouseenter', function (e) {
-                showTooltip(e, '<strong>' + d.date + '</strong><br>' + formatTokens(d.value));
+                showTooltip(e, '<strong>' + d.date + '</strong><br>' + d.desc);
             });
             cell.addEventListener('mouseleave', hideTooltip);
             grid.appendChild(cell);
@@ -382,14 +419,13 @@
     }
 
     // ─── Update All ───────────────────────────────────────────────
-        function renderAll(data) {
-            if (!data) { return; }
-            renderSummaryCards(data.summaryCards);
-            renderHeatmap(data.heatmap);
-            renderTrendChart(data.trendLines, data.modelLabels);
-            renderDonutChart(data.donut);
-        }
-
+    function renderAll(data) {
+        if (!data) { return; }
+        renderSummaryCards(data.summaryCards);
+        renderHeatmap(data.heatmap, currentHeatmapMode);
+        renderTrendChart(data.trendLines, data.modelLabels);
+        renderDonutChart(data.donut);
+    }
 
     // ─── Message listener ─────────────────────────────────────────
     window.addEventListener('message', function (event) {
@@ -428,6 +464,23 @@
                 requestStats();
             });
         }
+
+        // Heatmap mode toggle buttons
+        ['daily', 'weekly', 'cumulative'].forEach(function (mode) {
+            let btn = document.getElementById('stats-heatmap-' + mode);
+            if (btn) {
+                btn.addEventListener('click', function () {
+                    currentHeatmapMode = mode;
+                    ['daily', 'weekly', 'cumulative'].forEach(function (m) {
+                        let b = document.getElementById('stats-heatmap-' + m);
+                        if (b) { b.classList.toggle('active', m === mode); }
+                    });
+                    if (statsData) {
+                        renderHeatmap(statsData.heatmap, currentHeatmapMode);
+                    }
+                });
+            }
+        });
 
         // Tab click → request stats
         document.querySelectorAll('[data-tab="stats"]').forEach(function (btn) {
