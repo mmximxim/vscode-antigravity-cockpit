@@ -1,5 +1,4 @@
 # Antigravity Cockpit (GitHub Contribution Style)
-
 English · [简体中文](README.md)
 
 [![Version](https://img.shields.io/open-vsx/v/jlcodes/antigravity-cockpit)](https://open-vsx.org/extension/jlcodes/antigravity-cockpit)
