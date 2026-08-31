@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.54] - 2026-09-01
+
+### Fixed
+- **Stats Summary Cards Layout**: Fixed unclosed HTML card tags and missing value elements that caused summary statistics cards to misalign.
+
 ## [2.1.53] - 2026-08-30
 
 ### Added

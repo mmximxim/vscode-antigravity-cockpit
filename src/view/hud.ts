@@ -1051,14 +1051,18 @@ export class CockpitHUD {
                 <div class="stats-card stats-card-tokens" style="cursor: help;">
                     <span class="stats-card-icon">⚡</span>
                     <div class="stats-card-label">累计消耗 Tokens <span style="opacity: 0.6; font-size: 10px;">ℹ️</span></div>
+                    <div class="stats-card-value" id="stats-total-tokens">–</div>
                     <div class="stats-card-sub" id="stats-total-value">≈ $0.00 价值</div>
                 </div>
+                <div class="stats-card stats-card-peak" style="cursor: help;">
                     <span class="stats-card-icon">🏔️</span>
                     <div class="stats-card-label">单日峰值 Tokens <span style="opacity: 0.6; font-size: 10px;">ℹ️</span></div>
                     <div class="stats-card-value" id="stats-peak-tokens">–</div>
                     <div class="stats-card-sub">最高单日消耗</div>
+                </div>
                 <div class="stats-card stats-card-streak" style="cursor: help;">
                     <span class="stats-card-icon">🔥</span>
+                    <div class="stats-card-label">连续活跃</div>
                     <div class="stats-card-value" id="stats-streak">–</div>
                     <div class="stats-card-sub" id="stats-record-streak">最长 – 天</div>
                 </div>
