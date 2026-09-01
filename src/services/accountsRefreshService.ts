@@ -699,7 +699,7 @@ export class AccountsRefreshService {
         }
 
         try {
-            const { snapshot, fromApiCacheFile } = await this.reactor.fetchQuotaForAccountWithSource(email);
+            const { snapshot } = await this.reactor.fetchQuotaForAccountWithSource(email);
             const cache: AccountQuotaCache = {
                 snapshot,
                 fetchedAt: Date.now(),
@@ -707,9 +707,7 @@ export class AccountsRefreshService {
                 error: undefined,
             };
             this.quotaCache.set(email, cache);
-            if (!fromApiCacheFile) {
-                void recordQuotaHistory(email, snapshot);
-            }
+            void recordQuotaHistory(email, snapshot);
             this.emitUpdate();
             logger.info(`[AccountsRefresh] Refreshed quota for ${email}: ${snapshot.models.length} models, ${snapshot.groups?.length ?? 0} groups`);
         } catch (err) {

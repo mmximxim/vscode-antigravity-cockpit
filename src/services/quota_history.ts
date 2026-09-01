@@ -329,7 +329,8 @@ async function readHistory(email: string): Promise<QuotaHistoryRecord | null> {
 }
 
 async function writeHistory(record: QuotaHistoryRecord): Promise<void> {
-    await fs.mkdir(HISTORY_ROOT, { recursive: true });
+    const historyRoot = getHistoryRoot();
+    await fs.mkdir(historyRoot, { recursive: true });
     const filePath = getHistoryFilePath(record.email);
     const tempPath = `${filePath}.${Date.now()}.${Math.random().toString(16).slice(2)}.tmp`;
     await fs.writeFile(tempPath, JSON.stringify(record, null, 2), 'utf8');
@@ -347,13 +348,14 @@ export async function clearHistory(email: string): Promise<boolean> {
 }
 
 export async function clearAllHistory(): Promise<boolean> {
+    const historyRoot = getHistoryRoot();
     try {
-        await fs.mkdir(HISTORY_ROOT, { recursive: true });
-        const files = await fs.readdir(HISTORY_ROOT);
+        await fs.mkdir(historyRoot, { recursive: true });
+        const files = await fs.readdir(historyRoot);
         await Promise.all(
             files
                 .filter(file => file.endsWith('.json'))
-                .map(file => fs.unlink(path.join(HISTORY_ROOT, file))),
+                .map(file => fs.unlink(path.join(historyRoot, file))),
         );
         return true;
     } catch {

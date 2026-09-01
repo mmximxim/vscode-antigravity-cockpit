@@ -56,6 +56,7 @@ export class QuotaRefreshManager {
             await this.waitForRefresh(email);
             const cachedSnapshot = await this.tryUseApiCache(email, reason, waitStartedAt, forceRefresh);
             if (cachedSnapshot) {
+                void recordQuotaHistory(email, cachedSnapshot);
                 return {
                     success: true,
                     fromCache: true,
@@ -70,6 +71,7 @@ export class QuotaRefreshManager {
             if (!forceRefresh) {
                 const cachedSnapshot = await this.tryUseApiCache(email, reason);
                 if (cachedSnapshot) {
+                    void recordQuotaHistory(email, cachedSnapshot);
                     return {
                         success: true,
                         fromCache: true,
@@ -81,15 +83,11 @@ export class QuotaRefreshManager {
             // 2. 缓存无效或强制刷新，发起网络请求
             logger.info(`[QuotaRefresh] Fetching quota for ${email} from network (force: ${forceRefresh}, reason: ${reason})`);
             
-            const { snapshot, fromApiCacheFile } = await this.reactor.fetchQuotaForAccountWithSource(email, { forceRefresh });
+            const { snapshot } = await this.reactor.fetchQuotaForAccountWithSource(email, { forceRefresh });
             this.lastNetworkRefreshAt.set(email, Date.now());
             
             // 3. 记录历史
-            if (!fromApiCacheFile) {
-                void recordQuotaHistory(email, snapshot);
-            } else {
-                logger.debug(`[QuotaRefresh] Skip history record for ${email} because data comes from api cache file`);
-            }
+            void recordQuotaHistory(email, snapshot);
 
             logger.info(`[QuotaRefresh] Refreshed ${email}: ${snapshot.models.length} models`);
             
