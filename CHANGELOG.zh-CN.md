@@ -10,6 +10,13 @@
 
 ## [未发布]
 
+## [2.1.59] - 2026-09-03
+
+### 优化
+- **精准对齐 Antigravity IDE 可选模型列表**：
+  - 严格仅保留当前在 Antigravity 界面中可供用户选择的活跃模型（Gemini 3.8 Flash、Gemini 3.7 Flash、Gemini 3.6 Flash 三档，以及 Gemini 3.1 Pro 两档）。
+  - 自动过滤所有已下线的历史模型（如 3.5 Flash 系列、3.1 Flash Lite、3.1 Flash Image 等），精简卡片“包含模型”展示，消除多余历史条目。
+
 ## [2.1.58] - 2026-09-03
 
 ### 修复

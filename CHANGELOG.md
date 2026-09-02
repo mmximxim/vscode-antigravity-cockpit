@@ -10,6 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.59] - 2026-09-03
+
+### Changed
+- **Align Quota Models Exactly with Antigravity IDE Selectable List**:
+  - Filtered out obsolete/deprecated models (such as Gemini 3.5 Flash series, 3.1 Flash Lite, 3.1 Flash Image).
+  - Strictly retained only currently selectable active models in Antigravity IDE (Gemini 3.8 Flash, 3.7 Flash, 3.6 Flash High/Med/Low, Gemini 3.1 Pro High/Low).
+
 ## [2.1.58] - 2026-09-03
 
 ### Fixed

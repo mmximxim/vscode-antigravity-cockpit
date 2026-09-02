@@ -33,6 +33,7 @@ import {
     AUTH_RECOMMENDED_LABELS,
     AUTH_RECOMMENDED_MODEL_IDS,
     AUTH_MODEL_BLACKLIST_IDS,
+    isSelectableModel,
 } from '../shared/recommended_models';
 
 
@@ -1338,6 +1339,7 @@ export class ReactorCore {
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.7-flash-tiered', added, orderedKeys);
         this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M301', added, orderedKeys);
 
+        // 2. 遍历官方 agentModelSorts，仅添加在当前 Antigravity 中可被用户选择的活跃模型
         for (const sort of data.agentModelSorts ?? []) {
             for (const group of sort.groups ?? []) {
                 for (const modelIdentifier of group.modelIds ?? []) {
@@ -1348,40 +1350,18 @@ export class ReactorCore {
                     if (added.has(modelIdentifier)) {
                         continue;
                     }
+                    const info = data.models[modelIdentifier];
+                    if (!info || info.disabled) {
+                        continue;
+                    }
+                    // 严格只保留 IDE 中可供用户选择的活跃模型（排除下线、内部或未分级模型）
+                    if (!isSelectableModel(info.model || modelIdentifier, info.displayName)) {
+                        continue;
+                    }
                     added.add(modelIdentifier);
                     orderedKeys.push(modelIdentifier);
                 }
             }
-        }
-
-        // 在官方列表基础上补入 Gemini 3 Pro Image（若接口返回且未包含）
-        this.pushAuthorizedModelKeyIfExists(
-            data.models,
-            AUTHORIZED_EXTRA_IMAGE_MODEL_KEY,
-            added,
-            orderedKeys,
-        );
-        this.pushAuthorizedModelKeyByModelIdIfExists(
-            data.models,
-            AUTHORIZED_EXTRA_IMAGE_MODEL_ID,
-            added,
-            orderedKeys,
-        );
-
-        // 补入 data.models 中未加入排序的其他有效模型（保证不遗漏）
-        for (const modelKey of Object.keys(data.models)) {
-            if (added.has(modelKey)) {
-                continue;
-            }
-            const info = data.models[modelKey];
-            if (!info || info.disabled) {
-                continue;
-            }
-            if (AUTH_MODEL_BLACKLIST_ID_SET.has(info.model || modelKey)) {
-                continue;
-            }
-            added.add(modelKey);
-            orderedKeys.push(modelKey);
         }
 
         if (orderedKeys.length === 0) {
@@ -1638,7 +1618,7 @@ export class ReactorCore {
             }
         }
 
-        const models: ModelQuotaInfo[] = configs
+        let models: ModelQuotaInfo[] = configs
             .filter((m): m is ClientModelConfig & { quotaInfo: NonNullable<ClientModelConfig['quotaInfo']> } => 
                 !!m.quotaInfo,
             )
@@ -1702,6 +1682,9 @@ export class ReactorCore {
                 });
             }
         }
+
+        // 仅保留 IDE 中可供用户选择的活跃模型
+        models = models.filter(m => isSelectableModel(m.modelId, m.label));
 
         // 排序：优先使用 clientModelSorts，否则按 label 字母排序
         models.sort((a, b) => {
