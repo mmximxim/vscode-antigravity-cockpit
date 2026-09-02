@@ -10,7 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## [2.1.56] - 2026-09-03
+## [2.1.57] - 2026-09-03
+
+### Fixed
+- **Automatic Inclusion of Gemini 3.8 & 3.7 Flash in Quota Cards**:
+  - Fixed an issue where models not yet declared in cached `agentModelSorts` were excluded from the model keys resolution pipeline.
+  - Automatically associate models of the same family into existing quota group cards, ensuring `Gemini 3.8 Flash` and `Gemini 3.7 Flash` immediately appear under the `Gemini Flash` card.
 
 ### Added
 - **Full Support for Gemini 3.8 Flash & 3.7 Flash Models**:

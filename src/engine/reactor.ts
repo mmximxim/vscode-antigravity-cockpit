@@ -1215,6 +1215,33 @@ export class ReactorCore {
             return models;
         }
 
+        // 确保 Gemini 3.8 Flash 与 Gemini 3.7 Flash 即使在接口未显式返回时也能基于 Flash 共享配额自动补全
+        const flashKey = Object.keys(data.models).find(k =>
+            (k.includes('flash') || data.models![k]?.model?.toLowerCase().includes('flash') || data.models![k]?.model === 'MODEL_PLACEHOLDER_M71')
+            && data.models![k]?.quotaInfo
+        );
+        const flashTemplate = flashKey ? data.models[flashKey] : undefined;
+
+        if (flashTemplate && flashTemplate.quotaInfo) {
+            if (!data.models['gemini-3.8-flash'] && !data.models['MODEL_PLACEHOLDER_M318']) {
+                data.models['gemini-3.8-flash'] = {
+                    ...flashTemplate,
+                    displayName: 'Gemini 3.8 Flash (High)',
+                    model: 'MODEL_PLACEHOLDER_M318',
+                    tagTitle: 'Fast',
+                    recommended: true,
+                };
+            }
+            if (!data.models['gemini-3.7-flash'] && !data.models['gemini-3.7-flash-tiered'] && !data.models['MODEL_PLACEHOLDER_M301']) {
+                data.models['gemini-3.7-flash-tiered'] = {
+                    ...flashTemplate,
+                    displayName: 'Gemini 3.7 Flash',
+                    model: 'MODEL_PLACEHOLDER_M301',
+                    recommended: true,
+                };
+            }
+        }
+
         const orderedKeys = this.resolveAuthorizedOrderedModelKeys(data);
         for (const modelKey of orderedKeys) {
             const info = data.models[modelKey];
@@ -1283,6 +1310,13 @@ export class ReactorCore {
         const orderedKeys: string[] = [];
         const added = new Set<string>();
 
+        // 1. 优先将最新的 Gemini 3.8 Flash 和 3.7 Flash 放入排序列表前面
+        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.8-flash', added, orderedKeys);
+        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M318', added, orderedKeys);
+        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.7-flash', added, orderedKeys);
+        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.7-flash-tiered', added, orderedKeys);
+        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M301', added, orderedKeys);
+
         for (const sort of data.agentModelSorts ?? []) {
             for (const group of sort.groups ?? []) {
                 for (const modelIdentifier of group.modelIds ?? []) {
@@ -1312,6 +1346,22 @@ export class ReactorCore {
             added,
             orderedKeys,
         );
+
+        // 补入 data.models 中未加入排序的其他有效模型（保证不遗漏）
+        for (const modelKey of Object.keys(data.models)) {
+            if (added.has(modelKey)) {
+                continue;
+            }
+            const info = data.models[modelKey];
+            if (!info || info.disabled) {
+                continue;
+            }
+            if (AUTH_MODEL_BLACKLIST_ID_SET.has(info.model || modelKey)) {
+                continue;
+            }
+            added.add(modelKey);
+            orderedKeys.push(modelKey);
+        }
 
         if (orderedKeys.length === 0) {
             logger.warn('[AuthorizedQuota] No model found from available models response');
@@ -1603,6 +1653,35 @@ export class ReactorCore {
                 };
             });
 
+        // 如果包含 Flash 模型但缺少 3.8 / 3.7，自动基于共享 Flash 配额补全
+        const localFlash = models.find(m =>
+            m.label.toLowerCase().includes('flash') ||
+            m.modelId.toLowerCase().includes('flash') ||
+            m.modelId === 'MODEL_PLACEHOLDER_M71'
+        );
+        if (localFlash) {
+            const has38 = models.some(m => m.label.includes('3.8') || m.modelId === 'MODEL_PLACEHOLDER_M318');
+            if (!has38) {
+                models.unshift({
+                    ...localFlash,
+                    label: 'Gemini 3.8 Flash (High)',
+                    modelId: 'MODEL_PLACEHOLDER_M318',
+                    tagTitle: 'Fast',
+                    isRecommended: true,
+                });
+            }
+            const has37 = models.some(m => m.label.includes('3.7') || m.modelId === 'MODEL_PLACEHOLDER_M301');
+            if (!has37) {
+                const insertIdx = has38 ? 1 : 0;
+                models.splice(insertIdx, 0, {
+                    ...localFlash,
+                    label: 'Gemini 3.7 Flash',
+                    modelId: 'MODEL_PLACEHOLDER_M301',
+                    isRecommended: true,
+                });
+            }
+        }
+
         // 排序：优先使用 clientModelSorts，否则按 label 字母排序
         models.sort((a, b) => {
             const indexA = sortOrderMap.get(a.label);
@@ -1691,7 +1770,19 @@ export class ReactorCore {
             if (hasSavedMappings) {
                 // 使用存储的分组映射
                 for (const model of models) {
-                    const groupId = savedMappings[model.modelId];
+                    let groupId = savedMappings[model.modelId];
+                    if (!groupId) {
+                        const family = resolveAutoGroupFamily(model.modelId, model.label);
+                        if (family) {
+                            for (const otherModel of models) {
+                                const otherGid = savedMappings[otherModel.modelId];
+                                if (otherGid && resolveAutoGroupFamily(otherModel.modelId, otherModel.label) === family) {
+                                    groupId = otherGid;
+                                    break;
+                                }
+                            }
+                        }
+                    }
                     if (groupId) {
                         if (!groupMap.has(groupId)) {
                             groupMap.set(groupId, []);

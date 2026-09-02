@@ -1,7 +1,7 @@
 {
   "name": "antigravity-cockpit-github-style",
   "description": "A premium, dashboard-style quota monitor for Antigravity AI with GitHub Contribution Style statistics.",
-  "version": "2.1.56",
+  "version": "2.1.57",
   "publisher": "mmxmxm",
   "engines": {
     "vscode": "^1.90.0"
