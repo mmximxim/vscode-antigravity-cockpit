@@ -109,8 +109,62 @@ const AUTO_GROUP_GEMINI_PRO_ID_SET = new Set(
 const AUTO_GROUP_GEMINI_FLASH_ID_SET = new Set(
     [
         'MODEL_PLACEHOLDER_M18',
+        'MODEL_PLACEHOLDER_M318',
+        'MODEL_PLACEHOLDER_M301',
+        'MODEL_PLACEHOLDER_M71',
+        'MODEL_PLACEHOLDER_M72',
+        'MODEL_PLACEHOLDER_M73',
+        'MODEL_PLACEHOLDER_M196',
+        'MODEL_PLACEHOLDER_M84',
+        'MODEL_PLACEHOLDER_M20',
+        'MODEL_PLACEHOLDER_M187',
+        'gemini-3.8-flash',
+        'gemini-3.8-flash-high',
+        'gemini-3.8-flash-medium',
+        'gemini-3.8-flash-low',
+        'gemini-3.7-flash',
+        'gemini-3.7-flash-tiered',
+        'gemini-3.7-flash-high',
+        'gemini-3.7-flash-medium',
+        'gemini-3.7-flash-low',
+        'gemini-3.6-flash',
+        'gemini-3.6-flash-tiered',
+        'gemini-3.6-flash-high',
+        'gemini-3.6-flash-medium',
+        'gemini-3.6-flash-low',
     ].map(id => id.toLowerCase()),
 );
+
+const KNOWN_MODEL_DISPLAY_NAMES: Record<string, string> = {
+    'gemini-3.8-flash': 'Gemini 3.8 Flash (High)',
+    'gemini-3.8-flash-high': 'Gemini 3.8 Flash (High)',
+    'gemini-3.8-flash-medium': 'Gemini 3.8 Flash (Medium)',
+    'gemini-3.8-flash-low': 'Gemini 3.8 Flash (Low)',
+    'gemini-3.7-flash': 'Gemini 3.7 Flash',
+    'gemini-3.7-flash-tiered': 'Gemini 3.7 Flash',
+    'gemini-3.7-flash-high': 'Gemini 3.7 Flash (High)',
+    'gemini-3.7-flash-medium': 'Gemini 3.7 Flash (Medium)',
+    'gemini-3.7-flash-low': 'Gemini 3.7 Flash (Low)',
+    'gemini-3.6-flash': 'Gemini 3.6 Flash',
+    'gemini-3.6-flash-tiered': 'Gemini 3.6 Flash',
+    'gemini-3.6-flash-high': 'Gemini 3.6 Flash (High)',
+    'gemini-3.6-flash-medium': 'Gemini 3.6 Flash (Medium)',
+    'gemini-3.6-flash-low': 'Gemini 3.6 Flash (Low)',
+    'gemini-3.1-pro-high': 'Gemini 3.1 Pro (High)',
+    'gemini-3.1-pro-low': 'Gemini 3.1 Pro (Low)',
+    'gemini-3.1-flash-image': 'Gemini 3.1 Flash Image',
+    'MODEL_PLACEHOLDER_M318': 'Gemini 3.8 Flash (High)',
+    'MODEL_PLACEHOLDER_M301': 'Gemini 3.7 Flash',
+    'MODEL_PLACEHOLDER_M71': 'Gemini 3.6 Flash (High)',
+    'MODEL_PLACEHOLDER_M72': 'Gemini 3.6 Flash (Medium)',
+    'MODEL_PLACEHOLDER_M73': 'Gemini 3.6 Flash (Low)',
+    'MODEL_PLACEHOLDER_M196': 'Gemini 3.6 Flash',
+    'MODEL_PLACEHOLDER_M37': 'Gemini 3.1 Pro (High)',
+    'MODEL_PLACEHOLDER_M36': 'Gemini 3.1 Pro (Low)',
+    'MODEL_PLACEHOLDER_M18': 'Gemini 3 Flash',
+    'MODEL_PLACEHOLDER_M35': 'Claude Sonnet 4.6 (Thinking)',
+    'MODEL_PLACEHOLDER_M26': 'Claude Opus 4.6 (Thinking)',
+};
 
 const AUTO_GROUP_GEMINI_IMAGE_ID_SET = new Set(
     [
@@ -1193,7 +1247,11 @@ export class ReactorCore {
 
             const timeUntilReset = resetTimeValid ? Math.max(0, resetTime.getTime() - now) : 0;
             const modelId = info.model || modelKey;
-            const label = info.displayName?.trim() || modelKey;
+            const rawLabel = info.displayName?.trim();
+            const fallbackLabel = KNOWN_MODEL_DISPLAY_NAMES[modelKey] || KNOWN_MODEL_DISPLAY_NAMES[modelId];
+            const label = (rawLabel && rawLabel !== modelKey && rawLabel !== modelId)
+                ? rawLabel
+                : (fallbackLabel || rawLabel || modelKey);
 
             models.push({
                 label,

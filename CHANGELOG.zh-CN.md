@@ -10,12 +10,27 @@
 
 ## [未发布]
 
-## [2.1.55] - 2026-09-01
+## [2.1.56] - 2026-09-03
+
+### 新增
+- **全方位支持 Gemini 3.8 Flash 与 Gemini 3.7 Flash 系列模型**：
+  - 支持 `Gemini 3.8 Flash (High)`、`Gemini 3.8 Flash (Medium)`、`Gemini 3.8 Flash (Low)` 及其对应的模型 ID（`MODEL_PLACEHOLDER_M318`、`gemini-3.8-flash*`）。
+  - 支持 `Gemini 3.7 Flash` 混合推理系列模型，涵盖 High/Medium/Low 与 Tiered 分级。
+  - 自动识别并归入 `Gemini Flash` 智能分组、配额历史分组、自动触发模型池及推荐模型白名单。
+- **详实精准的模型官方能力展示 (Model Capabilities)**：
+  - 悬浮卡片全面升级，精准呈现官方能力参数：
+    - 🧠 **思考推理**：Gemini 3.8 Flash 动态深度思考 (Low/Med/High)、Gemini 3.7 Flash 混合推理架构、Gemini 3.1 Pro 顶级架构推理、Claude 扩展深度思考。
+    - ⚡ **响应特性**：Flash 系列 Sub-second 极速响应（Fast 模式）、Pro 深度推演全面解析。
+    - 📚 **上下文窗口**：Flash 1,000,000 Tokens (1M 窗口)、Pro 2,000,000 Tokens (2M 最大窗口)、Claude 200K、GPT-OSS 128K。
+    - 🛠️ **智能体与工具**：原生函数调用 (Tool / Function Calling) 与代码执行能力。
+    - 🖼️ **视觉能力**：高精图像输入 (JPEG, PNG, WEBP, HEIC)。
+    - 📄 **文档能力**：PDF、代码、文本、Markdown 格式支持。
+    - 🎬 **多媒体**：音视频原生流输入 (MP4, WebM, MP3, WAV)。
+
+## [2.1.55] - 2026-09-02
 
 ### 修复
-- **历史记录写入与统计流水线恢复**：修复 `quota_history.ts` 中 `writeHistory` 引用未定义变量导致的静默写入失败，并确保缓存与网络轮询周期均正常触发配额打点，彻底解决统计数据中断的问题。
-
-## [2.1.54] - 2026-09-01
+- **配额历史持久化与统计管道修复**：修复 `writeHistory` 中因历史路径变量重构导致的 `ReferenceError`，确保每次缓存命中与网络刷新均正常触发 `recordQuotaHistory`，恢复近两天中断的热力图数据采集。
 
 ### 修复
 - **统计指标卡布局错位修复**：修复由于 HTML 卡片容器标签闭合遗漏与数值元素缺失导致的统计卡片错位散落问题。

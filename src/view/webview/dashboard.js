@@ -178,6 +178,15 @@ import { createAnnouncementModule } from './dashboard_announcements';
             /^gemini-\d+(?:\.\d+)?-flash(?:-|$)/.test(modelIdLower)
             || /^gemini \d+(?:\.\d+)? flash\b/.test(labelText)
             || modelIdLower === 'model_placeholder_m18'
+            || modelIdLower === 'model_placeholder_m318'
+            || modelIdLower === 'model_placeholder_m301'
+            || modelIdLower === 'model_placeholder_m71'
+            || modelIdLower === 'model_placeholder_m72'
+            || modelIdLower === 'model_placeholder_m73'
+            || modelIdLower === 'model_placeholder_m196'
+            || modelIdLower === 'model_placeholder_m84'
+            || modelIdLower === 'model_placeholder_m20'
+            || modelIdLower === 'model_placeholder_m187'
         ) {
             return 'gemini_flash';
         }
@@ -3209,6 +3218,12 @@ import { createAnnouncementModule } from './dashboard_announcements';
                 name: 'Gemini Flash',
                 family: 'gemini_flash',
                 modelIds: [
+                    'MODEL_PLACEHOLDER_M318', // Gemini 3.8 Flash
+                    'MODEL_PLACEHOLDER_M301', // Gemini 3.7 Flash
+                    'MODEL_PLACEHOLDER_M71',  // Gemini 3.6 Flash (High)
+                    'MODEL_PLACEHOLDER_M72',  // Gemini 3.6 Flash (Medium)
+                    'MODEL_PLACEHOLDER_M73',  // Gemini 3.6 Flash (Low)
+                    'MODEL_PLACEHOLDER_M196',
                     'MODEL_PLACEHOLDER_M18', // Gemini 3 Flash
                 ],
             },
@@ -3513,28 +3528,136 @@ import { createAnnouncementModule } from './dashboard_announcements';
     function getModelCapabilityList(model) {
         const caps = [];
         const mime = model.supportedMimeTypes || {};
+        const label = (model.label || '').toLowerCase();
+        const modelId = (model.modelId || '').toLowerCase();
 
-        // 1. 图片能力
-        if (model.supportsImages || Object.keys(mime).some(k => k.startsWith('image/'))) {
+        // 1. 思考与推理 (Reasoning / Thinking)
+        if (label.includes('3.8 flash') || modelId.includes('3.8-flash') || modelId === 'model_placeholder_m318') {
+            caps.push({
+                icon: '🧠',
+                text: i18n['capability.reasoning.gemini38'] || '深度思考：支持动态推理思考 (Low / Medium / High 深度)'
+            });
+            caps.push({
+                icon: '⚡',
+                text: i18n['capability.speed.fast'] || '响应特性：Sub-second 极速响应 (Fast 模式)'
+            });
+            caps.push({
+                icon: '📚',
+                text: i18n['capability.context.1m'] || '上下文：1,000,000 Tokens (1M 上下文窗口)'
+            });
+            caps.push({
+                icon: '🛠️',
+                text: i18n['capability.agentTools'] || '智能体：支持原生工具调用 (Tool / Function Calling) 与代码执行'
+            });
+        } else if (label.includes('3.7 flash') || modelId.includes('3.7-flash') || modelId === 'model_placeholder_m301') {
+            caps.push({
+                icon: '🧠',
+                text: i18n['capability.reasoning.gemini37'] || '思考推理：混合推理架构，支持动态思考 (Low / Medium / High)'
+            });
+            caps.push({
+                icon: '⚡',
+                text: i18n['capability.speed.fast'] || '响应特性：Sub-second 极速响应 (Fast 模式)'
+            });
+            caps.push({
+                icon: '📚',
+                text: i18n['capability.context.1m'] || '上下文：1,000,000 Tokens (1M 上下文窗口)'
+            });
+            caps.push({
+                icon: '🛠️',
+                text: i18n['capability.agentTools'] || '智能体：支持原生工具调用 (Tool / Function Calling) 与代码执行'
+            });
+        } else if (label.includes('3.6 flash') || modelId.includes('3.6-flash') || modelId === 'model_placeholder_m71' || modelId === 'model_placeholder_m72' || modelId === 'model_placeholder_m73' || modelId === 'model_placeholder_m196') {
+            caps.push({
+                icon: '🧠',
+                text: i18n['capability.reasoning.gemini36'] || '思考推理：支持思考推理控制 (Low / Medium / High, Fast)'
+            });
+            caps.push({
+                icon: '⚡',
+                text: i18n['capability.speed.fast'] || '响应特性：Sub-second 极速响应 (Fast 模式)'
+            });
+            caps.push({
+                icon: '📚',
+                text: i18n['capability.context.1m'] || '上下文：1,000,000 Tokens (1M 上下文窗口)'
+            });
+            caps.push({
+                icon: '🛠️',
+                text: i18n['capability.agentTools'] || '智能体：支持原生工具调用 (Tool / Function Calling) 与代码执行'
+            });
+        } else if (label.includes('3.1 pro') || modelId.includes('3.1-pro') || modelId === 'model_placeholder_m36' || modelId === 'model_placeholder_m37') {
+            caps.push({
+                icon: '🧠',
+                text: i18n['capability.reasoning.gemini31pro'] || '深度推理：顶级通用逻辑推演与高难度代码架构设计'
+            });
+            caps.push({
+                icon: '⚡',
+                text: i18n['capability.speed.pro'] || '响应特性：深度推演全面解析 (High Intelligence)'
+            });
+            caps.push({
+                icon: '📚',
+                text: i18n['capability.context.2m'] || '上下文：2,000,000 Tokens (2M 行业最大上下文)'
+            });
+            caps.push({
+                icon: '🛠️',
+                text: i18n['capability.agentTools'] || '智能体：支持复杂多步工具链与深度分析'
+            });
+        } else if (label.includes('sonnet') || modelId.includes('sonnet') || modelId === 'model_placeholder_m35') {
+            caps.push({
+                icon: '🧠',
+                text: i18n['capability.reasoning.claude'] || '深度思考：扩展思考模式 (Extended Thinking)，深层代码规划'
+            });
+            caps.push({
+                icon: '📚',
+                text: i18n['capability.context.200k'] || '上下文：200,000 Tokens (200K 上下文窗口)'
+            });
+            caps.push({
+                icon: '🛠️',
+                text: i18n['capability.agentTools'] || '智能体：最强代码重构与自主智能体执行'
+            });
+        } else if (label.includes('opus') || modelId.includes('opus') || modelId === 'model_placeholder_m26') {
+            caps.push({
+                icon: '🧠',
+                text: i18n['capability.reasoning.claudeOpus'] || '深度思考：专家级复杂推理与复杂长链逻辑推导'
+            });
+            caps.push({
+                icon: '📚',
+                text: i18n['capability.context.200k'] || '上下文：200,000 Tokens (200K 上下文窗口)'
+            });
+            caps.push({
+                icon: '🛠️',
+                text: i18n['capability.agentTools'] || '智能体：顶级复杂问题求解'
+            });
+        } else if (label.includes('gpt-oss') || modelId.includes('gpt-oss')) {
+            caps.push({
+                icon: '🧠',
+                text: i18n['capability.reasoning.gptOss'] || '模型特性：高性能开源权重大模型'
+            });
+            caps.push({
+                icon: '📚',
+                text: i18n['capability.context.128k'] || '上下文：128,000 Tokens (128K 上下文窗口)'
+            });
+        }
+
+        // 2. 视觉多模态
+        if (model.supportsImages || Object.keys(mime).some(k => k.startsWith('image/')) || label.includes('gemini') || label.includes('claude')) {
             caps.push({
                 icon: '🖼️',
-                text: i18n['capability.vision'] || 'Vision'
+                text: i18n['capability.vision'] || '视觉能力：支持图片输入 (JPEG, PNG, WEBP, HEIC)'
             });
         }
 
-        // 2. 文档能力
-        if (mime['application/pdf'] || mime['text/plain'] || mime['application/rtf']) {
+        // 3. 文档解析
+        if (mime['application/pdf'] || mime['text/plain'] || mime['application/rtf'] || label.includes('gemini') || label.includes('claude')) {
             caps.push({
                 icon: '📄',
-                text: i18n['capability.docs'] || 'Documents'
+                text: i18n['capability.docs'] || '文档能力：支持 PDF、代码、文本、Markdown 格式'
             });
         }
 
-        // 3. 音视频能力
-        if (Object.keys(mime).some(k => k.startsWith('video/') || k.startsWith('audio/'))) {
+        // 4. 音视频多媒体
+        if (Object.keys(mime).some(k => k.startsWith('video/') || k.startsWith('audio/')) || label.includes('gemini')) {
             caps.push({
                 icon: '🎬',
-                text: i18n['capability.media'] || 'Media'
+                text: i18n['capability.media'] || '多媒体：支持音视频输入 (MP4, WebM, MP3, WAV)'
             });
         }
 

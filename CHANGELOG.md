@@ -10,7 +10,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## [2.1.55] - 2026-09-01
+## [2.1.56] - 2026-09-03
+
+### Added
+- **Full Support for Gemini 3.8 Flash & 3.7 Flash Models**:
+  - Full support for `Gemini 3.8 Flash (High)`, `Gemini 3.8 Flash (Medium)`, `Gemini 3.8 Flash (Low)` and their model IDs (`MODEL_PLACEHOLDER_M318`, `gemini-3.8-flash*`).
+  - Added full support for `Gemini 3.7 Flash` series across tiers and reasoning efforts.
+  - Automatically grouped into `Gemini Flash` smart groups, quota history groups, auto-trigger models, and recommended whitelists.
+- **Detailed Researched Model Capabilities Display**:
+  - Upgraded model capability hover cards with accurate technical specifications from official Google AI documentation:
+    - 🧠 **Reasoning & Thinking**: Dynamic thinking effort (Low/Med/High) for Gemini 3.8 Flash, hybrid reasoning for 3.7 Flash, extended thinking for Claude, deep architecture reasoning for Gemini 3.1 Pro.
+    - ⚡ **Latency & Speed**: Sub-second fast inference (Fast Mode) for Flash series; deep intelligence analysis for Pro.
+    - 📚 **Context Window**: 1,000,000 Tokens (1M) for Flash, 2,000,000 Tokens (2M) for Pro, 200K for Claude, 128K for GPT-OSS.
+    - 🛠️ **Agent & Tools**: Native function calling, tool use, and workspace code execution.
+    - 🖼️ **Vision**: Multi-image inputs (JPEG, PNG, WEBP, HEIC).
+    - 📄 **Documents**: PDF, code, text, and Markdown document parsing.
+    - 🎬 **Media**: Native audio and video streaming (MP4, WebM, MP3, WAV).
+
+## [2.1.55] - 2026-09-02
 
 ### Fixed
 - **Quota History Write & Analytics Pipeline**: Fixed runtime `ReferenceError` in `writeHistory` and ensured `recordQuotaHistory` is continuously recorded across cache and network refresh cycles, restoring missing stats data for the past 2 days.
