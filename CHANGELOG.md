@@ -10,6 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.60] - 2026-09-03
+
+### Changed
+- **Deduplicate Thinking Effort Tiers and Arrange Vertically in a Single Column**:
+  - Removed redundant tags for varying effort tiers (High / Medium / Low) of the same model, consolidating them into clean canonical model names.
+  - Formatted the "Models" section on quota cards as a single vertical column for clean aesthetics.
+
 ## [2.1.59] - 2026-09-03
 
 ### Changed

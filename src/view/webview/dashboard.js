@@ -3695,8 +3695,21 @@ import { createAnnouncementModule } from './dashboard_announcements';
         card.addEventListener('drop', handleDrop, false);
         card.addEventListener('dragend', handleDragEnd, false);
 
+        // 归纳并去重同系列模型（去除不同强度 Low/Medium/High 后缀）
+        const uniqueModelsMap = new Map();
+        for (const m of group.models) {
+            const cleanLabel = (m.label || '').replace(/\s*\((?:High|Medium|Low)\)/gi, '').trim();
+            if (!uniqueModelsMap.has(cleanLabel)) {
+                uniqueModelsMap.set(cleanLabel, {
+                    ...m,
+                    label: cleanLabel,
+                });
+            }
+        }
+        const displayModels = Array.from(uniqueModelsMap.values());
+
         // 生成组内模型列表（带能力图标）
-        const modelList = group.models.map(m => {
+        const modelList = displayModels.map(m => {
             const caps = getModelCapabilityList(m);
             const tagHtml = m.tagTitle
                 ? `<span class="tag-new tag-new-transient tag-new-hidden-after-burst">${escapeHtml(m.tagTitle)}</span>`
@@ -3741,7 +3754,7 @@ import { createAnnouncementModule } from './dashboard_announcements';
                 </span>
             </div>
             <div class="group-models">
-                <div class="group-models-label">${escapeHtml(i18n['grouping.models'] || 'Models')} (${group.models.length}):</div>
+                <div class="group-models-label">${escapeHtml(i18n['grouping.models'] || 'Models')} (${displayModels.length}):</div>
                 <div class="group-models-list">${modelList}</div>
             </div>
         `;
