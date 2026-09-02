@@ -10,6 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.61] - 2026-09-03
+
+### Changed
+- **History Details Table Always Shows Latest Monitored State**:
+  - Improved details table filtering so that the latest captured data point is always pinned to the top row even when delta is 0, providing clear visual confirmation that monitoring is active even when quota remains at 100%.
+
 ## [2.1.60] - 2026-09-03
 
 ### Changed

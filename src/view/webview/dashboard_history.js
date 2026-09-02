@@ -558,9 +558,13 @@ export function createHistoryModule({
             return;
         }
 
-        // 先计算每个点的 delta，只保留配额有实际变化的点
+        // 先计算每个点的 delta，保留有配额变化的点以及最新的当前点（表明监控处于活动状态）
         const allPointsDesc = getHistoryPoints().slice().sort((a, b) => b.timestamp - a.timestamp);
         const pointsDesc = allPointsDesc.filter((point, index) => {
+            if (index === 0) {
+                // 最新的当前记录始终保留，直观呈现最新监控状态
+                return true;
+            }
             const nextPoint = allPointsDesc[index + 1];
             if (!nextPoint) {
                 // 最旧的一条记录，保留
