@@ -29,6 +29,11 @@ import {
     isApiCacheValid,
     type QuotaApiCacheRecord,
 } from '../services/quota_api_cache';
+import {
+    AUTH_RECOMMENDED_LABELS,
+    AUTH_RECOMMENDED_MODEL_IDS,
+    AUTH_MODEL_BLACKLIST_IDS,
+} from '../shared/recommended_models';
 
 
 interface AuthorizedQuotaInfo {
@@ -76,6 +81,22 @@ export interface AccountQuotaFetchResult {
 
 const AUTHORIZED_EXTRA_IMAGE_MODEL_KEY = 'gemini-3-pro-image';
 const AUTHORIZED_EXTRA_IMAGE_MODEL_ID = 'MODEL_PLACEHOLDER_M9';
+
+const AUTH_MODEL_BLACKLIST_ID_SET = new Set(AUTH_MODEL_BLACKLIST_IDS);
+const AUTH_RECOMMENDED_ID_RANK = new Map(AUTH_RECOMMENDED_MODEL_IDS.map((id, index) => [id, index]));
+const AUTH_RECOMMENDED_LABEL_RANK = new Map(AUTH_RECOMMENDED_LABELS.map((label, index) => [label, index]));
+
+function normalizeRecommendedKey(value: string): string {
+    return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+const AUTH_RECOMMENDED_ID_KEY_RANK = new Map(
+    AUTH_RECOMMENDED_MODEL_IDS.map((id, index) => [normalizeRecommendedKey(id), index])
+);
+const AUTH_RECOMMENDED_LABEL_KEY_RANK = new Map(
+    AUTH_RECOMMENDED_LABELS.map((label, index) => [normalizeRecommendedKey(label), index])
+);
+
 type AutoGroupFamily = 'claude' | 'gemini_pro' | 'gemini_flash' | 'gemini_image';
 
 const AUTO_GROUP_GEMINI_PRO_ID_PATTERN = /^gemini-\d+(?:\.\d+)?-pro-(high|low)(?:-|$)/;

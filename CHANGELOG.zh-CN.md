@@ -10,6 +10,12 @@
 
 ## [未发布]
 
+## [2.1.58] - 2026-09-03
+
+### 修复
+- **修复启动时 ReferenceError 异常**：
+  - 修复 `reactor.ts` 中缺失导入 `AUTH_MODEL_BLACKLIST_IDS` 以及缺少定义 `AUTH_MODEL_BLACKLIST_ID_SET`、推荐权重常量导致的 `AUTH_MODEL_BLACKLIST_ID_SET is not defined` 运行时报错。
+
 ## [2.1.57] - 2026-09-03
 
 ### 修复

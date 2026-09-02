@@ -10,14 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## [2.1.57] - 2026-09-03
+## [2.1.58] - 2026-09-03
 
 ### Fixed
-- **Automatic Inclusion of Gemini 3.8 & 3.7 Flash in Quota Cards**:
-  - Fixed an issue where models not yet declared in cached `agentModelSorts` were excluded from the model keys resolution pipeline.
-  - Automatically associate models of the same family into existing quota group cards, ensuring `Gemini 3.8 Flash` and `Gemini 3.7 Flash` immediately appear under the `Gemini Flash` card.
+- **Runtime ReferenceError on Startup**:
+  - Fixed a missing import and undefined variable error (`AUTH_MODEL_BLACKLIST_ID_SET is not defined`) in `reactor.ts` during initialization.
 
-### Added
+## [2.1.57] - 2026-09-03
+### Fixed
 - **Full Support for Gemini 3.8 Flash & 3.7 Flash Models**:
   - Full support for `Gemini 3.8 Flash (High)`, `Gemini 3.8 Flash (Medium)`, `Gemini 3.8 Flash (Low)` and their model IDs (`MODEL_PLACEHOLDER_M318`, `gemini-3.8-flash*`).
   - Added full support for `Gemini 3.7 Flash` series across tiers and reasoning efforts.
