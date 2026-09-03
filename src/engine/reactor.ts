@@ -128,6 +128,7 @@ const AUTO_GROUP_GEMINI_PRO_ID_SET = new Set(
 const AUTO_GROUP_GEMINI_FLASH_ID_SET = new Set(
     [
         'MODEL_PLACEHOLDER_M18',
+        'MODEL_PLACEHOLDER_M322',
         'MODEL_PLACEHOLDER_M318',
         'MODEL_PLACEHOLDER_M301',
         'MODEL_PLACEHOLDER_M71',
@@ -138,6 +139,7 @@ const AUTO_GROUP_GEMINI_FLASH_ID_SET = new Set(
         'MODEL_PLACEHOLDER_M20',
         'MODEL_PLACEHOLDER_M187',
         'gemini-3.8-flash',
+        'gemini-3.8-flash-tiered',
         'gemini-3.8-flash-high',
         'gemini-3.8-flash-medium',
         'gemini-3.8-flash-low',
@@ -156,6 +158,7 @@ const AUTO_GROUP_GEMINI_FLASH_ID_SET = new Set(
 
 const KNOWN_MODEL_DISPLAY_NAMES: Record<string, string> = {
     'gemini-3.8-flash': 'Gemini 3.8 Flash (High)',
+    'gemini-3.8-flash-tiered': 'Gemini 3.8 Flash',
     'gemini-3.8-flash-high': 'Gemini 3.8 Flash (High)',
     'gemini-3.8-flash-medium': 'Gemini 3.8 Flash (Medium)',
     'gemini-3.8-flash-low': 'Gemini 3.8 Flash (Low)',
@@ -172,6 +175,7 @@ const KNOWN_MODEL_DISPLAY_NAMES: Record<string, string> = {
     'gemini-3.1-pro-high': 'Gemini 3.1 Pro (High)',
     'gemini-3.1-pro-low': 'Gemini 3.1 Pro (Low)',
     'gemini-3.1-flash-image': 'Gemini 3.1 Flash Image',
+    'MODEL_PLACEHOLDER_M322': 'Gemini 3.8 Flash',
     'MODEL_PLACEHOLDER_M318': 'Gemini 3.8 Flash (High)',
     'MODEL_PLACEHOLDER_M301': 'Gemini 3.7 Flash',
     'MODEL_PLACEHOLDER_M71': 'Gemini 3.6 Flash (High)',
@@ -1097,14 +1101,9 @@ export class ReactorCore {
     }
 
     private async autoAssignNewModelsToExistingGroups(
-        previousCache: QuotaApiCacheRecord | null,
+        _previousCache: QuotaApiCacheRecord | null,
         latestModels: ModelQuotaInfo[],
     ): Promise<void> {
-        const newModels = this.getNewModelsComparedToCache(previousCache, latestModels);
-        if (newModels.length === 0) {
-            return;
-        }
-
         const config = configService.getConfig();
         const existingMappings = config.groupMappings || {};
         if (Object.keys(existingMappings).length === 0) {
@@ -1120,7 +1119,7 @@ export class ReactorCore {
 
         let changedCount = 0;
         const nextMappings = { ...existingMappings };
-        for (const model of newModels) {
+        for (const model of latestModels) {
             if (!model.modelId || nextMappings[model.modelId]) {
                 continue;
             }
@@ -1135,7 +1134,7 @@ export class ReactorCore {
             nextMappings[model.modelId] = targetGroupId;
             changedCount++;
             logger.info(
-                `[AutoGroup] Assigned new model "${model.label}" (${model.modelId}) to existing group "${targetGroupId}" (family=${family})`,
+                `[AutoGroup] Assigned model "${model.label}" (${model.modelId}) to existing group "${targetGroupId}" (family=${family})`,
             );
         }
 
@@ -1144,7 +1143,7 @@ export class ReactorCore {
         }
 
         await configService.updateGroupMappings(nextMappings);
-        logger.info(`[AutoGroup] Auto-assigned ${changedCount} new model(s) based on api-cache diff`);
+        logger.info(`[AutoGroup] Auto-assigned ${changedCount} unmapped model(s) to existing groups`);
     }
 
     private async fetchAuthorizedQuotaModels(
@@ -1234,24 +1233,60 @@ export class ReactorCore {
             return models;
         }
 
-        // 确保 Gemini 3.8 Flash 与 Gemini 3.7 Flash 即使在接口未显式返回时也能基于 Flash 共享配额自动补全
-        const flashKey = Object.keys(data.models).find(k =>
-            (k.includes('flash') || data.models![k]?.model?.toLowerCase().includes('flash') || data.models![k]?.model === 'MODEL_PLACEHOLDER_M71')
-            && data.models![k]?.quotaInfo,
-        );
-        const flashTemplate = flashKey ? data.models[flashKey] : undefined;
+        // 确保从真实可用的 Gemini Flash 模型中提取模板配额，排除黑名单模型（如 tab_flash_lite_preview 等）
+        const candidateFlashKeys = [
+            'gemini-3.8-flash-tiered',
+            'gemini-3.7-flash-tiered',
+            'gemini-3.6-flash-high',
+            'gemini-3.6-flash-tiered',
+            'gemini-3.7-flash',
+            'gemini-3.6-flash-medium',
+            'gemini-3.6-flash-low',
+        ];
+        let flashTemplate: AuthorizedModelInfo | undefined;
+        for (const k of candidateFlashKeys) {
+            if (data.models[k]?.quotaInfo) {
+                flashTemplate = data.models[k];
+                break;
+            }
+        }
+        if (!flashTemplate) {
+            const k = Object.keys(data.models).find(key => {
+                const m = data.models![key];
+                const mid = (m?.model || key).toLowerCase();
+                if (AUTH_MODEL_BLACKLIST_ID_SET.has(key) || AUTH_MODEL_BLACKLIST_ID_SET.has(mid)) {
+                    return false;
+                }
+                return (key.includes('flash') || mid.includes('flash')) && m?.quotaInfo;
+            });
+            if (k) {
+                flashTemplate = data.models![k];
+            }
+        }
 
         if (flashTemplate && flashTemplate.quotaInfo) {
-            if (!data.models['gemini-3.8-flash'] && !data.models['MODEL_PLACEHOLDER_M318']) {
-                data.models['gemini-3.8-flash'] = {
+            const has38 = Boolean(
+                data.models['gemini-3.8-flash']
+                || data.models['gemini-3.8-flash-tiered']
+                || data.models['MODEL_PLACEHOLDER_M318']
+                || data.models['MODEL_PLACEHOLDER_M322']
+                || Object.values(data.models).some(m => m?.model === 'MODEL_PLACEHOLDER_M318' || m?.model === 'MODEL_PLACEHOLDER_M322')
+            );
+            if (!has38) {
+                data.models['gemini-3.8-flash-tiered'] = {
                     ...flashTemplate,
-                    displayName: 'Gemini 3.8 Flash (High)',
-                    model: 'MODEL_PLACEHOLDER_M318',
-                    tagTitle: 'Fast',
+                    displayName: 'Gemini 3.8 Flash',
+                    model: 'MODEL_PLACEHOLDER_M322',
                     recommended: true,
                 };
             }
-            if (!data.models['gemini-3.7-flash'] && !data.models['gemini-3.7-flash-tiered'] && !data.models['MODEL_PLACEHOLDER_M301']) {
+            const has37 = Boolean(
+                data.models['gemini-3.7-flash']
+                || data.models['gemini-3.7-flash-tiered']
+                || data.models['MODEL_PLACEHOLDER_M301']
+                || Object.values(data.models).some(m => m?.model === 'MODEL_PLACEHOLDER_M301')
+            );
+            if (!has37) {
                 data.models['gemini-3.7-flash-tiered'] = {
                     ...flashTemplate,
                     displayName: 'Gemini 3.7 Flash',
@@ -1331,6 +1366,8 @@ export class ReactorCore {
 
         // 1. 优先将最新的 Gemini 3.8 Flash 和 3.7 Flash 放入排序列表前面
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.8-flash', added, orderedKeys);
+        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.8-flash-tiered', added, orderedKeys);
+        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M322', added, orderedKeys);
         this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M318', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.7-flash', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.7-flash-tiered', added, orderedKeys);
@@ -1358,6 +1395,17 @@ export class ReactorCore {
                     added.add(modelIdentifier);
                     orderedKeys.push(modelIdentifier);
                 }
+            }
+        }
+
+        // 3. 兜底补齐：检查 data.models 中所有未在 agentModelSorts 出现的活跃可选模型
+        for (const [key, info] of Object.entries(data.models)) {
+            if (added.has(key) || !info || info.disabled) {
+                continue;
+            }
+            if (isSelectableModel(info.model || key, info.displayName)) {
+                added.add(key);
+                orderedKeys.push(key);
             }
         }
 
@@ -1653,12 +1701,14 @@ export class ReactorCore {
 
         // 如果包含 Flash 模型但缺少 3.8 / 3.7，自动基于共享 Flash 配额补全
         const localFlash = models.find(m =>
-            m.label.toLowerCase().includes('flash') ||
-            m.modelId.toLowerCase().includes('flash') ||
-            m.modelId === 'MODEL_PLACEHOLDER_M71',
+            !AUTH_MODEL_BLACKLIST_ID_SET.has(m.modelId) && (
+                m.label.toLowerCase().includes('flash') ||
+                m.modelId.toLowerCase().includes('flash') ||
+                m.modelId === 'MODEL_PLACEHOLDER_M71'
+            ),
         );
         if (localFlash) {
-            const has38 = models.some(m => m.label.includes('3.8') || m.modelId === 'MODEL_PLACEHOLDER_M318');
+            const has38 = models.some(m => m.label.includes('3.8') || m.modelId === 'MODEL_PLACEHOLDER_M318' || m.modelId === 'MODEL_PLACEHOLDER_M322');
             if (!has38) {
                 models.unshift({
                     ...localFlash,
@@ -1839,17 +1889,8 @@ export class ReactorCore {
                     }
                 }
                 
-                // 更新 groupMappings，移除不一致的模型
+                // 在当前快照的呈现层隔离不一致模型（避免向 configService 触发配置写回引发重绘死循环）
                 if (modelsToRemove.length > 0) {
-                    const newMappings = { ...savedMappings };
-                    for (const modelId of modelsToRemove) {
-                        delete newMappings[modelId];
-                    }
-                    
-                    configService.updateGroupMappings(newMappings).catch(err => {
-                        logger.warn(`Failed to save updated groupMappings: ${err}`);
-                    });
-                    
                     // 从 groupMap 中移除这些模型（未分组模型在分组视图中隐藏）
                     for (const modelId of modelsToRemove) {
                         for (const [_gid, gModels] of groupMap) {
@@ -1882,7 +1923,7 @@ export class ReactorCore {
             for (const [groupId, groupModels] of groupMap) {
                 // 锚点共识：查找组内模型的自定义名称
                 let groupName = '';
-                const customNames = config.groupingCustomNames;
+                const customNames = config.groupingCustomNames || {};
                 
                 // 统计每个自定义名称的投票数
                 const nameVotes = new Map<string, number>();

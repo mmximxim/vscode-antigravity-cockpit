@@ -10,6 +10,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.64] - 2026-09-03
+
+### Fixed & Improved
+- **Fix Missing Gemini 3.8 Flash & Quota Parity**:
+  - Full support for `gemini-3.8-flash-tiered` and internal model ID `MODEL_PLACEHOLDER_M322`, ensuring it is properly recognized, selectable, and recommended.
+  - Hardened quota template extraction to prevent accidental matching against internal preview models, keeping Gemini 3.8 Flash persistently grouped inside `Gemini Flash`.
+- **Resolve Panel Rapid Flickering & High CPU Consumption**:
+  - Eliminated persistent configuration write side-effects from snapshot calculation, breaking recursive reprocess loops.
+  - Implemented deep-equality guards on state updates in `ConfigService` to stop duplicate event broadcasts.
+  - Controlled card fade-in animation to run only on initial load, rendering telemetry updates smoothly in-place without visual flicker.
+
 ## [2.1.63] - 2026-09-03
 
 ### Changed

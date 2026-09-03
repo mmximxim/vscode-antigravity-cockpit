@@ -113,7 +113,7 @@ class ConfigService {
     dispose(): void {
         this.configDisposable?.dispose();
         this.configDisposable = undefined;
-        this.configChangeListeners.clear();
+        this.configChangeListeners.length = 0;
     }
 
     private async ensureAuthorizedQuotaSource(): Promise<void> {
@@ -257,6 +257,10 @@ class ConfigService {
         );
         if (this.isStateKey(key) && this.globalState) {
             const stateKey = this.buildStateKey(key);
+            const currentValue = this.globalState.get<CockpitConfig[K]>(stateKey);
+            if (JSON.stringify(currentValue) === JSON.stringify(normalizedValue)) {
+                return;
+            }
             logger.info(`Updating state '${stateKey}':`, JSON.stringify(normalizedValue));
             await this.globalState.update(stateKey, normalizedValue);
             this.notifyListeners();

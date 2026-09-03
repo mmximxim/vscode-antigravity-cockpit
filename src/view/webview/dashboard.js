@@ -65,6 +65,7 @@ import { createAnnouncementModule } from './dashboard_announcements';
     let isDataMasked = false;     // 控制数据是否显示为 ***
     let modelManagerSelection = new Set();
     let modelManagerModels = [];
+    let isInitialDashboardRender = true;
     const historyState = {
         rangeDays: 7,
         selectedEmail: null,
@@ -2608,6 +2609,7 @@ import { createAnnouncementModule } from './dashboard_announcements';
                 renderGroupCard(group, config?.pinnedGroups || []);
             });
             triggerNewTagBurstIfNeeded();
+            isInitialDashboardRender = false;
             return;
         }
 
@@ -2629,6 +2631,7 @@ import { createAnnouncementModule } from './dashboard_announcements';
             renderModelCard(model, config?.pinnedModels || [], config?.modelCustomNames || {});
         });
         triggerNewTagBurstIfNeeded();
+        isInitialDashboardRender = false;
     }
 
     function renderLocalOfflineCard(errorMessage) {
@@ -3682,7 +3685,8 @@ import { createAnnouncementModule } from './dashboard_announcements';
         const isPinned = pinnedGroups && pinnedGroups.includes(group.groupId);
 
         const card = document.createElement('div');
-        card.className = 'card group-card draggable';
+        const enterAnimClass = isInitialDashboardRender ? ' card-enter' : '';
+        card.className = `card group-card draggable${enterAnimClass}`;
         card.setAttribute('data-id', group.groupId);
         card.setAttribute('data-group-id', group.groupId);
         card.setAttribute('draggable', 'true');
@@ -3811,7 +3815,8 @@ import { createAnnouncementModule } from './dashboard_announcements';
         const recommendedClass = model.isRecommended ? ' card-recommended' : '';
 
         const card = document.createElement('div');
-        card.className = `card draggable${recommendedClass}`;
+        const enterAnimClass = isInitialDashboardRender ? ' card-enter' : '';
+        card.className = `card draggable${recommendedClass}${enterAnimClass}`;
         card.setAttribute('draggable', 'true');
         card.setAttribute('data-id', model.modelId);
 

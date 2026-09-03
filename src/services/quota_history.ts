@@ -115,6 +115,7 @@ const HISTORY_GROUPS: HistoryGroupDefinition[] = [
         label: 'Gemini Flash',
         modelIds: [
             'MODEL_PLACEHOLDER_M18',
+            'MODEL_PLACEHOLDER_M322',
             'MODEL_PLACEHOLDER_M318',
             'MODEL_PLACEHOLDER_M301',
             'MODEL_PLACEHOLDER_M71',
@@ -122,6 +123,7 @@ const HISTORY_GROUPS: HistoryGroupDefinition[] = [
             'MODEL_PLACEHOLDER_M73',
             'MODEL_PLACEHOLDER_M196',
             'gemini-3.8-flash',
+            'gemini-3.8-flash-tiered',
             'gemini-3.8-flash-high',
             'gemini-3.8-flash-medium',
             'gemini-3.8-flash-low',

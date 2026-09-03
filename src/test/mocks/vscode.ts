@@ -14,6 +14,7 @@ export const workspace = {
     getConfiguration: jest.fn(() => ({
         get: jest.fn(),
         update: jest.fn(),
+        inspect: jest.fn(),
     })),
     onDidChangeConfiguration: jest.fn(),
 };
@@ -44,6 +45,16 @@ export enum ExtensionMode {
     Test = 3,
 }
 
+export enum ConfigurationTarget {
+    Global = 1,
+    Workspace = 2,
+    WorkspaceFolder = 3,
+}
+
+export const env = {
+    language: 'en',
+};
+
 export default {
     window,
     workspace,
@@ -52,4 +63,6 @@ export default {
     EventEmitter,
     StatusBarAlignment,
     ExtensionMode,
+    ConfigurationTarget,
+    env,
 };

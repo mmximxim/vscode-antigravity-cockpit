@@ -21,8 +21,10 @@ export const AUTH_RECOMMENDED_LABELS = [
 ];
 
 export const AUTH_RECOMMENDED_MODEL_IDS = [
+    'MODEL_PLACEHOLDER_M322', // Gemini 3.8 Flash (Tiered)
     'MODEL_PLACEHOLDER_M318', // Gemini 3.8 Flash
     'gemini-3.8-flash',
+    'gemini-3.8-flash-tiered',
     'gemini-3.8-flash-high',
     'gemini-3.8-flash-medium',
     'gemini-3.8-flash-low',
@@ -84,10 +86,12 @@ export const AUTH_MODEL_BLACKLIST_IDS = [
 export const SELECTABLE_MODEL_KEYS = new Set([
     // Gemini 3.8 Flash
     'gemini-3.8-flash',
+    'gemini-3.8-flash-tiered',
     'gemini-3.8-flash-high',
     'gemini-3.8-flash-medium',
     'gemini-3.8-flash-low',
     'MODEL_PLACEHOLDER_M318',
+    'MODEL_PLACEHOLDER_M322',
 
     // Gemini 3.7 Flash
     'gemini-3.7-flash',
