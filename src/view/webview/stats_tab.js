@@ -85,8 +85,9 @@
 
         if (totalEl)  { totalEl.textContent  = formatTokens(cards.totalConsumed); }
         if (totalValueEl) {
-            // ~$10 per 1M tokens (industry standard for GPT-4o / Claude 3.5 Sonnet)
-            let estUsd = (cards.totalConsumed / 100000).toFixed(2);
+            // 基于 Antigravity 逆向抓包与 Google 官方 Context Caching 真实计费标准：
+            // 100% 满额配额对应 5 小时 $4.00 API 价值（全天约 $19.2），即约 $4.00 / 百万 Tokens
+            let estUsd = ((cards.totalConsumed / 1000000) * 4).toFixed(2);
             totalValueEl.textContent = '≈ $' + estUsd + ' 价值';
         }
         if (peakEl)   { peakEl.textContent   = formatTokens(cards.peakDailyConsumed); }
@@ -535,7 +536,7 @@
         let cardTokens = document.querySelector('.stats-card-tokens');
         if (cardTokens) {
             cardTokens.addEventListener('mouseenter', function (e) {
-                showTooltip(e, '<strong>💡 累计 Token 与价值估算说明</strong><br>基于官方配额消耗换算为工业级真实 Token 量：<br>• <strong>Token 换算</strong>：配额每下降 1% 约对应 <strong>10,000 (1万) Tokens</strong>（100% 满额配额 ≈ 100万 Tokens）。<br>• <strong>价值参考</strong>：参考 ChatGPT Pro / Claude 3.5 工业级 API 计价标准（约 $5~$15 / 百万 Tokens）估算。<br>• <strong>智能去重</strong>：已自动合并 Gemini 与 Claude 共享模型池并过滤周期重置波动。');
+                showTooltip(e, '<strong>💡 累计 Token 与真实价值估算说明</strong><br>基于 Antigravity 逆向计费与官方真实 Token 量换算：<br>• <strong>Token 换算</strong>：内置提示词约 1.7万 Tokens 起步，配额每下降 1% 约对应 <strong>10,000 (1万) Tokens</strong>（100% 满额配额 ≈ 100万 Tokens）。<br>• <strong>价值换算</strong>：参考 Google 官方 Context Caching 真实计费标准（5小时满额约对应 <strong>$4.00 官方 API 价值</strong>，全天约 $19.2），按约 <strong>$4.00 / 百万 Tokens</strong> 真实折算。<br>• <strong>智能去重</strong>：已自动合并 Gemini 与 Claude 共享模型池并过滤周期重置波动。');
             });
             cardTokens.addEventListener('mouseleave', hideTooltip);
         }

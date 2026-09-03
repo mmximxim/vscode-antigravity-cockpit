@@ -24,6 +24,7 @@ jest.config.js
 .env.local
 
 # Exclude docs directory and announcement source files (fetched via GitHub raw URL)
+docs/**
 announcements*.json
 
 assets/*

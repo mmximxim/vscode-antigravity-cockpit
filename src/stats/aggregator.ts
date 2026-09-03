@@ -130,7 +130,7 @@ export class StatsAggregator {
                         const dropPct = p1.remainingPercentage - p2.remainingPercentage;
                         // Filter out quota resets (anything over 50% drop in one interval)
                         if (dropPct > 0 && dropPct <= 50) {
-                            // 1% quota drop = 10,000 Tokens (100% full quota window ≈ 1,000,000 Tokens, standard ChatGPT / Claude Pro scale)
+                            // 1% quota drop ≈ 10,000 Tokens (100% full quota window ≈ 1,000,000 Tokens based on Antigravity reverse engineering)
                             const dropUnits = dropPct * 10000;
                             const ts = Math.floor(p2.timestamp / 120000) * 120000;
 

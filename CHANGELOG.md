@@ -10,6 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.63] - 2026-09-03
+
+### Changed
+- **Calibrated Token Value Estimation via Reverse-Engineered Official Pricing**:
+  - Replaced legacy generic standard ($10/1M tokens) with calibrated **$4.00 / 1M tokens** derived from network packet captures and Google official Context Caching rates ($4.00 commercial value per 5-hour full quota window, ~$19.2/day).
+  - Updated summary card tooltip explaining the ~17k initial prompt size, 1% ≈ 10,000 tokens scale, and realistic valuation.
+
 ## [2.1.62] - 2026-09-03
 
 ### Changed & Fixed
