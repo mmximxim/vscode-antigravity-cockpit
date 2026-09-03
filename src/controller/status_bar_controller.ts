@@ -416,4 +416,8 @@ export class StatusBarController {
                 return `${dot} ${label}: ${pct}`;
         }
     }
+
+    dispose(): void {
+        this.statusBarItem.dispose();
+    }
 }

@@ -23,11 +23,9 @@ package-lock.json
 jest.config.js
 .env.local
 
-# Exclude docs directory and full announcement source
-docs/**
-announcements_full.json
+# Exclude docs directory and announcement source files (fetched via GitHub raw URL)
+announcements*.json
 
-# Exclude specific assets (KEEP icon.png)
 assets/*
 !assets/icon.png
 

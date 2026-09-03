@@ -82,9 +82,11 @@ class ConfigService {
     private static readonly stateKeyPrefix = 'state';
     private static readonly migrationKey = `${ConfigService.stateKeyPrefix}.migratedToGlobalState.v171`;
 
+    private configDisposable?: vscode.Disposable;
+
     constructor() {
         // 监听配置变化
-        vscode.workspace.onDidChangeConfiguration((e) => {
+        this.configDisposable = vscode.workspace.onDidChangeConfiguration((e) => {
             if (e.affectsConfiguration(this.configSection)) {
                 const newConfig = this.getConfig();
                 this.configChangeListeners.forEach(listener => listener(newConfig));
@@ -98,10 +100,20 @@ class ConfigService {
     async initialize(context: vscode.ExtensionContext): Promise<void> {
         this.globalState = context.globalState;
         this.initialized = true;
+        if (this.configDisposable) {
+            context.subscriptions.push(this.configDisposable);
+        }
+        context.subscriptions.push({ dispose: () => this.dispose() });
         await this.migrateSettingsToState();
         await this.migrateDeprecatedModelPreferences();
         await this.cleanupLegacySettings();
         await this.ensureAuthorizedQuotaSource();
+    }
+
+    dispose(): void {
+        this.configDisposable?.dispose();
+        this.configDisposable = undefined;
+        this.configChangeListeners.clear();
     }
 
     private async ensureAuthorizedQuotaSource(): Promise<void> {

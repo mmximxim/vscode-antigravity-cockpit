@@ -166,6 +166,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // 初始化状态栏控制器
     statusBar = new StatusBarController(context);
+    context.subscriptions.push(statusBar);
+    context.subscriptions.push(autoTriggerController);
 
     const syncStatusBarFromAccountsCache = (): void => {
         const currentEmail = accountsRefreshService.getCurrentEmail();
@@ -649,6 +651,8 @@ export async function deactivate(): Promise<void> {
     cockpitToolsWs.removeAllListeners();
     cockpitToolsSyncEvents.removeAllListeners();
 
+    autoTriggerController.dispose();
+    statusBar?.dispose();
     reactor?.shutdown();
     hud?.dispose();
     logger.dispose();

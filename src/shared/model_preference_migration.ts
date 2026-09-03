@@ -43,6 +43,7 @@ export const DEPRECATED_MODEL_KEY_REPLACEMENTS: Record<string, string> = {
 };
 
 // pinnedModels 历史上理论上可能存 label，因此补一层标签映射兜底（仅用于数组值，不用于对象 key）。
+/* eslint-disable @typescript-eslint/naming-convention */
 export const DEPRECATED_MODEL_LABEL_REPLACEMENTS: Record<string, string> = {
     'Gemini 3 Pro (High)': 'Gemini 3.1 Pro (High)',
     'Gemini 3 Pro (Low)': 'Gemini 3.1 Pro (Low)',
@@ -50,6 +51,7 @@ export const DEPRECATED_MODEL_LABEL_REPLACEMENTS: Record<string, string> = {
     'Claude Sonnet 4.5 (Thinking)': 'Claude Sonnet 4.6 (Thinking)',
     'Claude Opus 4.5 (Thinking)': 'Claude Opus 4.6 (Thinking)',
 };
+/* eslint-enable @typescript-eslint/naming-convention */
 
 const ID_REPLACEMENT_LOWER = buildLowerMap(DEPRECATED_MODEL_ID_REPLACEMENTS);
 const LABEL_REPLACEMENT_LOWER = buildLowerMap(DEPRECATED_MODEL_LABEL_REPLACEMENTS);

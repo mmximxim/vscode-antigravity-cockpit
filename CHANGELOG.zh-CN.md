@@ -10,6 +10,15 @@
 
 ## [未发布]
 
+## [2.1.62] - 2026-09-03
+
+### 优化与修复
+- **工程级生命周期治理与资源释放**：
+  - 完善 `StatusBarController`、`AutoTriggerController` 与 `ConfigService` 的销毁机制，消除状态栏底层对象、后台定时器与全局配置监听器的悬挂泄漏隐患。
+  - 清理 `src/engine/reactor.ts` 中的未引用遗留常量与语法告警，全项目 ESLint 达成 0 错误 0 警告。
+- **打包体积直接优化**：
+  - 更新 `.vscodeignore` 忽略非本地运行时所需的 `announcements*.json` 文件，VSIX 安装包体积缩减 **~100KB**（约 10%）。
+
 ## [2.1.61] - 2026-09-03
 
 ### 优化

@@ -10,6 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.62] - 2026-09-03
+
+### Changed & Fixed
+- **Engineering Lifecycle Governance & Resource Cleanup**:
+  - Implemented proper disposal for `StatusBarController`, `AutoTriggerController`, and `ConfigService`, preventing memory and timer leaks on extension reload or deactivation.
+  - Removed unused constants and fixed syntax warnings in `reactor.ts` to achieve zero ESLint errors and warnings.
+- **VSIX Package Size Optimization**:
+  - Updated `.vscodeignore` to exclude `announcements*.json` files (fetched remotely over HTTPS), reducing VSIX package size by **~100KB** (~10%).
+
 ## [2.1.61] - 2026-09-03
 
 ### Changed

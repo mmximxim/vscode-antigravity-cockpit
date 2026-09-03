@@ -80,9 +80,6 @@ export interface AccountQuotaFetchResult {
     fromApiCacheFile: boolean;
 }
 
-const AUTHORIZED_EXTRA_IMAGE_MODEL_KEY = 'gemini-3-pro-image';
-const AUTHORIZED_EXTRA_IMAGE_MODEL_ID = 'MODEL_PLACEHOLDER_M9';
-
 const AUTH_MODEL_BLACKLIST_ID_SET = new Set(AUTH_MODEL_BLACKLIST_IDS);
 const AUTH_RECOMMENDED_ID_RANK = new Map(AUTH_RECOMMENDED_MODEL_IDS.map((id, index) => [id, index]));
 const AUTH_RECOMMENDED_LABEL_RANK = new Map(AUTH_RECOMMENDED_LABELS.map((label, index) => [label, index]));
@@ -92,10 +89,10 @@ function normalizeRecommendedKey(value: string): string {
 }
 
 const AUTH_RECOMMENDED_ID_KEY_RANK = new Map(
-    AUTH_RECOMMENDED_MODEL_IDS.map((id, index) => [normalizeRecommendedKey(id), index])
+    AUTH_RECOMMENDED_MODEL_IDS.map((id, index) => [normalizeRecommendedKey(id), index]),
 );
 const AUTH_RECOMMENDED_LABEL_KEY_RANK = new Map(
-    AUTH_RECOMMENDED_LABELS.map((label, index) => [normalizeRecommendedKey(label), index])
+    AUTH_RECOMMENDED_LABELS.map((label, index) => [normalizeRecommendedKey(label), index]),
 );
 
 type AutoGroupFamily = 'claude' | 'gemini_pro' | 'gemini_flash' | 'gemini_image';
@@ -1240,7 +1237,7 @@ export class ReactorCore {
         // 确保 Gemini 3.8 Flash 与 Gemini 3.7 Flash 即使在接口未显式返回时也能基于 Flash 共享配额自动补全
         const flashKey = Object.keys(data.models).find(k =>
             (k.includes('flash') || data.models![k]?.model?.toLowerCase().includes('flash') || data.models![k]?.model === 'MODEL_PLACEHOLDER_M71')
-            && data.models![k]?.quotaInfo
+            && data.models![k]?.quotaInfo,
         );
         const flashTemplate = flashKey ? data.models[flashKey] : undefined;
 
@@ -1658,7 +1655,7 @@ export class ReactorCore {
         const localFlash = models.find(m =>
             m.label.toLowerCase().includes('flash') ||
             m.modelId.toLowerCase().includes('flash') ||
-            m.modelId === 'MODEL_PLACEHOLDER_M71'
+            m.modelId === 'MODEL_PLACEHOLDER_M71',
         );
         if (localFlash) {
             const has38 = models.some(m => m.label.includes('3.8') || m.modelId === 'MODEL_PLACEHOLDER_M318');
