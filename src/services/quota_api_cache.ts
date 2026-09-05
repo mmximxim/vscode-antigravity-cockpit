@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { createHash } from 'crypto';
 import { getCockpitToolsSharedDir } from '../shared/antigravity_paths';
+import { safeWriteFileAtomic } from '../shared/atomic_write';
 
 export type QuotaApiCacheSource = 'authorized';
 
@@ -56,12 +57,9 @@ export async function readQuotaApiCache(
 }
 
 export async function writeQuotaApiCache(record: QuotaApiCacheRecord): Promise<void> {
-    await ensureCacheDir(record.source);
     const filePath = getCacheFilePath(record.source, record.email);
-    const tempPath = `${filePath}.tmp`;
     const content = JSON.stringify(record, null, 2);
-    await fs.writeFile(tempPath, content, 'utf8');
-    await fs.rename(tempPath, filePath);
+    await safeWriteFileAtomic(filePath, content);
 }
 
 /** 缓存过期时间（毫秒）：60秒 */

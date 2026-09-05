@@ -12,6 +12,7 @@ import { logger } from '../shared/log_service';
 import { cloudCodeClient } from '../shared/cloudcode_client';
 import { t } from '../shared/i18n';
 import { getCockpitToolsSharedDir } from '../shared/antigravity_paths';
+import { safeWriteFileAtomic } from '../shared/atomic_write';
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
 const RESET_TRIGGER_COOLDOWN_MS = 10 * 60 * 1000;
@@ -515,15 +516,12 @@ class TriggerService {
     private async writeAvailableModelsCache(models: ModelInfo[]): Promise<void> {
         try {
             const cacheFile = getAvailableModelsCacheFile();
-            await fs.mkdir(path.dirname(cacheFile), { recursive: true });
             const record: AvailableModelsCache = {
                 version: AVAILABLE_MODELS_CACHE_VERSION,
                 updatedAt: Date.now(),
                 models,
             };
-            const tempPath = `${cacheFile}.tmp`;
-            await fs.writeFile(tempPath, JSON.stringify(record, null, 2), 'utf8');
-            await fs.rename(tempPath, cacheFile);
+            await safeWriteFileAtomic(cacheFile, JSON.stringify(record, null, 2));
         } catch (error) {
             logger.debug(`[TriggerService] Failed to write available models cache: ${error instanceof Error ? error.message : String(error)}`);
         }

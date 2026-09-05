@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.66] - 2026-09-05
+
+### Critical Fixes & Stability
+- **Completely Resolve Windows Quota History Temporary File Leak (.tmp File Avalanche Occupying 89.8 GB)**:
+  - **Root Cause Fix**: Traced Windows `fs.rename` failures (`EPERM`/`EBUSY`) caused by transient handle locks and virus scanner interception. Previously, lack of a `try...finally` block left orphan `.tmp` files on disk every second upon polling retries, accumulating over 434,000 files, consuming nearly 90 GB of disk space, and freezing NTFS directory traversal during refreshes;
+  - **Industrial-Grade Safe Atomic Write Module (`atomic_write.ts`)**:
+    - Guaranteed cleanup in `finally`, assuring temporary files are immediately unlinked regardless of write outcome;
+    - Serialized per-file Promise queue preventing race conditions and concurrent write conflicts;
+    - Windows-resilient exponential backoff retry mechanism (up to 5 attempts) with graceful fallback to `fs.copyFile` if rename is persistently locked;
+  - **Standardized Across All Cache Modules**: Upgraded `quota_history`, `quota_cache`, `quota_api_cache`, and `trigger_service` to the atomic writer;
+  - **Startup Self-Healing & Cleanup**: Automatically scans and purges leftover orphaned `.tmp` files asynchronously on startup.
+
 ## [2.1.65] - 2026-09-05
 
 ### Performance & Architectural Improvements

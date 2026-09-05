@@ -126,6 +126,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     logger.info(`Antigravity Cockpit v${version} - Systems Online`);
 
+    // 启动时自动异步清理可能存在的孤立临时文件，防止磁盘泄露
+    void (async () => {
+        try {
+            const { cleanQuotaHistoryTmpFiles } = await import('./services/quota_history');
+            const cleaned = await cleanQuotaHistoryTmpFiles(30 * 1000);
+            if (cleaned > 0) {
+                logger.info(`[Startup] Cleaned up ${cleaned} orphaned .tmp file(s) in quota_history`);
+            }
+        } catch {
+            // ignore
+        }
+    })();
+
     // 初始化核心模块
     hunter = new ProcessHunter();
     reactor = new ReactorCore();

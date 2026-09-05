@@ -5,6 +5,7 @@ import { QuotaSnapshot } from '../shared/types';
 import { logger } from '../shared/log_service';
 import { AUTH_RECOMMENDED_MODEL_IDS } from '../shared/recommended_models';
 import { getCockpitToolsSharedDir } from '../shared/antigravity_paths';
+import { safeWriteFileAtomic, cleanupOrphanedTmpFiles } from '../shared/atomic_write';
 
 export interface QuotaHistoryPoint {
     timestamp: number;
@@ -351,18 +352,19 @@ async function readHistory(email: string): Promise<QuotaHistoryRecord | null> {
 }
 
 async function writeHistory(record: QuotaHistoryRecord): Promise<void> {
-    const historyRoot = getHistoryRoot();
-    await fs.mkdir(historyRoot, { recursive: true });
     const filePath = getHistoryFilePath(record.email);
-    const tempPath = `${filePath}.${Date.now()}.${Math.random().toString(16).slice(2)}.tmp`;
-    await fs.writeFile(tempPath, JSON.stringify(record, null, 2), 'utf8');
-    await fs.rename(tempPath, filePath);
+    await safeWriteFileAtomic(filePath, JSON.stringify(record, null, 2));
 }
 
 export async function clearHistory(email: string): Promise<boolean> {
     try {
         const filePath = getHistoryFilePath(email);
-        await fs.unlink(filePath);
+        try {
+            await fs.unlink(filePath);
+        } catch {
+            // Ignore if file doesn't exist
+        }
+        await cleanupOrphanedTmpFiles(getHistoryRoot(), 0);
         return true;
     } catch {
         return false;
@@ -376,13 +378,17 @@ export async function clearAllHistory(): Promise<boolean> {
         const files = await fs.readdir(historyRoot);
         await Promise.all(
             files
-                .filter(file => file.endsWith('.json'))
-                .map(file => fs.unlink(path.join(historyRoot, file))),
+                .filter(file => file.endsWith('.json') || file.endsWith('.tmp'))
+                .map(file => fs.unlink(path.join(historyRoot, file)).catch(() => {})),
         );
         return true;
     } catch {
         return false;
     }
+}
+
+export async function cleanQuotaHistoryTmpFiles(maxAgeMs: number = 30 * 1000): Promise<number> {
+    return cleanupOrphanedTmpFiles(getHistoryRoot(), maxAgeMs);
 }
 
 function buildModelOptions(record: QuotaHistoryRecord): QuotaHistoryModelOption[] {
