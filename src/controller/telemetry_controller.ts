@@ -73,17 +73,18 @@ export class TelemetryController {
                 logger.debug('Auto-group on first run skipped: no models matched smart-group families');
             }
 
-            // 自动将新分组添加到 pinnedGroups（第一次开启分组时默认全部显示在状态栏）
+            // 自动将新分组添加到 pinnedGroups（仅在首次初始化分组时默认全部显示在状态栏）
             if (config.groupingEnabled && snapshot.groups && snapshot.groups.length > 0) {
-                const currentPinnedGroups = config.pinnedGroups;
-                const allGroupIds = snapshot.groups.map(g => g.groupId);
-
-                // 如果 pinnedGroups 为空，说明是第一次开启分组，自动 pin 全部
-                if (currentPinnedGroups.length === 0) {
-                    logger.info(`Auto-pinning all ${allGroupIds.length} groups to status bar`);
-                    await configService.updateConfig('pinnedGroups', allGroupIds);
-                    // 重新获取配置
-                    config = configService.getConfig();
+                const hasAutoPinned = configService.getStateFlag('hasAutoPinnedInitialGroups', false);
+                if (!hasAutoPinned) {
+                    await configService.setStateFlag('hasAutoPinnedInitialGroups', true);
+                    const currentPinnedGroups = config.pinnedGroups;
+                    if (currentPinnedGroups.length === 0) {
+                        const allGroupIds = snapshot.groups.map(g => g.groupId);
+                        logger.info(`Auto-pinning all ${allGroupIds.length} groups to status bar on initial setup`);
+                        await configService.updateConfig('pinnedGroups', allGroupIds);
+                        config = configService.getConfig();
+                    }
                 }
             }
 

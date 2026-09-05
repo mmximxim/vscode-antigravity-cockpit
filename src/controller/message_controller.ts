@@ -302,24 +302,13 @@ export class MessageController {
                     cockpitToolsWs.ensureConnected();
 
                     {
-                        const config = configService.getConfig();
-                        let handled = false;
+                        // 直接由 reactor 统一强制刷新主遥测数据（单次网络请求，避免重复拉取与重复广播）
+                        await this.reactor.syncTelemetry(true);
 
-                        if (config.quotaSource === 'authorized' && this.refreshService) {
-                            const activeEmail = await credentialStorage.getActiveAccount();
-                            if (activeEmail) {
-                                logger.info(`[MsgCtrl] Refreshing active account: ${activeEmail}`);
-                                // loadAccountQuota 内部使用 QuotaRefreshManager 并强制刷新 (forceRefresh=true)
-                                await this.refreshService.loadAccountQuota(activeEmail);
-                                handled = true;
-                            }
+                        // 多账号管理服务在后台进行增量刷新，不阻塞主面板响应
+                        if (this.refreshService) {
+                            void this.refreshService.refresh({ reason: 'manualRefresh' });
                         }
-
-                        if (!handled && this.refreshService) {
-                            this.refreshService.refresh();
-                        }
-                        // 无论走哪条刷新路径，都同步主遥测，确保主面板离线卡可恢复
-                        await this.reactor.syncTelemetry();
 
                         const state = await autoTriggerController.getState();
                         this.hud.sendMessage({

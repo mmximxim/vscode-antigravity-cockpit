@@ -288,6 +288,12 @@ export class ReactorCore {
     private initRetryToken: number = 0;
     /** 本地模式下的账户邮箱（从 state.vscdb 读取） */
     private localAccountEmail?: string;
+    /** 当前正在执行的同步操作 Promise（并发锁） */
+    private syncInFlight: Promise<void> | null = null;
+
+    isSyncInFlight(): boolean {
+        return this.syncInFlight !== null;
+    }
     /** 本地模式是否使用远端 API */
     private localUsingRemoteApi: boolean = false;
     /** 上次记录的本地模型列表（避免重复日志） */
@@ -691,33 +697,47 @@ export class ReactorCore {
     /**
      * 同步遥测数据（用于定时器调用，自带错误处理）
      */
-    async syncTelemetry(): Promise<void> {
+    async syncTelemetry(forceRefresh: boolean = false): Promise<void> {
+        if (this.syncInFlight) {
+            logger.debug('[ReactorCore] syncTelemetry already in flight, awaiting existing operation');
+            await this.syncInFlight;
+            return;
+        }
+
+        this.syncInFlight = (async () => {
+            try {
+                await this.syncTelemetryCore(forceRefresh);
+            } catch (error) {
+                const err = error instanceof Error ? error : new Error(String(error));
+                if (this.shouldIgnoreSyncError(err)) {
+                    logger.info(`[ReactorCore] Ignoring ${this.getSyncErrorSource(err)} sync error after source switch: ${err.message}`);
+                    return;
+                }
+                const source = this.getSyncErrorSource(err);
+                const currentSource = configService.getConfig().quotaSource === 'authorized' ? 'authorized' : 'local';
+                const sourceInfo = source ? `source=${source}` : 'source=unknown';
+                const endpoint = source === 'authorized'
+                    ? 'v1internal:fetchAvailableModels'
+                    : API_ENDPOINTS.GET_USER_STATUS;
+                logger.error(`Telemetry Sync Failed (${sourceInfo}, current=${currentSource}, endpoint=${endpoint}): ${err.message}`);
+                
+                if (this.errorHandler) {
+                    this.errorHandler(err);
+                }
+            }
+        })();
+
         try {
-            await this.syncTelemetryCore();
-        } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
-            if (this.shouldIgnoreSyncError(err)) {
-                logger.info(`[ReactorCore] Ignoring ${this.getSyncErrorSource(err)} sync error after source switch: ${err.message}`);
-                return;
-            }
-            const source = this.getSyncErrorSource(err);
-            const currentSource = configService.getConfig().quotaSource === 'authorized' ? 'authorized' : 'local';
-            const sourceInfo = source ? `source=${source}` : 'source=unknown';
-            const endpoint = source === 'authorized'
-                ? 'v1internal:fetchAvailableModels'
-                : API_ENDPOINTS.GET_USER_STATUS;
-            logger.error(`Telemetry Sync Failed (${sourceInfo}, current=${currentSource}, endpoint=${endpoint}): ${err.message}`);
-            
-            if (this.errorHandler) {
-                this.errorHandler(err);
-            }
+            await this.syncInFlight;
+        } finally {
+            this.syncInFlight = null;
         }
     }
 
     /**
      * 同步遥测数据核心逻辑（可抛出异常，用于重试机制）
      */
-    private async syncTelemetryCore(): Promise<void> {
+    private async syncTelemetryCore(forceRefresh: boolean = false): Promise<void> {
         const config = configService.getConfig();
         if (config.quotaSource === 'authorized') {
             // 注意：移除了每次配额刷新时的自动账户切换逻辑
@@ -733,7 +753,7 @@ export class ReactorCore {
                     this.publishTelemetry(telemetry, 'authorized');
                     return;
                 }
-                const telemetry = await this.fetchAuthorizedTelemetry();
+                const telemetry = await this.fetchAuthorizedTelemetry(0, forceRefresh);
                 this.lastAuthorizedFetchedAt = Date.now();
                 this.publishTelemetry(telemetry, 'authorized');
                 return;
@@ -911,7 +931,7 @@ export class ReactorCore {
      * 获取授权配额并构建快照
      * @param retryCount 当前重试次数，用于防止账号切换时的无限递归
      */
-    private async fetchAuthorizedTelemetry(retryCount = 0): Promise<QuotaSnapshot> {
+    private async fetchAuthorizedTelemetry(retryCount = 0, forceRefresh = false): Promise<QuotaSnapshot> {
         // 防止账号频繁切换导致的无限递归
         const MAX_ACCOUNT_CHANGE_RETRIES = 3;
         if (retryCount >= MAX_ACCOUNT_CHANGE_RETRIES) {
@@ -972,7 +992,7 @@ export class ReactorCore {
             accessToken,
             projectId,
             activeAccount ?? undefined,
-            false,
+            forceRefresh,
             credential?.isGcpTos,
         );
         const activeAccountAfter = await credentialStorage.getActiveAccount();
@@ -980,7 +1000,7 @@ export class ReactorCore {
             logger.info('[AuthorizedQuota] Active account changed during fetch, retrying with new account');
             this.lastAuthorizedModels = undefined;
             // 递归重试，获取新账号的配额
-            return this.fetchAuthorizedTelemetry(retryCount + 1);
+            return this.fetchAuthorizedTelemetry(retryCount + 1, forceRefresh);
         }
         this.lastAuthorizedModels = models;
 

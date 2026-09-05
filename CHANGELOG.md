@@ -10,6 +10,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.65] - 2026-09-05
+
+### Performance & Architectural Improvements
+- **Webview In-Place Keyed DOM Patching & rAF Debounce (Eliminating Refresh Stutter & Redraw Storms)**:
+  - Deprecated full DOM teardown (`dashboard.innerHTML = ''`) in favor of keyed in-place card patching (`updateGroupCard` / `updateModelCard`). Quota percentages, conic-gradient arcs, and status labels update smoothly in <1ms without layout reflow or visual flicker;
+  - Added `window.requestAnimationFrame` scheduling to batch and debounce incoming high-frequency telemetry messages to a single smooth frame.
+- **Reactor Core Concurrency Mutex & Streamlined Refresh**:
+  - Implemented `syncInFlight` mutex lock in `ReactorCore`, coalescing overlapping telemetry sync calls into a shared task and preventing duplicate API calls during rapid refreshes;
+  - Streamlined manual refresh flow, removing redundant secondary account fetch and executing a single unified network synchronization.
+- **Config Loop Guard & State Protection**:
+  - Added a persistent execution state guard for auto-pinning initial groups, eliminating infinite config loop cycles when users have zero pinned groups;
+  - Extension config change handlers now skip intermediate reprocessing when a network telemetry sync is already in flight.
+
 ## [2.1.64] - 2026-09-03
 
 ### Fixed & Improved

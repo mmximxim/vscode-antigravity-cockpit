@@ -874,7 +874,7 @@ import { createAnnouncementModule } from './dashboard_announcements';
                 }
                 setQuotaSourceSwitching(false);
             }
-            render(message.data, message.config);
+            scheduleRender(message.data, message.config);
             lastSnapshot = message.data; // Update global snapshot
             updateQuotaSourceUI(message.data?.isConnected);
             if (historyModule.isHistoryTabActive()) {
@@ -2561,12 +2561,32 @@ import { createAnnouncementModule } from './dashboard_announcements';
         }, NEW_TAG_BURST_MS);
     }
 
+    let renderRafId = null;
+    let pendingRenderData = null;
+    let pendingRenderConfig = null;
+
+    function scheduleRender(data, config) {
+        pendingRenderData = data;
+        pendingRenderConfig = config;
+        if (renderRafId !== null) {
+            return;
+        }
+        renderRafId = window.requestAnimationFrame(() => {
+            renderRafId = null;
+            if (pendingRenderData) {
+                render(pendingRenderData, pendingRenderConfig);
+                pendingRenderData = null;
+                pendingRenderConfig = null;
+            }
+        });
+    }
+
     function render(snapshot, config) {
         statusDiv.style.display = 'none';
-        dashboard.innerHTML = '';
 
         // 检查离线状态
         if (!snapshot.isConnected) {
+            dashboard.innerHTML = '';
             const source = config?.quotaSource || currentQuotaSource;
             if (source === 'authorized') {
                 renderAuthorizedOfflineCard(snapshot.errorMessage);
@@ -2576,10 +2596,20 @@ import { createAnnouncementModule } from './dashboard_announcements';
             return;
         }
 
-        // Render User Profile (if available) - New Section
+        // 如果之前展示的是离线卡，先清空
+        if (dashboard.querySelector('.offline-card')) {
+            dashboard.innerHTML = '';
+        }
+
+        // Render User Profile (if available)
         // Check isProfileHidden state before rendering
+        const existingProfile = dashboard.querySelector('.profile-card');
         if (snapshot.userInfo && !isProfileHidden) {
-            renderUserProfile(snapshot.userInfo);
+            if (!existingProfile) {
+                renderUserProfile(snapshot.userInfo);
+            }
+        } else if (existingProfile) {
+            existingProfile.remove();
         }
 
         // 更新分组按钮状态
@@ -2587,8 +2617,14 @@ import { createAnnouncementModule } from './dashboard_announcements';
 
         // 如果启用了分组显示，仅渲染已分组卡片（未分组模型不显示）
         if (config?.groupingEnabled) {
-            // 渲染自动分组按钮区域
-            renderAutoGroupBar();
+            // 清除可能遗留的单个模型卡片
+            const modelCards = dashboard.querySelectorAll('.card.draggable:not(.group-card)');
+            modelCards.forEach(c => c.remove());
+
+            // 渲染自动分组按钮区域（若已存在则复用）
+            if (!dashboard.querySelector('.auto-group-toolbar')) {
+                renderAutoGroupBar();
+            }
 
             // 分组排序：支持自定义顺序
             let groups = snapshot.groups ? [...snapshot.groups] : [];
@@ -2605,13 +2641,39 @@ import { createAnnouncementModule } from './dashboard_announcements';
                 });
             }
 
-            groups.forEach(group => {
-                renderGroupCard(group, config?.pinnedGroups || []);
+            const existingCardMap = new Map();
+            dashboard.querySelectorAll('.group-card').forEach(card => {
+                const gid = card.getAttribute('data-group-id');
+                if (gid) existingCardMap.set(gid, card);
             });
+
+            const activeGroupIds = new Set();
+            groups.forEach(group => {
+                activeGroupIds.add(group.groupId);
+                const existing = existingCardMap.get(group.groupId);
+                if (existing) {
+                    updateGroupCard(existing, group, config?.pinnedGroups || []);
+                    dashboard.appendChild(existing); // 确保与排序顺序一致
+                } else {
+                    renderGroupCard(group, config?.pinnedGroups || []);
+                }
+            });
+
+            // 移除不再存在的分组卡片
+            existingCardMap.forEach((card, gid) => {
+                if (!activeGroupIds.has(gid)) {
+                    card.remove();
+                }
+            });
+
             triggerNewTagBurstIfNeeded();
             isInitialDashboardRender = false;
             return;
         }
+
+        // 未开启分组：清除可能遗留的分组卡片和工具栏
+        const groupElements = dashboard.querySelectorAll('.group-card, .auto-group-toolbar');
+        groupElements.forEach(el => el.remove());
 
         // 模型排序
         let models = [...snapshot.models];
@@ -2626,10 +2688,31 @@ import { createAnnouncementModule } from './dashboard_announcements';
             });
         }
 
-        // 渲染模型卡片
-        models.forEach(model => {
-            renderModelCard(model, config?.pinnedModels || [], config?.modelCustomNames || {});
+        const existingModelMap = new Map();
+        dashboard.querySelectorAll('.card.draggable:not(.group-card)').forEach(card => {
+            const mid = card.getAttribute('data-id');
+            if (mid) existingModelMap.set(mid, card);
         });
+
+        const activeModelIds = new Set();
+        models.forEach(model => {
+            activeModelIds.add(model.modelId);
+            const existing = existingModelMap.get(model.modelId);
+            if (existing) {
+                updateModelCard(existing, model, config?.pinnedModels || [], config?.modelCustomNames || {});
+                dashboard.appendChild(existing);
+            } else {
+                renderModelCard(model, config?.pinnedModels || [], config?.modelCustomNames || {});
+            }
+        });
+
+        // 移除不再存在的模型卡片
+        existingModelMap.forEach((card, mid) => {
+            if (!activeModelIds.has(mid)) {
+                card.remove();
+            }
+        });
+
         triggerNewTagBurstIfNeeded();
         isInitialDashboardRender = false;
     }
@@ -3790,6 +3873,88 @@ import { createAnnouncementModule } from './dashboard_announcements';
         dashboard.appendChild(card);
     }
 
+    function updateGroupCard(card, group, pinnedGroups) {
+        const pct = group.remainingPercentage || 0;
+        const color = getHealthColor(pct);
+        const isPinned = pinnedGroups && pinnedGroups.includes(group.groupId);
+
+        // 更新组名称
+        const nameEl = card.querySelector('.group-name');
+        if (nameEl && nameEl.textContent !== group.groupName) {
+            nameEl.textContent = group.groupName;
+        }
+
+        // 更新百分比与圆环进度
+        const pctEl = card.querySelector('.percentage');
+        const pctText = pct.toFixed(2) + '%';
+        if (pctEl && pctEl.textContent !== pctText) {
+            pctEl.textContent = pctText;
+        }
+        const circleEl = card.querySelector('.progress-circle');
+        const newBg = `conic-gradient(${color} ${pct}%, var(--border-color) ${pct}%)`;
+        if (circleEl && circleEl.style.background !== newBg) {
+            circleEl.style.background = newBg;
+        }
+
+        // 更新各行信息
+        const infoValues = card.querySelectorAll('.info-row .info-value');
+        if (infoValues[0] && infoValues[0].textContent !== group.timeUntilResetFormatted) {
+            infoValues[0].textContent = group.timeUntilResetFormatted;
+        }
+        const resetTimeText = group.resetTimeDisplay || 'N/A';
+        if (infoValues[1] && infoValues[1].textContent !== resetTimeText) {
+            infoValues[1].textContent = resetTimeText;
+        }
+        const statusText = getStatusText(pct);
+        if (infoValues[2]) {
+            if (infoValues[2].textContent.trim() !== statusText.trim()) {
+                infoValues[2].textContent = statusText;
+            }
+            if (infoValues[2].style.color !== color) {
+                infoValues[2].style.color = color;
+            }
+        }
+
+        // 更新 pin 开关
+        const pinToggle = card.querySelector('.group-pin-toggle');
+        if (pinToggle && pinToggle.checked !== Boolean(isPinned)) {
+            pinToggle.checked = Boolean(isPinned);
+        }
+
+        // 检查组内模型变动
+        const modelsContainer = card.querySelector('.group-models-list');
+        if (modelsContainer) {
+            const currentTagCount = modelsContainer.querySelectorAll('.group-model-tag').length;
+            if (currentTagCount !== group.models.length) {
+                const uniqueModelsMap = new Map();
+                for (const m of group.models) {
+                    const cleanLabel = (m.label || '').replace(/\s*\((?:High|Medium|Low)\)/gi, '').trim();
+                    if (!uniqueModelsMap.has(cleanLabel)) {
+                        uniqueModelsMap.set(cleanLabel, {
+                            ...m,
+                            label: cleanLabel,
+                        });
+                    }
+                }
+                const displayModels = Array.from(uniqueModelsMap.values());
+                modelsContainer.innerHTML = displayModels.map(m => {
+                    const caps = getModelCapabilityList(m);
+                    const tagHtml = m.tagTitle
+                        ? `<span class="tag-new tag-new-transient tag-new-hidden-after-burst">${escapeHtml(m.tagTitle)}</span>`
+                        : '';
+                    const recClass = m.isRecommended ? ' recommended' : '';
+                    const tooltipHtml = encodeURIComponent(generateCapabilityTooltip(m.label, caps));
+                    const tooltipAttr = ` data-tooltip-html="${tooltipHtml}"`;
+                    return `<span class="group-model-tag${recClass}" title="${escapeHtml(m.modelId)}"${tooltipAttr}>${escapeHtml(m.label)}${tagHtml}</span>`;
+                }).join('');
+                const labelEl = card.querySelector('.group-models-label');
+                if (labelEl) {
+                    labelEl.textContent = `${i18n['grouping.models'] || 'Models'} (${displayModels.length}):`;
+                }
+            }
+        }
+    }
+
     function renderModelCard(model, pinnedModels, modelCustomNames) {
         const pct = model.remainingPercentage || 0;
         const color = getHealthColor(pct);
@@ -3872,6 +4037,56 @@ import { createAnnouncementModule } from './dashboard_announcements';
         }
 
         dashboard.appendChild(card);
+    }
+
+    function updateModelCard(card, model, pinnedModels, modelCustomNames) {
+        const pct = model.remainingPercentage || 0;
+        const color = getHealthColor(pct);
+        const isPinned = pinnedModels && pinnedModels.includes(model.modelId);
+        const displayName = (modelCustomNames && modelCustomNames[model.modelId]) || model.label;
+
+        // 更新模型名称
+        const nameEl = card.querySelector('.model-name');
+        if (nameEl && nameEl.textContent !== displayName) {
+            nameEl.textContent = displayName;
+        }
+
+        // 更新百分比与圆环进度
+        const pctEl = card.querySelector('.percentage');
+        const pctText = pct.toFixed(2) + '%';
+        if (pctEl && pctEl.textContent !== pctText) {
+            pctEl.textContent = pctText;
+        }
+        const circleEl = card.querySelector('.progress-circle');
+        const newBg = `conic-gradient(${color} ${pct}%, var(--border-color) ${pct}%)`;
+        if (circleEl && circleEl.style.background !== newBg) {
+            circleEl.style.background = newBg;
+        }
+
+        // 更新各行信息
+        const infoValues = card.querySelectorAll('.info-row .info-value');
+        if (infoValues[0] && infoValues[0].textContent !== model.timeUntilResetFormatted) {
+            infoValues[0].textContent = model.timeUntilResetFormatted;
+        }
+        const resetTimeText = model.resetTimeDisplay || 'N/A';
+        if (infoValues[1] && infoValues[1].textContent !== resetTimeText) {
+            infoValues[1].textContent = resetTimeText;
+        }
+        const statusText = getStatusText(pct);
+        if (infoValues[2]) {
+            if (infoValues[2].textContent.trim() !== statusText.trim()) {
+                infoValues[2].textContent = statusText;
+            }
+            if (infoValues[2].style.color !== color) {
+                infoValues[2].style.color = color;
+            }
+        }
+
+        // 更新 pin 开关
+        const pinToggle = card.querySelector('.pin-toggle');
+        if (pinToggle && pinToggle.checked !== Boolean(isPinned)) {
+            pinToggle.checked = Boolean(isPinned);
+        }
     }
 
     // ============ 启动 ============

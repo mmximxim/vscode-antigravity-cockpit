@@ -507,6 +507,10 @@ async function handleConfigChange(config: CockpitConfig): Promise<void> {
     // 对于任何配置变更，立即重新处理最近的数据以更新 UI（如状态栏格式变化）
     // 这确保存储在 lastSnapshot 中的数据使用新配置重新呈现
     if (!quotaSourceChanged) {
+        if (reactor.isSyncInFlight()) {
+            logger.debug('[ConfigChange] Sync is in flight, skipping intermediate reprocess');
+            return;
+        }
         reactor.reprocess();
     }
 }
