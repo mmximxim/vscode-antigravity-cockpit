@@ -28,6 +28,7 @@ export const tr = {
     'dashboard.resetIn': 'Sıfırlamaya',
     'dashboard.resetTime': 'Sıfırlama Zamanı',
     'dashboard.status': 'Durum',
+    'dashboard.weeklyLimit': 'Haftalık Limit',
     'dashboard.exhausted': 'Tükendi',
     'dashboard.active': 'Sağlıklı',
     'dashboard.warning': 'Uyarı',

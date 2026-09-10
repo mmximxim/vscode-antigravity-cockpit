@@ -44,6 +44,7 @@ export const UI = {
 export const API_ENDPOINTS = {
     GET_USER_STATUS: '/exa.language_server_pb.LanguageServerService/GetUserStatus',
     GET_UNLEASH_DATA: '/exa.language_server_pb.LanguageServerService/GetUnleashData',
+    RETRIEVE_USER_QUOTA_SUMMARY: '/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary',
 } as const;
 
 /** 目标进程名称映射 */

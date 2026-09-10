@@ -28,6 +28,7 @@ export const cs = {
     'dashboard.resetIn': 'Reset za',
     'dashboard.resetTime': 'Čas Resetu',
     'dashboard.status': 'Stav',
+    'dashboard.weeklyLimit': 'Týdenní limit',
     'dashboard.exhausted': 'Vyčerpáno',
     'dashboard.active': 'Zdravý',
     'dashboard.warning': 'Varování',

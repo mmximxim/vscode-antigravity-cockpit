@@ -28,6 +28,7 @@ export const ptBR = {
     'dashboard.resetIn': 'Reinício em',
     'dashboard.resetTime': 'Hora do Reinício',
     'dashboard.status': 'Status',
+    'dashboard.weeklyLimit': 'Limite semanal',
     'dashboard.exhausted': 'Esgotado',
     'dashboard.active': 'Saudável',
     'dashboard.warning': 'Aviso',

@@ -30,6 +30,7 @@ export const zhCN = {
     'dashboard.resetIn': '重置倒计时',
     'dashboard.resetTime': '重置时间',
     'dashboard.status': '状态',
+    'dashboard.weeklyLimit': '周限额',
     'dashboard.modelName': '模型名称',
     'dashboard.name': '名称',
     'dashboard.remainingQuota': '剩余配额',

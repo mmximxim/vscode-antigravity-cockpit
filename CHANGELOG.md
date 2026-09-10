@@ -10,6 +10,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.67] - 2026-09-10
+
+### Added & Improved
+- **Add Weekly Limit Display to Dashboard Cards**:
+  - Added a "Weekly Limit" row directly under the Status row in both group cards and model cards, displaying the weekly quota remaining percentage and reset countdown (e.g. `28.00% (21h 59m)`) with detailed reset timestamp tooltips;
+  - Aligned with Antigravity official dual-quota model architecture, fetching weekly quota pools for Gemini and 3P (Claude/GPT) models via `RetrieveUserQuotaSummary`;
+  - Built with in-place `.weekly-limit-value` DOM patching to update smoothly without card re-rendering or UI stuttering.
+- **Adaptive Process Detection**:
+  - Enhanced Antigravity process and Hub service discovery for improved local connection resilience.
+
 ## [2.1.66] - 2026-09-05
 
 ### Fixed & Improved

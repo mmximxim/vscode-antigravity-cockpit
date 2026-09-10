@@ -32,6 +32,7 @@ export const vi = {
     'dashboard.resetIn': 'Đặt lại sau',
     'dashboard.resetTime': 'Thời gian đặt lại',
     'dashboard.status': 'Trạng thái',
+    'dashboard.weeklyLimit': 'Hạn mức tuần',
     'dashboard.modelName': 'Tên mô hình',
     'dashboard.name': 'Tên',
     'dashboard.remainingQuota': 'Hạn mức còn lại',

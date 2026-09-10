@@ -28,6 +28,7 @@ export const ru = {
     'dashboard.resetIn': 'Сброс через',
     'dashboard.resetTime': 'Время сброса',
     'dashboard.status': 'Статус',
+    'dashboard.weeklyLimit': 'Недельный лимит',
     'dashboard.exhausted': 'Исчерпано',
     'dashboard.active': 'Здоров',
     'dashboard.warning': 'Предупреждение',

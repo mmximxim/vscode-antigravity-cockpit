@@ -30,6 +30,7 @@ export const en = {
     'dashboard.resetIn': 'Reset In',
     'dashboard.resetTime': 'Reset Time',
     'dashboard.status': 'Status',
+    'dashboard.weeklyLimit': 'Weekly Limit',
     'dashboard.modelName': 'Model Name',
     'dashboard.name': 'Name',
     'dashboard.remainingQuota': 'Remaining Quota',

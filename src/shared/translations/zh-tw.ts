@@ -30,6 +30,7 @@ export const zhTW = {
     'dashboard.resetIn': '重置倒計時',
     'dashboard.resetTime': '重置時間',
     'dashboard.status': '狀態',
+    'dashboard.weeklyLimit': '週限額',
     'dashboard.exhausted': '已耗盡',
     'dashboard.active': '健康',
     'dashboard.warning': '警告',

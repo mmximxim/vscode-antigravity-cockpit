@@ -28,6 +28,7 @@ export const ja = {
     'dashboard.resetIn': 'リセットまで',
     'dashboard.resetTime': 'リセット時刻',
     'dashboard.status': 'ステータス',
+    'dashboard.weeklyLimit': '週間制限',
     'dashboard.exhausted': '枯渇',
     'dashboard.active': '正常',
     'dashboard.warning': '警告',

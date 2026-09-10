@@ -178,5 +178,78 @@ describe('Gemini 3.8 Flash and Grouping Verification', () => {
 
         disposable.dispose();
     });
+
+    it('should correctly attach weekly limits to models and groups', () => {
+        const reactor = new ReactorCore();
+        const mockWeeklySummary = {
+            response: {
+                groups: [
+                    {
+                        displayName: 'Gemini Models',
+                        buckets: [
+                            {
+                                bucketId: 'gemini-weekly',
+                                displayName: 'Weekly Limit Remaining',
+                                window: 'weekly',
+                                remainingFraction: 0.28,
+                                resetTime: '2026-09-11T12:00:00Z',
+                                description: 'You have used some of your weekly limit',
+                            },
+                        ],
+                    },
+                    {
+                        displayName: 'Claude and GPT models',
+                        buckets: [
+                            {
+                                bucketId: '3p-weekly',
+                                displayName: 'Weekly Limit Remaining',
+                                window: 'weekly',
+                                remainingFraction: 1.0,
+                                resetTime: '2026-09-17T12:00:00Z',
+                            },
+                        ],
+                    },
+                ],
+            },
+        };
+
+        const mockUserStatusResponse = {
+            userStatus: {
+                cascadeModelConfigData: {
+                    clientModelConfigs: [
+                        {
+                            label: 'Gemini 3.8 Flash',
+                            modelOrAlias: { model: 'MODEL_PLACEHOLDER_M318' },
+                            quotaInfo: {
+                                remainingFraction: 0.4,
+                                resetTime: '2026-09-10T18:00:00Z',
+                            },
+                        },
+                        {
+                            label: 'Claude Sonnet 4.6 (Thinking)',
+                            modelOrAlias: { model: 'MODEL_PLACEHOLDER_M35' },
+                            quotaInfo: {
+                                remainingFraction: 0.9,
+                                resetTime: '2026-09-10T18:00:00Z',
+                            },
+                        },
+                    ],
+                },
+            },
+        };
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const snapshot = (reactor as any).decodeSignal(mockUserStatusResponse, mockWeeklySummary);
+        expect(snapshot.models.length).toBeGreaterThanOrEqual(2);
+
+        const geminiModel = snapshot.models.find((m: ModelQuotaInfo) => m.label.includes('Gemini 3.8'));
+        expect(geminiModel?.weeklyLimit).toBeDefined();
+        expect(geminiModel?.weeklyLimit?.remainingPercentage).toBeCloseTo(28);
+        expect(geminiModel?.weeklyLimit?.description).toBe('You have used some of your weekly limit');
+
+        const claudeModel = snapshot.models.find((m: ModelQuotaInfo) => m.label.includes('Claude'));
+        expect(claudeModel?.weeklyLimit).toBeDefined();
+        expect(claudeModel?.weeklyLimit?.remainingPercentage).toBeCloseTo(100);
+    });
 });
 

@@ -10,7 +10,7 @@
 
 VS Code 扩展，用于监控 Google Antigravity AI 模型配额。
 
-**功能**：Webview 仪表盘 · QuickPick 模式 · **📊 统计看板（GitHub Contribution Graph Style）** · 配额分组 · 自动分组 · 重命名 · 卡片视图 · 拖拽排序 · 状态栏监控 · 阈值通知 · 隐私模式
+**功能**：Webview 仪表盘 · QuickPick 模式 · **📊 统计看板（GitHub Contribution Graph Style）** · 配额分组 · 自动分组 · 周限额监控 · 重命名 · 卡片视图 · 拖拽排序 · 状态栏监控 · 阈值通知 · 隐私模式
 
 **语言**：跟随 VS Code 语言设置，支持 16 种语言
 

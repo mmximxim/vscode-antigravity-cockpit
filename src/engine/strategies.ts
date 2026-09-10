@@ -12,24 +12,29 @@ import { PlatformStrategy, ProcessInfo } from '../shared/types';
 export class WindowsStrategy implements PlatformStrategy {
     /**
      * 判断命令行是否属于 Antigravity 进程
-     * 精准匹配：必须同时满足以下条件：
-     * 1. 必须有 --extension_server_port 参数
-     * 2. 必须有 --csrf_token 参数
-     * 3. 必须有 --app_data_dir antigravity 参数
+     * 匹配规则：
+     * 1. 必须有 --app_data_dir antigravity 参数（最可靠的标识）
+     * 2. 必须有 --extension_server_port 或 --hub-port 参数
+     * 3. 若为 --extension_server_port，必须包含 --csrf_token 参数
      */
     private isAntigravityProcess(commandLine: string): boolean {
-        // 条件1：必须包含 --extension_server_port 参数
-        if (!commandLine.includes('--extension_server_port')) {
+        // 条件1：必须有 --app_data_dir antigravity 参数（最可靠的标识）
+        if (!/--app_data_dir[=\s]+antigravity\b/i.test(commandLine)) {
             return false;
         }
 
-        // 条件2：必须包含 --csrf_token 参数
-        if (!commandLine.includes('--csrf_token')) {
+        // 条件2：包含 --extension_server_port 或 --hub-port
+        const hasPort = commandLine.includes('--extension_server_port') || commandLine.includes('--hub-port');
+        if (!hasPort) {
             return false;
         }
 
-        // 条件3：必须有 --app_data_dir antigravity 参数（最可靠的标识）
-        return /--app_data_dir\s+antigravity\b/i.test(commandLine);
+        // 条件3：如果是 extension_server_port 模式，必须包含 --csrf_token 参数
+        if (commandLine.includes('--extension_server_port') && !commandLine.includes('--csrf_token')) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -44,13 +49,13 @@ export class WindowsStrategy implements PlatformStrategy {
     }
 
     /**
-     * 按关键字获取进程列表命令（查找所有包含 csrf_token 的进程）
+     * 按关键字获取进程列表命令（查找所有包含 csrf_token 或 hub-port 的进程）
      * 这是备用方案，当按进程名查找失败时使用
      */
     getProcessByKeywordCommand(): string {
         const utf8Header = '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; ';
         // chcp 65001 >nul 确保 CMD 环境以 UTF-8 运行
-        return `chcp 65001 >nul && powershell -NoProfile -Command "${utf8Header}Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'csrf_token' } | Select-Object ProcessId,Name,CommandLine | ConvertTo-Json"`;
+        return `chcp 65001 >nul && powershell -NoProfile -Command "${utf8Header}Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'csrf_token' -or $_.CommandLine -match 'hub-port' } | Select-Object ProcessId,Name,CommandLine | ConvertTo-Json"`;
     }
 
     parseProcessInfo(stdout: string): ProcessInfo[] {
@@ -94,14 +99,19 @@ export class WindowsStrategy implements PlatformStrategy {
 
                 const portMatch = commandLine.match(/--extension_server_port[=\s]+(\d+)/);
                 const tokenMatch = commandLine.match(/--csrf_token[=\s]+([a-f0-9-]+)/i);
+                const hubPortMatch = commandLine.match(/--hub-port[=\s]+(\d+)/);
 
-                if (!tokenMatch?.[1]) {
-                    logger.warn(`[WindowsStrategy] Cannot extract CSRF Token from PID ${pid}`);
-                    continue;
+                let extensionPort = portMatch?.[1] ? parseInt(portMatch[1], 10) : 0;
+                let csrfToken = tokenMatch?.[1] || '';
+
+                if (!csrfToken && hubPortMatch?.[1]) {
+                    extensionPort = parseInt(hubPortMatch[1], 10);
                 }
 
-                const extensionPort = portMatch?.[1] ? parseInt(portMatch[1], 10) : 0;
-                const csrfToken = tokenMatch[1];
+                if (!csrfToken && !hubPortMatch?.[1]) {
+                    logger.warn(`[WindowsStrategy] Cannot extract CSRF Token or hub port from PID ${pid}`);
+                    continue;
+                }
 
                 candidates.push({ pid, extensionPort, csrfToken });
             }
@@ -211,24 +221,29 @@ export class UnixStrategy implements PlatformStrategy {
 
     /**
      * 判断命令行是否属于 Antigravity 进程
-     * 精准匹配：必须同时满足以下条件：
-     * 1. 必须有 --extension_server_port 参数
-     * 2. 必须有 --csrf_token 参数
-     * 3. 必须有 --app_data_dir antigravity 参数
+     * 匹配规则：
+     * 1. 必须有 --app_data_dir antigravity 参数（最可靠的标识）
+     * 2. 必须有 --extension_server_port 或 --hub-port 参数
+     * 3. 若为 --extension_server_port，必须包含 --csrf_token 参数
      */
     private isAntigravityProcess(commandLine: string): boolean {
-        // 条件1：必须包含 --extension_server_port 参数
-        if (!commandLine.includes('--extension_server_port')) {
+        // 条件1：必须有 --app_data_dir antigravity 参数（最可靠的标识）
+        if (!/--app_data_dir[=\s]+antigravity\b/i.test(commandLine)) {
             return false;
         }
 
-        // 条件2：必须包含 --csrf_token 参数
-        if (!commandLine.includes('--csrf_token')) {
+        // 条件2：包含 --extension_server_port 或 --hub-port
+        const hasPort = commandLine.includes('--extension_server_port') || commandLine.includes('--hub-port');
+        if (!hasPort) {
             return false;
         }
 
-        // 条件3：必须有 --app_data_dir antigravity 参数（最可靠的标识）
-        return /--app_data_dir\s+antigravity\b/i.test(commandLine);
+        // 条件3：如果是 extension_server_port 模式，必须包含 --csrf_token 参数
+        if (commandLine.includes('--extension_server_port') && !commandLine.includes('--csrf_token')) {
+            return false;
+        }
+
+        return true;
     }
 
     getProcessListCommand(processName: string): string {
@@ -265,11 +280,17 @@ export class UnixStrategy implements PlatformStrategy {
 
             const portMatch = cmd.match(/--extension_server_port[=\s]+(\d+)/);
             const tokenMatch = cmd.match(/--csrf_token[=\s]+([a-zA-Z0-9-]+)/i);
+            const hubPortMatch = cmd.match(/--hub-port[=\s]+(\d+)/);
 
-            // 必须同时满足：有 csrf_token 且是 Antigravity 进程
-            if (tokenMatch?.[1] && this.isAntigravityProcess(cmd)) {
-                const extensionPort = portMatch?.[1] ? parseInt(portMatch[1], 10) : 0;
-                const csrfToken = tokenMatch[1];
+            let extensionPort = portMatch?.[1] ? parseInt(portMatch[1], 10) : 0;
+            let csrfToken = tokenMatch?.[1] || '';
+
+            if (!csrfToken && hubPortMatch?.[1]) {
+                extensionPort = parseInt(hubPortMatch[1], 10);
+            }
+
+            // 必须是 Antigravity 进程且有 token 或 hubPort
+            if ((csrfToken || hubPortMatch?.[1]) && this.isAntigravityProcess(cmd)) {
                 candidates.push({ pid, ppid, extensionPort, csrfToken });
                 logger.debug(`[UnixStrategy] Found candidate: PID=${pid}, PPID=${ppid}, ExtPort=${extensionPort}`);
             }

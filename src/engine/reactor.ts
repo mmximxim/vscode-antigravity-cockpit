@@ -13,6 +13,8 @@ import {
     QuotaGroup,
     ScanDiagnostics,
     UserInfo,
+    WeeklyLimitInfo,
+    UserQuotaSummaryResponse,
 } from '../shared/types';
 import { logger } from '../shared/log_service';
 import { configService } from '../shared/config_service';
@@ -276,6 +278,8 @@ export class ReactorCore {
     private lastSnapshotSource?: 'local' | 'authorized';
     /** 上一次的原始 API 响应缓存（用于 reprocess 时重新生成分组） */
     private lastRawResponse?: ServerUserStatusResponse;
+    /** 上一次的周限额响应缓存 */
+    private lastWeeklyQuotaSummary?: UserQuotaSummaryResponse;
     /** 上一次的授权配额模型缓存（用于 reprocess 时重新生成分组） */
     private lastAuthorizedModels?: ModelQuotaInfo[];
     /** 最近一次成功获取到的授权 Credits（用于缓存重放时避免回退为 --） */
@@ -833,7 +837,23 @@ export class ReactorCore {
         );
         this.lastRawResponse = raw; // 缓存原始响应
         this.lastLocalFetchedAt = Date.now();
-        return this.decodeSignal(raw);
+
+        let weeklySummary: UserQuotaSummaryResponse | undefined;
+        try {
+            weeklySummary = await this.transmit<UserQuotaSummaryResponse>(
+                API_ENDPOINTS.RETRIEVE_USER_QUOTA_SUMMARY,
+                {},
+            );
+            if (weeklySummary?.response?.groups && weeklySummary.response.groups.length > 0) {
+                this.lastWeeklyQuotaSummary = weeklySummary;
+            }
+        } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            logger.debug(`[ReactorCore] RetrieveUserQuotaSummary failed: ${err.message}`);
+            weeklySummary = this.lastWeeklyQuotaSummary;
+        }
+
+        return this.decodeSignal(raw, weeklySummary);
     }
 
     private async tryFetchLocalTelemetry(): Promise<QuotaSnapshot | null> {
@@ -1016,6 +1036,35 @@ export class ReactorCore {
         if (localSnapshot?.promptCredits || localSnapshot?.userInfo) {
             snapshot.promptCredits = localSnapshot.promptCredits;
             snapshot.userInfo = localSnapshot.userInfo;
+        }
+        if (localSnapshot) {
+            for (const model of snapshot.models) {
+                const match = localSnapshot.models.find(lm =>
+                    lm.modelId === model.modelId ||
+                    (this.resolveAutoGroupFamily(lm.modelId, lm.label) &&
+                     this.resolveAutoGroupFamily(lm.modelId, lm.label) === this.resolveAutoGroupFamily(model.modelId, model.label))
+                );
+                if (match?.weeklyLimit) {
+                    model.weeklyLimit = match.weeklyLimit;
+                }
+            }
+            if (snapshot.allModels) {
+                for (const model of snapshot.allModels) {
+                    const match = localSnapshot.models.find(lm =>
+                        lm.modelId === model.modelId ||
+                        (this.resolveAutoGroupFamily(lm.modelId, lm.label) &&
+                         this.resolveAutoGroupFamily(lm.modelId, lm.label) === this.resolveAutoGroupFamily(model.modelId, model.label))
+                    );
+                    if (match?.weeklyLimit) {
+                        model.weeklyLimit = match.weeklyLimit;
+                    }
+                }
+            }
+            if (snapshot.groups) {
+                for (const group of snapshot.groups) {
+                    group.weeklyLimit = group.models.find(m => m.weeklyLimit)?.weeklyLimit;
+                }
+            }
         }
 
         return snapshot;
@@ -1592,9 +1641,100 @@ export class ReactorCore {
     }
 
     /**
+     * 从 RetrieveUserQuotaSummary 响应中提取周限额信息
+     */
+    private extractWeeklyLimits(weeklySummary?: UserQuotaSummaryResponse): Map<string, WeeklyLimitInfo> {
+        const result = new Map<string, WeeklyLimitInfo>();
+        if (!weeklySummary?.response?.groups) {
+            return result;
+        }
+
+        for (const group of weeklySummary.response.groups) {
+            const weeklyBucket = group.buckets?.find(b => b.window === 'weekly' || b.bucketId.includes('weekly'));
+            if (!weeklyBucket) {
+                continue;
+            }
+
+            const now = new Date();
+            let reset = new Date(weeklyBucket.resetTime || '');
+            let resetTimeValid = !Number.isNaN(reset.getTime());
+            if (!resetTimeValid) {
+                reset = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            }
+            const delta = reset.getTime() - now.getTime();
+            const remainingFraction = typeof weeklyBucket.remainingFraction === 'number' ? weeklyBucket.remainingFraction : 1;
+            const remainingPercentage = remainingFraction * 100;
+
+            const weeklyInfo: WeeklyLimitInfo = {
+                remainingFraction,
+                remainingPercentage,
+                resetTime: reset,
+                resetTimeDisplay: resetTimeValid ? this.formatIso(reset) : (t('common.unknown') || 'Unknown'),
+                timeUntilResetFormatted: resetTimeValid ? this.formatDelta(delta) : (t('common.unknown') || 'Unknown'),
+                description: weeklyBucket.description,
+            };
+
+            const groupNameLower = (group.displayName || '').toLowerCase();
+            const groupDescLower = (group.description || '').toLowerCase();
+
+            if (groupNameLower.includes('gemini') || weeklyBucket.bucketId.includes('gemini') || groupDescLower.includes('gemini')) {
+                result.set('gemini', weeklyInfo);
+            }
+            if (groupNameLower.includes('claude') || groupNameLower.includes('gpt') || weeklyBucket.bucketId.includes('3p') || groupDescLower.includes('claude')) {
+                result.set('3p', weeklyInfo);
+            }
+            result.set(weeklyBucket.bucketId, weeklyInfo);
+        }
+
+        return result;
+    }
+
+    /**
+     * 根据模型 ID 和标签解析周限额
+     */
+    private resolveModelWeeklyLimit(
+        modelId: string,
+        label: string,
+        weeklyLimits: Map<string, WeeklyLimitInfo>,
+    ): WeeklyLimitInfo | undefined {
+        if (weeklyLimits.size === 0) {
+            return undefined;
+        }
+
+        const idLower = modelId.toLowerCase();
+        const labelLower = label.toLowerCase();
+        const family = resolveAutoGroupFamily(modelId, label);
+
+        if (family?.startsWith('gemini') || idLower.includes('gemini') || labelLower.includes('gemini')) {
+            return weeklyLimits.get('gemini') || weeklyLimits.get('gemini-weekly');
+        }
+
+        if (
+            family === 'claude' ||
+            idLower.includes('claude') ||
+            labelLower.includes('claude') ||
+            idLower.includes('gpt') ||
+            labelLower.includes('gpt') ||
+            idLower.includes('sonnet') ||
+            labelLower.includes('sonnet') ||
+            idLower.includes('opus') ||
+            labelLower.includes('opus') ||
+            idLower.includes('oss') ||
+            labelLower.includes('oss')
+        ) {
+            return weeklyLimits.get('3p') || weeklyLimits.get('3p-weekly');
+        }
+
+        return undefined;
+    }
+
+    /**
      * 解码服务端响应
      */
-    private decodeSignal(data: ServerUserStatusResponse): QuotaSnapshot {
+    private decodeSignal(
+        data: ServerUserStatusResponse,
+        weeklySummary: UserQuotaSummaryResponse | undefined = this.lastWeeklyQuotaSummary,
+    ): QuotaSnapshot {
         // 验证响应数据结构
         if (!data || !data.userStatus) {
             // 如果服务端返回了错误消息，直接透传给用户，这不属于插件 Bug
@@ -1683,6 +1823,8 @@ export class ReactorCore {
             }
         }
 
+        const weeklyLimits = this.extractWeeklyLimits(weeklySummary);
+
         let models: ModelQuotaInfo[] = configs
             .filter((m): m is ClientModelConfig & { quotaInfo: NonNullable<ClientModelConfig['quotaInfo']> } => 
                 !!m.quotaInfo,
@@ -1697,6 +1839,12 @@ export class ReactorCore {
                     logger.warn(`[ReactorCore] Invalid resetTime for model ${m.label}: ${m.quotaInfo.resetTime}`);
                 }
                 const delta = reset.getTime() - now.getTime();
+
+                const weeklyLimit = this.resolveModelWeeklyLimit(
+                    m.modelOrAlias?.model || '',
+                    m.label,
+                    weeklyLimits,
+                );
 
                 return {
                     label: m.label,
@@ -1716,6 +1864,7 @@ export class ReactorCore {
                     isRecommended: m.isRecommended,
                     tagTitle: m.tagTitle,
                     supportedMimeTypes: m.supportedMimeTypes,
+                    weeklyLimit,
                 };
             });
 
@@ -1978,6 +2127,7 @@ export class ReactorCore {
                 // 计算组内所有模型的平均/最低配额
                 const minPercentage = Math.min(...groupModels.map(m => m.remainingPercentage ?? 0));
                 
+                const groupWeeklyLimit = groupModels.find(m => m.weeklyLimit)?.weeklyLimit;
                 groups.push({
                     groupId,
                     groupName,
@@ -1987,6 +2137,7 @@ export class ReactorCore {
                     resetTimeDisplay: firstModel.resetTimeDisplay,
                     timeUntilResetFormatted: firstModel.timeUntilResetFormatted,
                     isExhausted: groupModels.some(m => m.isExhausted),
+                    weeklyLimit: groupWeeklyLimit,
                 });
                 
                 groupIndex++;

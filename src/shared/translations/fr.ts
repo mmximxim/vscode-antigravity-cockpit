@@ -28,6 +28,7 @@ export const fr = {
     'dashboard.resetIn': 'Réinitialisation dans',
     'dashboard.resetTime': 'Heure de Réinitialisation',
     'dashboard.status': 'Statut',
+    'dashboard.weeklyLimit': 'Limite hebdomadaire',
     'dashboard.exhausted': 'Épuisé',
     'dashboard.active': 'Sain',
     'dashboard.warning': 'Avertissement',

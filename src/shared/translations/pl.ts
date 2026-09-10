@@ -28,6 +28,7 @@ export const pl = {
     'dashboard.resetIn': 'Reset za',
     'dashboard.resetTime': 'Czas Resetu',
     'dashboard.status': 'Status',
+    'dashboard.weeklyLimit': 'Limit tygodniowy',
     'dashboard.exhausted': 'Wyczerpane',
     'dashboard.active': 'Zdrowy',
     'dashboard.warning': 'Ostrzeżenie',

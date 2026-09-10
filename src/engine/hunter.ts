@@ -6,6 +6,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as https from 'https';
+import * as http from 'http';
 import * as process from 'process';
 import { WindowsStrategy, UnixStrategy } from './strategies';
 import { logger } from '../shared/log_service';
@@ -237,15 +238,52 @@ export class ProcessHunter {
     }
 
     /**
+     * 尝试从 Hub 服务端口提取 CSRF Token
+     */
+    private async fetchCsrfTokenFromHub(hubPort: number): Promise<string | null> {
+        return new Promise(resolve => {
+            const req = http.get(`http://127.0.0.1:${hubPort}`, { timeout: 2000 }, res => {
+                let html = '';
+                res.on('data', chunk => {
+                    html += chunk;
+                });
+                res.on('end', () => {
+                    const match = html.match(/"csrfToken":"([a-f0-9-]+)"/i);
+                    resolve(match ? match[1] : null);
+                });
+            });
+            req.on('error', () => resolve(null));
+            req.on('timeout', () => {
+                req.destroy();
+                resolve(null);
+            });
+        });
+    }
+
+    /**
      * 验证并建立连接
      */
     private async verifyAndConnect(info: ProcessInfo): Promise<EnvironmentScanResult | null> {
+        let token = info.csrfToken;
+        if (!token && info.extensionPort > 0) {
+            const hubToken = await this.fetchCsrfTokenFromHub(info.extensionPort);
+            if (hubToken) {
+                token = hubToken;
+                logger.info(`[ProcessHunter] Extracted CSRF token from hub port ${info.extensionPort}`);
+            }
+        }
+
+        if (!token) {
+            logger.warn(`[ProcessHunter] No CSRF token available for PID ${info.pid}`);
+            return null;
+        }
+
         const ports = await this.identifyPorts(info.pid);
         logger.debug(`Listening Ports: ${ports.join(', ')}`);
         this.lastDiagnostics.ports = ports;
 
         if (ports.length > 0) {
-            const validPort = await this.verifyConnection(ports, info.csrfToken);
+            const validPort = await this.verifyConnection(ports, token);
             this.lastDiagnostics.verified_port = validPort ?? null;
             this.lastDiagnostics.verification_success = Boolean(validPort);
 
@@ -254,7 +292,7 @@ export class ProcessHunter {
                 return {
                     extensionPort: info.extensionPort,
                     connectPort: validPort,
-                    csrfToken: info.csrfToken,
+                    csrfToken: token,
                 };
             }
         }

@@ -3762,10 +3762,65 @@ import { createAnnouncementModule } from './dashboard_announcements';
         return modelNameRow + capRows;
     }
 
+    function getWeeklyLimitDisplay(item) {
+        if (!item || !item.weeklyLimit) {
+            return {
+                text: '-',
+                color: 'var(--text-secondary)',
+                tooltip: '',
+                hasData: false,
+            };
+        }
+
+        const wl = item.weeklyLimit;
+        if (isDataMasked) {
+            return {
+                text: '***',
+                color: 'var(--text-secondary)',
+                tooltip: '',
+                hasData: true,
+            };
+        }
+
+        const pct = typeof wl.remainingPercentage === 'number'
+            ? wl.remainingPercentage
+            : (typeof wl.remainingFraction === 'number' ? wl.remainingFraction * 100 : undefined);
+
+        if (pct === undefined) {
+            return {
+                text: '-',
+                color: 'var(--text-secondary)',
+                tooltip: '',
+                hasData: false,
+            };
+        }
+
+        const color = getHealthColor(pct);
+        const countdown = wl.timeUntilResetFormatted;
+        const text = countdown && countdown !== '-'
+            ? `${pct.toFixed(2)}% (${countdown})`
+            : `${pct.toFixed(2)}%`;
+
+        let tooltip = wl.description || '';
+        if (wl.resetTimeDisplay && wl.resetTimeDisplay !== 'N/A') {
+            const resetPrefix = `${i18n['dashboard.resetTime'] || 'Reset Time'}: ${wl.resetTimeDisplay}`;
+            tooltip = tooltip ? `${resetPrefix}\n${tooltip}` : resetPrefix;
+        }
+
+        return {
+            text,
+            color,
+            tooltip,
+            hasData: true,
+        };
+    }
+
     function renderGroupCard(group, pinnedGroups) {
         const pct = group.remainingPercentage || 0;
         const color = getHealthColor(pct);
         const isPinned = pinnedGroups && pinnedGroups.includes(group.groupId);
+        const weeklyInfo = getWeeklyLimitDisplay(group);
+        const weeklyTooltipAttr = weeklyInfo.tooltip ? ` data-tooltip="${escapeHtml(weeklyInfo.tooltip)}"` : '';
 
         const card = document.createElement('div');
         const enterAnimClass = isInitialDashboardRender ? ' card-enter' : '';
@@ -3838,6 +3893,12 @@ import { createAnnouncementModule } from './dashboard_announcements';
                 <span>${escapeHtml(i18n['dashboard.status'] || 'Status')}</span>
                 <span class="info-value" style="color: ${color}">
                     ${getStatusText(pct)}
+                </span>
+            </div>
+            <div class="info-row weekly-limit-row">
+                <span>${escapeHtml(i18n['dashboard.weeklyLimit'] || 'Weekly Limit')}</span>
+                <span class="info-value weekly-limit-value"${weeklyTooltipAttr} style="color: ${weeklyInfo.color}">
+                    ${escapeHtml(weeklyInfo.text)}
                 </span>
             </div>
             <div class="group-models">
@@ -3915,6 +3976,23 @@ import { createAnnouncementModule } from './dashboard_announcements';
             }
         }
 
+        // 更新周限额
+        const weeklyInfo = getWeeklyLimitDisplay(group);
+        const weeklyValEl = card.querySelector('.weekly-limit-value');
+        if (weeklyValEl) {
+            if (weeklyValEl.textContent.trim() !== weeklyInfo.text.trim()) {
+                weeklyValEl.textContent = weeklyInfo.text;
+            }
+            if (weeklyValEl.style.color !== weeklyInfo.color) {
+                weeklyValEl.style.color = weeklyInfo.color;
+            }
+            if (weeklyInfo.tooltip) {
+                weeklyValEl.setAttribute('data-tooltip', weeklyInfo.tooltip);
+            } else {
+                weeklyValEl.removeAttribute('data-tooltip');
+            }
+        }
+
         // 更新 pin 开关
         const pinToggle = card.querySelector('.group-pin-toggle');
         if (pinToggle && pinToggle.checked !== Boolean(isPinned)) {
@@ -3959,6 +4037,8 @@ import { createAnnouncementModule } from './dashboard_announcements';
         const pct = model.remainingPercentage || 0;
         const color = getHealthColor(pct);
         const isPinned = pinnedModels.includes(model.modelId);
+        const weeklyInfo = getWeeklyLimitDisplay(model);
+        const weeklyTooltipAttr = weeklyInfo.tooltip ? ` data-tooltip="${escapeHtml(weeklyInfo.tooltip)}"` : '';
 
         // 获取自定义名称，如果没有则使用原始 label
         const displayName = (modelCustomNames && modelCustomNames[model.modelId]) || model.label;
@@ -4025,6 +4105,12 @@ import { createAnnouncementModule } from './dashboard_announcements';
                     ${getStatusText(pct)}
                 </span>
             </div>
+            <div class="info-row weekly-limit-row">
+                <span>${escapeHtml(i18n['dashboard.weeklyLimit'] || 'Weekly Limit')}</span>
+                <span class="info-value weekly-limit-value"${weeklyTooltipAttr} style="color: ${weeklyInfo.color}">
+                    ${escapeHtml(weeklyInfo.text)}
+                </span>
+            </div>
         `;
 
         // 绑定重命名按钮事件
@@ -4079,6 +4165,23 @@ import { createAnnouncementModule } from './dashboard_announcements';
             }
             if (infoValues[2].style.color !== color) {
                 infoValues[2].style.color = color;
+            }
+        }
+
+        // 更新周限额
+        const weeklyInfo = getWeeklyLimitDisplay(model);
+        const weeklyValEl = card.querySelector('.weekly-limit-value');
+        if (weeklyValEl) {
+            if (weeklyValEl.textContent.trim() !== weeklyInfo.text.trim()) {
+                weeklyValEl.textContent = weeklyInfo.text;
+            }
+            if (weeklyValEl.style.color !== weeklyInfo.color) {
+                weeklyValEl.style.color = weeklyInfo.color;
+            }
+            if (weeklyInfo.tooltip) {
+                weeklyValEl.setAttribute('data-tooltip', weeklyInfo.tooltip);
+            } else {
+                weeklyValEl.removeAttribute('data-tooltip');
             }
         }
 

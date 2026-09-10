@@ -28,6 +28,7 @@ export const de = {
     'dashboard.resetIn': 'Zurücksetzen in',
     'dashboard.resetTime': 'Zurücksetzzeit',
     'dashboard.status': 'Status',
+    'dashboard.weeklyLimit': 'Wöchentliches Limit',
     'dashboard.exhausted': 'Erschöpft',
     'dashboard.active': 'Gesund',
     'dashboard.warning': 'Warnung',

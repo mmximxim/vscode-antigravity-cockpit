@@ -47,6 +47,49 @@ export interface ModelQuotaInfo {
     tagTitle?: string;
     /** 支持的 MIME 类型映射 */
     supportedMimeTypes?: Record<string, boolean>;
+    /** 周限额信息 */
+    weeklyLimit?: WeeklyLimitInfo;
+}
+
+/** 周限额详情 */
+export interface WeeklyLimitInfo {
+    /** 剩余比例 (0-1) */
+    remainingFraction?: number;
+    /** 剩余百分比 (0-100) */
+    remainingPercentage?: number;
+    /** 重置时间字符串或 Date */
+    resetTime?: Date | string;
+    /** 格式化的重置倒计时 (例如 "21h 59m") */
+    timeUntilResetFormatted?: string;
+    /** 格式化的重置时间显示 (例如 "2026/09/11 17:43") */
+    resetTimeDisplay?: string;
+    /** 描述信息 */
+    description?: string;
+}
+
+/** 用户配额桶 (RetrieveUserQuotaSummary 响应) */
+export interface UserQuotaBucket {
+    bucketId: string;
+    displayName: string;
+    description?: string;
+    window?: string;
+    remainingFraction?: number;
+    resetTime?: string;
+}
+
+/** 用户配额分组 (RetrieveUserQuotaSummary 响应) */
+export interface UserQuotaSummaryGroup {
+    displayName?: string;
+    description?: string;
+    buckets?: UserQuotaBucket[];
+}
+
+/** 用户配额概要响应 (RetrieveUserQuotaSummary 响应) */
+export interface UserQuotaSummaryResponse {
+    response?: {
+        groups?: UserQuotaSummaryGroup[];
+        description?: string;
+    };
 }
 
 /** 配额分组 - 共享相同配额的模型集合 */
@@ -67,6 +110,8 @@ export interface QuotaGroup {
     timeUntilResetFormatted: string;
     /** 是否已耗尽 */
     isExhausted: boolean;
+    /** 周限额信息 */
+    weeklyLimit?: WeeklyLimitInfo;
 }
 
 /** 配额快照 */

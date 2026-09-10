@@ -386,6 +386,7 @@ export class CockpitHUD {
                 isRecommended: m.isRecommended,
                 tagTitle: m.tagTitle,
                 supportedMimeTypes: m.supportedMimeTypes,
+                weeklyLimit: m.weeklyLimit,
             })),
             allModels: snapshot.allModels?.map(m => ({
                 label: m.label,
@@ -398,6 +399,7 @@ export class CockpitHUD {
                 isRecommended: m.isRecommended,
                 tagTitle: m.tagTitle,
                 supportedMimeTypes: m.supportedMimeTypes,
+                weeklyLimit: m.weeklyLimit,
             })),
             groups: snapshot.groups?.map(g => ({
                 groupId: g.groupId,
@@ -406,6 +408,7 @@ export class CockpitHUD {
                 resetTimeDisplay: g.resetTimeDisplay,
                 timeUntilResetFormatted: g.timeUntilResetFormatted,
                 isExhausted: g.isExhausted,
+                weeklyLimit: g.weeklyLimit,
                 models: g.models.map(m => ({
                     label: m.label,
                     modelId: m.modelId,
@@ -414,6 +417,7 @@ export class CockpitHUD {
                     isRecommended: m.isRecommended,
                     tagTitle: m.tagTitle,
                     supportedMimeTypes: m.supportedMimeTypes,
+                    weeklyLimit: m.weeklyLimit,
                 })),
             })),
             // 本地账户邮箱（local 模式下使用远端 API 时）

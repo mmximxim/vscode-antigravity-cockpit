@@ -28,6 +28,7 @@ export const ko = {
     'dashboard.resetIn': '재설정까지',
     'dashboard.resetTime': '재설정 시간',
     'dashboard.status': '상태',
+    'dashboard.weeklyLimit': '주간 한도',
     'dashboard.exhausted': '소진됨',
     'dashboard.active': '정상',
     'dashboard.warning': '경고',

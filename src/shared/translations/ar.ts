@@ -30,6 +30,7 @@ export const ar = {
     'dashboard.resetIn': 'إعادة تعيين خلال',
     'dashboard.resetTime': 'وقت إعادة التعيين',
     'dashboard.status': 'الحالة',
+    'dashboard.weeklyLimit': 'الحد الأسبوعي',
     'dashboard.modelName': 'اسم النموذج',
     'dashboard.name': 'الاسم',
     'dashboard.remainingQuota': 'الحصة المتبقية',
