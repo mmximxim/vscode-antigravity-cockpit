@@ -43,9 +43,9 @@ export class WindowsStrategy implements PlatformStrategy {
      */
     getProcessListCommand(processName: string): string {
         const utf8Header = '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; ';
-        // 使用单引号包裹 Filter 参数，内部 name 值使用双单引号转义
+        // 使用单引号包裹 Filter 参数，内部 name 值使用双单引号转义，支持 language_server 和 agy
         // chcp 65001 >nul 确保 CMD 环境以 UTF-8 运行，避免乱码
-        return `chcp 65001 >nul && powershell -NoProfile -Command "${utf8Header}Get-CimInstance Win32_Process -Filter 'name=''${processName}''' | Select-Object ProcessId,CommandLine | ConvertTo-Json"`;
+        return `chcp 65001 >nul && powershell -NoProfile -Command "${utf8Header}Get-CimInstance Win32_Process -Filter 'name=''${processName}'' or name=''agy.exe''' | Select-Object ProcessId,CommandLine | ConvertTo-Json"`;
     }
 
     /**
@@ -251,7 +251,7 @@ export class UnixStrategy implements PlatformStrategy {
         // -ww: 无限宽度
         // -eo: 自定义输出格式
         // pid,ppid,args: 进程ID、父进程ID、完整命令行
-        return `ps -ww -eo pid,ppid,args | grep "${processName}" | grep -v grep`;
+        return `ps -ww -eo pid,ppid,args | grep -E "(${processName}|agy)" | grep -v grep`;
     }
 
     parseProcessInfo(stdout: string): ProcessInfo[] {

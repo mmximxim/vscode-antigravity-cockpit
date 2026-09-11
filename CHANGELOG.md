@@ -10,6 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.69] - 2026-09-11
+
+### Fixed & Improved
+- **Fix Connection and Value Retrieval for Weekly Limit under agy and Hub Architecture**:
+  - Added support for detecting `agy` binary in process scan targets across platforms;
+  - Enhanced CSRF token extraction to support HTTPS/HTTP listening ports parsing `window.__APP_CONFIG__`;
+  - Optimized local port verification to reliably connect with Antigravity Language Server and display weekly limit values.
+
 ## [2.1.68] - 2026-09-11
 
 ### Fixed & Improved

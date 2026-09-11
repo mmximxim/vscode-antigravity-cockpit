@@ -96,10 +96,14 @@ async function main() {
     const owner = 'mmximxim';
     const repo = 'vscode-antigravity-cockpit';
     const tagName = `v${version}`;
-    const releaseName = `v${version}: 完善卡片周限额显示与多模式自动丰富`;
+    const releaseName = `v${version}: 修复 agy 与 Hub 架构下的周限额连接与数值获取`;
     const releaseBody = `## 🚀 Antigravity Cockpit v${version}
 
 ### ✨ 修复与优化
+- **修复 agy 与 Hub 架构下的周限额连接与数值获取**：
+  - 适配新版 \`agy\` 进程，将其纳入系统进程扫描目标范围；
+  - 增强 CSRF Token 提取能力，支持同时从 HTTPS/HTTP 监听端口解析 \`window.__APP_CONFIG__\` 中的 CSRF Token；
+  - 优化本地连接判定逻辑，确保与 Antigravity Language Server 通信正常，恢复周限额实时数值获取与显示。
 - **周限额在授权与缓存模式下的丰富与显示优化**：
   - 增强授权模式与 API 缓存模式下的周限额自动挂载，保证在本地连接扫描完成或读取本地缓存时，模型与分组均能秒级获取并显示周限额；
   - 进程检测连接建立（\`engage\`）后，立即异步拉取最新周限额并推送 UI 刷新；

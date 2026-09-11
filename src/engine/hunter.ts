@@ -238,26 +238,40 @@ export class ProcessHunter {
     }
 
     /**
-     * 尝试从 Hub 服务端口提取 CSRF Token
+     * 尝试从指定端口提取 CSRF Token (支持 HTTPS 与 HTTP)
      */
-    private async fetchCsrfTokenFromHub(hubPort: number): Promise<string | null> {
-        return new Promise(resolve => {
-            const req = http.get(`http://127.0.0.1:${hubPort}`, { timeout: 2000 }, res => {
-                let html = '';
-                res.on('data', chunk => {
-                    html += chunk;
+    private async fetchCsrfTokenFromPort(port: number): Promise<string | null> {
+        for (const isHttps of [true, false]) {
+            const mod = isHttps ? https : http;
+            const token = await new Promise<string | null>(resolve => {
+                const req = mod.get({
+                    hostname: '127.0.0.1',
+                    port,
+                    path: '/',
+                    rejectUnauthorized: false,
+                    timeout: 2000,
+                    agent: false,
+                }, res => {
+                    let html = '';
+                    res.on('data', chunk => {
+                        html += chunk;
+                    });
+                    res.on('end', () => {
+                        const match = html.match(/"csrfToken":"([a-f0-9-]+)"/i);
+                        resolve(match ? match[1] : null);
+                    });
                 });
-                res.on('end', () => {
-                    const match = html.match(/"csrfToken":"([a-f0-9-]+)"/i);
-                    resolve(match ? match[1] : null);
+                req.on('error', () => resolve(null));
+                req.on('timeout', () => {
+                    req.destroy();
+                    resolve(null);
                 });
             });
-            req.on('error', () => resolve(null));
-            req.on('timeout', () => {
-                req.destroy();
-                resolve(null);
-            });
-        });
+            if (token) {
+                return token;
+            }
+        }
+        return null;
     }
 
     /**
@@ -265,11 +279,29 @@ export class ProcessHunter {
      */
     private async verifyAndConnect(info: ProcessInfo): Promise<EnvironmentScanResult | null> {
         let token = info.csrfToken;
-        if (!token && info.extensionPort > 0) {
-            const hubToken = await this.fetchCsrfTokenFromHub(info.extensionPort);
-            if (hubToken) {
-                token = hubToken;
-                logger.info(`[ProcessHunter] Extracted CSRF token from hub port ${info.extensionPort}`);
+
+        // 获取进程监听的所有端口
+        const ports = await this.identifyPorts(info.pid);
+        logger.debug(`Listening Ports for PID ${info.pid}: ${ports.join(', ')}`);
+        this.lastDiagnostics.ports = ports;
+
+        // 若没有命令行 CSRF Token，尝试从所有候选端口中提取
+        if (!token) {
+            const candidatePorts = new Set<number>();
+            if (info.extensionPort > 0) {
+                candidatePorts.add(info.extensionPort);
+            }
+            for (const p of ports) {
+                candidatePorts.add(p);
+            }
+
+            for (const p of candidatePorts) {
+                const extracted = await this.fetchCsrfTokenFromPort(p);
+                if (extracted) {
+                    token = extracted;
+                    logger.info(`[ProcessHunter] Extracted CSRF token from port ${p} for PID ${info.pid}`);
+                    break;
+                }
             }
         }
 
@@ -277,10 +309,6 @@ export class ProcessHunter {
             logger.warn(`[ProcessHunter] No CSRF token available for PID ${info.pid}`);
             return null;
         }
-
-        const ports = await this.identifyPorts(info.pid);
-        logger.debug(`Listening Ports: ${ports.join(', ')}`);
-        this.lastDiagnostics.ports = ports;
 
         if (ports.length > 0) {
             const validPort = await this.verifyConnection(ports, token);
@@ -290,7 +318,7 @@ export class ProcessHunter {
             if (validPort) {
                 logger.info(`✅ Connection Logic Verified: ${validPort}`);
                 return {
-                    extensionPort: info.extensionPort,
+                    extensionPort: info.extensionPort || validPort,
                     connectPort: validPort,
                     csrfToken: token,
                 };
