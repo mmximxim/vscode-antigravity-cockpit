@@ -10,6 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.71] - 2026-09-11
+
+### Fixed & Improved
+- **Decouple Weekly Limit Display from Account Data Masking**:
+  - Decoupled weekly quota telemetry from the profile plan details data masking toggle (`***`);
+  - Weekly limit percentages and countdowns now remain permanently visible on model and group cards regardless of account privacy masking settings.
+
 ## [2.1.70] - 2026-09-11
 
 ### Fixed & Improved

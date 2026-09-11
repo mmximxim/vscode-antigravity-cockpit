@@ -3775,14 +3775,6 @@ import { createAnnouncementModule } from './dashboard_announcements';
                 hasData: false,
             };
         }
-        if (isDataMasked) {
-            return {
-                text: '***',
-                color: 'var(--text-secondary)',
-                tooltip: '',
-                hasData: true,
-            };
-        }
 
         const pct = typeof wl.remainingPercentage === 'number'
             ? wl.remainingPercentage
