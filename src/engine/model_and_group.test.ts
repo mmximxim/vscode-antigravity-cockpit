@@ -4,7 +4,7 @@ import {
     isSelectableModel,
 } from '../shared/recommended_models';
 import { ReactorCore } from './reactor';
-import { ModelQuotaInfo } from '../shared/types';
+import { ModelQuotaInfo, QuotaSnapshot } from '../shared/types';
 import { configService } from '../shared/config_service';
 
 describe('Gemini 3.8 Flash and Grouping Verification', () => {
@@ -250,6 +250,115 @@ describe('Gemini 3.8 Flash and Grouping Verification', () => {
         const claudeModel = snapshot.models.find((m: ModelQuotaInfo) => m.label.includes('Claude'));
         expect(claudeModel?.weeklyLimit).toBeDefined();
         expect(claudeModel?.weeklyLimit?.remainingPercentage).toBeCloseTo(100);
+    });
+
+    it('should enrich snapshot models and groups using attachWeeklyLimitsToSnapshot', () => {
+        const reactor = new ReactorCore();
+        const mockWeeklySummary = {
+            response: {
+                groups: [
+                    {
+                        displayName: 'Gemini models',
+                        buckets: [
+                            {
+                                bucketId: 'gemini-weekly',
+                                displayName: 'Weekly Limit Remaining',
+                                window: 'weekly',
+                                remainingFraction: 0.56,
+                                resetTime: '2026-09-17T12:00:00Z',
+                            },
+                        ],
+                    },
+                    {
+                        displayName: 'Claude and GPT models',
+                        buckets: [
+                            {
+                                bucketId: '3p-weekly',
+                                displayName: 'Weekly Limit Remaining',
+                                window: 'weekly',
+                                remainingFraction: 0.95,
+                                resetTime: '2026-09-17T12:00:00Z',
+                            },
+                        ],
+                    },
+                ],
+            },
+        };
+
+        const snapshot: QuotaSnapshot = {
+            timestamp: new Date(),
+            isConnected: true,
+            models: [
+                {
+                    label: 'Gemini 3.8 Flash',
+                    modelId: 'gemini-3.8-flash',
+                    isExhausted: false,
+                    resetTime: new Date(),
+                    resetTimeDisplay: '1h',
+                    timeUntilReset: 3600000,
+                    timeUntilResetFormatted: '1h',
+                    resetTimeValid: true,
+                },
+                {
+                    label: 'Claude Sonnet 4.6 (Thinking)',
+                    modelId: 'claude-sonnet-4-6',
+                    isExhausted: false,
+                    resetTime: new Date(),
+                    resetTimeDisplay: '5h',
+                    timeUntilReset: 18000000,
+                    timeUntilResetFormatted: '5h',
+                    resetTimeValid: true,
+                },
+            ],
+            groups: [
+                {
+                    groupId: 'group-gemini',
+                    groupName: 'Gemini Flash',
+                    isExhausted: false,
+                    models: [
+                        {
+                            label: 'Gemini 3.8 Flash',
+                            modelId: 'gemini-3.8-flash',
+                            isExhausted: false,
+                            resetTime: new Date(),
+                            resetTimeDisplay: '1h',
+                            timeUntilReset: 3600000,
+                            timeUntilResetFormatted: '1h',
+                            resetTimeValid: true,
+                        },
+                    ],
+                    remainingPercentage: 56,
+                    resetTime: new Date(),
+                    resetTimeDisplay: '1h',
+                    timeUntilResetFormatted: '1h',
+                },
+                {
+                    groupId: 'group-claude',
+                    groupName: 'Claude',
+                    isExhausted: false,
+                    models: [],
+                    remainingPercentage: 100,
+                    resetTime: new Date(),
+                    resetTimeDisplay: '5h',
+                    timeUntilResetFormatted: '5h',
+                },
+            ],
+        };
+
+        reactor.attachWeeklyLimitsToSnapshot(snapshot, mockWeeklySummary as any);
+
+        expect(snapshot.models[0].weeklyLimit).toBeDefined();
+        expect(snapshot.models[0].weeklyLimit?.remainingPercentage).toBeCloseTo(56);
+        expect(snapshot.models[1].weeklyLimit).toBeDefined();
+        expect(snapshot.models[1].weeklyLimit?.remainingPercentage).toBeCloseTo(95);
+
+        // Group 0 resolved from model
+        expect(snapshot.groups![0].weeklyLimit).toBeDefined();
+        expect(snapshot.groups![0].weeklyLimit?.remainingPercentage).toBeCloseTo(56);
+
+        // Group 1 resolved from groupName fallback ('Claude')
+        expect(snapshot.groups![1].weeklyLimit).toBeDefined();
+        expect(snapshot.groups![1].weeklyLimit?.remainingPercentage).toBeCloseTo(95);
     });
 });
 

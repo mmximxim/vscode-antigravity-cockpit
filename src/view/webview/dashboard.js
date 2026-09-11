@@ -3763,7 +3763,11 @@ import { createAnnouncementModule } from './dashboard_announcements';
     }
 
     function getWeeklyLimitDisplay(item) {
-        if (!item || !item.weeklyLimit) {
+        let wl = item && item.weeklyLimit;
+        if (!wl && item && Array.isArray(item.models)) {
+            wl = item.models.find(m => m && m.weeklyLimit)?.weeklyLimit;
+        }
+        if (!wl) {
             return {
                 text: '-',
                 color: 'var(--text-secondary)',
@@ -3771,8 +3775,6 @@ import { createAnnouncementModule } from './dashboard_announcements';
                 hasData: false,
             };
         }
-
-        const wl = item.weeklyLimit;
         if (isDataMasked) {
             return {
                 text: '***',
@@ -3978,7 +3980,20 @@ import { createAnnouncementModule } from './dashboard_announcements';
 
         // 更新周限额
         const weeklyInfo = getWeeklyLimitDisplay(group);
-        const weeklyValEl = card.querySelector('.weekly-limit-value');
+        let weeklyValEl = card.querySelector('.weekly-limit-value');
+        if (!weeklyValEl) {
+            const rows = card.querySelectorAll('.info-row');
+            if (rows.length >= 3) {
+                const weeklyRow = document.createElement('div');
+                weeklyRow.className = 'info-row weekly-limit-row';
+                weeklyRow.innerHTML = `
+                    <span>${escapeHtml(i18n['dashboard.weeklyLimit'] || 'Weekly Limit')}</span>
+                    <span class="info-value weekly-limit-value"></span>
+                `;
+                rows[2].parentNode.insertBefore(weeklyRow, rows[2].nextSibling);
+                weeklyValEl = weeklyRow.querySelector('.weekly-limit-value');
+            }
+        }
         if (weeklyValEl) {
             if (weeklyValEl.textContent.trim() !== weeklyInfo.text.trim()) {
                 weeklyValEl.textContent = weeklyInfo.text;
@@ -4170,7 +4185,20 @@ import { createAnnouncementModule } from './dashboard_announcements';
 
         // 更新周限额
         const weeklyInfo = getWeeklyLimitDisplay(model);
-        const weeklyValEl = card.querySelector('.weekly-limit-value');
+        let weeklyValEl = card.querySelector('.weekly-limit-value');
+        if (!weeklyValEl) {
+            const rows = card.querySelectorAll('.info-row');
+            if (rows.length >= 3) {
+                const weeklyRow = document.createElement('div');
+                weeklyRow.className = 'info-row weekly-limit-row';
+                weeklyRow.innerHTML = `
+                    <span>${escapeHtml(i18n['dashboard.weeklyLimit'] || 'Weekly Limit')}</span>
+                    <span class="info-value weekly-limit-value"></span>
+                `;
+                rows[2].parentNode.insertBefore(weeklyRow, rows[2].nextSibling);
+                weeklyValEl = weeklyRow.querySelector('.weekly-limit-value');
+            }
+        }
         if (weeklyValEl) {
             if (weeklyValEl.textContent.trim() !== weeklyInfo.text.trim()) {
                 weeklyValEl.textContent = weeklyInfo.text;

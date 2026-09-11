@@ -315,10 +315,22 @@ export class ReactorCore {
      * 启动反应堆，设置连接参数
      */
     engage(port: number, token: string, diagnostics?: ScanDiagnostics): void {
+        const wasEngaged = this.port === port && this.token === token;
         this.port = port;
         this.token = token;
         this.lastScanDiagnostics = diagnostics;
         logger.info(`Reactor Engaged: :${port}`);
+
+        if (!wasEngaged) {
+            this.fetchWeeklyQuotaSummary().then(summary => {
+                if (summary && this.lastSnapshot) {
+                    this.attachWeeklyLimitsToSnapshot(this.lastSnapshot, summary);
+                    this.publishTelemetry(this.lastSnapshot, this.lastSnapshotSource);
+                }
+            }).catch(err => {
+                logger.debug(`[ReactorCore] Post-engage weekly quota fetch skipped: ${err}`);
+            });
+        }
     }
 
     /**
@@ -838,22 +850,28 @@ export class ReactorCore {
         this.lastRawResponse = raw; // 缓存原始响应
         this.lastLocalFetchedAt = Date.now();
 
-        let weeklySummary: UserQuotaSummaryResponse | undefined;
+        const weeklySummary = await this.fetchWeeklyQuotaSummary();
+        return this.decodeSignal(raw, weeklySummary);
+    }
+
+    public async fetchWeeklyQuotaSummary(): Promise<UserQuotaSummaryResponse | undefined> {
+        if (!this.port || !this.token) {
+            return this.lastWeeklyQuotaSummary;
+        }
         try {
-            weeklySummary = await this.transmit<UserQuotaSummaryResponse>(
+            const weeklySummary = await this.transmit<UserQuotaSummaryResponse>(
                 API_ENDPOINTS.RETRIEVE_USER_QUOTA_SUMMARY,
                 {},
             );
             if (weeklySummary?.response?.groups && weeklySummary.response.groups.length > 0) {
                 this.lastWeeklyQuotaSummary = weeklySummary;
+                return weeklySummary;
             }
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
             logger.debug(`[ReactorCore] RetrieveUserQuotaSummary failed: ${err.message}`);
-            weeklySummary = this.lastWeeklyQuotaSummary;
         }
-
-        return this.decodeSignal(raw, weeklySummary);
+        return this.lastWeeklyQuotaSummary;
     }
 
     private async tryFetchLocalTelemetry(): Promise<QuotaSnapshot | null> {
@@ -1066,6 +1084,12 @@ export class ReactorCore {
                 }
             }
         }
+
+        let weeklySummary = this.lastWeeklyQuotaSummary;
+        if (!weeklySummary && this.port && this.token) {
+            weeklySummary = await this.fetchWeeklyQuotaSummary();
+        }
+        this.attachWeeklyLimitsToSnapshot(snapshot, weeklySummary);
 
         return snapshot;
     }
@@ -1729,6 +1753,58 @@ export class ReactorCore {
     }
 
     /**
+     * 将周限额数据附加到快照的所有模型和分组中
+     */
+    public attachWeeklyLimitsToSnapshot(
+        snapshot: QuotaSnapshot,
+        weeklySummary: UserQuotaSummaryResponse | undefined = this.lastWeeklyQuotaSummary,
+    ): void {
+        const summary = weeklySummary || this.lastWeeklyQuotaSummary;
+        if (!summary) {
+            return;
+        }
+        const weeklyLimits = this.extractWeeklyLimits(summary);
+        if (weeklyLimits.size === 0) {
+            return;
+        }
+
+        const enrichModel = (model: ModelQuotaInfo) => {
+            if (!model.weeklyLimit) {
+                model.weeklyLimit = this.resolveModelWeeklyLimit(
+                    model.modelId,
+                    model.label,
+                    weeklyLimits,
+                );
+            }
+        };
+
+        if (snapshot.models) {
+            for (const model of snapshot.models) {
+                enrichModel(model);
+            }
+        }
+        if (snapshot.allModels) {
+            for (const model of snapshot.allModels) {
+                enrichModel(model);
+            }
+        }
+        if (snapshot.groups) {
+            for (const group of snapshot.groups) {
+                if (!group.weeklyLimit) {
+                    group.weeklyLimit = group.models.find(m => m.weeklyLimit)?.weeklyLimit;
+                }
+                if (!group.weeklyLimit && group.groupName) {
+                    group.weeklyLimit = this.resolveModelWeeklyLimit(
+                        group.groupId || group.groupName,
+                        group.groupName,
+                        weeklyLimits,
+                    );
+                }
+            }
+        }
+    }
+
+    /**
      * 解码服务端响应
      */
     private decodeSignal(
@@ -2185,6 +2261,7 @@ export class ReactorCore {
         if (updatedAt) {
             snapshot.timestamp = new Date(updatedAt);
         }
+        this.attachWeeklyLimitsToSnapshot(snapshot);
         return snapshot;
     }
 

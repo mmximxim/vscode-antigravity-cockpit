@@ -10,6 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.68] - 2026-09-11
+
+### Fixed & Improved
+- **Enrich and Display Weekly Limit in Authorized and Cached Modes**:
+  - Automatically attach weekly limits in authorized quota mode and API cache mode so models and groups receive and display weekly limits immediately;
+  - Trigger instant asynchronous weekly quota refresh and UI telemetry push upon local process connection (`engage`);
+  - Add DOM self-healing to webview cards to dynamically ensure the weekly limit row is present.
+
 ## [2.1.67] - 2026-09-10
 
 ### Added & Improved

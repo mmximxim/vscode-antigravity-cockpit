@@ -548,6 +548,7 @@ async function bootSystems(): Promise<void> {
                 if (info) {
                     reactor.engage(info.connectPort, info.csrfToken, hunter.getLastDiagnostics());
                     logger.info('Local Antigravity connection detected in authorized mode');
+                    reactor.syncTelemetry(true);
                 }
             })
             .catch(err => {

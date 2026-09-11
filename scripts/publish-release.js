@@ -96,10 +96,14 @@ async function main() {
     const owner = 'mmximxim';
     const repo = 'vscode-antigravity-cockpit';
     const tagName = `v${version}`;
-    const releaseName = `v${version}: 新增卡片周限额显示，对齐官方模型配额机制`;
+    const releaseName = `v${version}: 完善卡片周限额显示与多模式自动丰富`;
     const releaseBody = `## 🚀 Antigravity Cockpit v${version}
 
-### ✨ 新特性与优化
+### ✨ 修复与优化
+- **周限额在授权与缓存模式下的丰富与显示优化**：
+  - 增强授权模式与 API 缓存模式下的周限额自动挂载，保证在本地连接扫描完成或读取本地缓存时，模型与分组均能秒级获取并显示周限额；
+  - 进程检测连接建立（\`engage\`）后，立即异步拉取最新周限额并推送 UI 刷新；
+  - Webview 卡片更新增加 DOM 节点自愈机制，防止卡片复用时缺少周限额行。
 - **新增卡片周限额显示**：
   - 在仪表盘分组卡片和模型卡片的状态行正下方新增“周限额”行，展示当前周限额剩余比例与重置倒计时（例如 \`28.00% (21h 59m)\`），并提供重置具体时间与说明的悬浮提示；
   - 对齐 Antigravity 官方 Models 双限额架构，通过 \`RetrieveUserQuotaSummary\` 接口实时同步 Gemini 与 3P（Claude/GPT）模型的周限额配额池；
