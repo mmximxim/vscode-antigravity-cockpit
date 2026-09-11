@@ -63,6 +63,80 @@ const MAX_AUTO_RETRY = 3;
 const AUTO_RETRY_DELAY_MS = 5000;
 const OFFICIAL_ANTIGRAVITY_EXTENSION_ID = 'google.antigravity';
 
+// 自适应后台本地进程扫描器状态
+let backgroundScanTimer: NodeJS.Timeout | null = null;
+let isBackgroundScanning = false;
+let backgroundScanAttemptCount = 0;
+
+/**
+ * 执行一次本地进程扫描并连接
+ * @param force 是否强制重扫
+ */
+async function scanAndEngageLocalProcess(force: boolean = false): Promise<boolean> {
+    if (isBackgroundScanning) {
+        return false;
+    }
+    if (reactor?.isEngaged && !force) {
+        return true;
+    }
+
+    isBackgroundScanning = true;
+    try {
+        const info = await hunter.scanEnvironment(1, false);
+        if (info) {
+            reactor.engage(info.connectPort, info.csrfToken, hunter.getLastDiagnostics());
+            logger.info(`[LocalScanner] Local Antigravity connected on port ${info.connectPort}`);
+            return true;
+        }
+    } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        logger.debug(`[LocalScanner] Scan attempt failed: ${error.message}`);
+    } finally {
+        isBackgroundScanning = false;
+    }
+    return false;
+}
+
+/**
+ * 启动自适应后台进程扫描器
+ * 启动初期高频重试（前 15 次每 2 秒一次，覆盖启动后约 30 秒窗口），以便捕获稍后启动的 agy/language_server
+ * 成功连接后降低频率至 60 秒长效保活，未连接时每 30 秒保持探测
+ */
+function startAdaptiveLocalScanner(): void {
+    if (backgroundScanTimer) {
+        clearTimeout(backgroundScanTimer);
+        backgroundScanTimer = null;
+    }
+    backgroundScanAttemptCount = 0;
+
+    const scheduleNext = (delayMs: number) => {
+        backgroundScanTimer = setTimeout(async () => {
+            backgroundScanTimer = null;
+            backgroundScanAttemptCount++;
+
+            const connected = await scanAndEngageLocalProcess();
+            if (connected) {
+                if (!reactor.hasWeeklyLimit) {
+                    reactor.syncTelemetry(true);
+                }
+                scheduleNext(60000);
+            } else {
+                const nextDelay = backgroundScanAttemptCount < 15 ? 2000 : 30000;
+                scheduleNext(nextDelay);
+            }
+        }, delayMs);
+    };
+
+    scheduleNext(100);
+}
+
+function stopAdaptiveLocalScanner(): void {
+    if (backgroundScanTimer) {
+        clearTimeout(backgroundScanTimer);
+        backgroundScanTimer = null;
+    }
+}
+
 /**
  * 扩展激活入口
  */
@@ -142,6 +216,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // 初始化核心模块
     hunter = new ProcessHunter();
     reactor = new ReactorCore();
+    reactor.setLocalProcessScanner(() => scanAndEngageLocalProcess(false));
+    context.subscriptions.push({ dispose: () => stopAdaptiveLocalScanner() });
     accountsRefreshService = new AccountsRefreshService(reactor);
     hud = new CockpitHUD(context.extensionUri, context, accountsRefreshService);
     quickPickView = new QuickPickView();
@@ -538,23 +614,12 @@ async function bootSystems(): Promise<void> {
 
     const quotaSource = configService.getConfig().quotaSource;
     if (quotaSource === 'authorized') {
-        logger.info('Authorized quota source active, starting reactor with background local scan');
+        logger.info('Authorized quota source active, starting reactor with adaptive local scan');
         reactor.startReactor(configService.getRefreshIntervalMs());
         systemOnline = true;
         autoRetryCount = 0;
         statusBar.setLoading();
-        hunter.scanEnvironment(1)
-            .then(info => {
-                if (info) {
-                    reactor.engage(info.connectPort, info.csrfToken, hunter.getLastDiagnostics());
-                    logger.info('Local Antigravity connection detected in authorized mode');
-                    reactor.syncTelemetry(true);
-                }
-            })
-            .catch(err => {
-                const error = err instanceof Error ? err : new Error(String(err));
-                logger.debug(`Background local scan skipped: ${error.message}`);
-            });
+        startAdaptiveLocalScanner();
         return;
     }
 
@@ -669,6 +734,7 @@ export async function deactivate(): Promise<void> {
     cockpitToolsWs.removeAllListeners();
     cockpitToolsSyncEvents.removeAllListeners();
 
+    stopAdaptiveLocalScanner();
     autoTriggerController.dispose();
     statusBar?.dispose();
     reactor?.shutdown();

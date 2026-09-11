@@ -360,5 +360,49 @@ describe('Gemini 3.8 Flash and Grouping Verification', () => {
         expect(snapshot.groups![1].weeklyLimit).toBeDefined();
         expect(snapshot.groups![1].weeklyLimit?.remainingPercentage).toBeCloseTo(95);
     });
+
+    test('should manage isEngaged, hasWeeklyLimit, and invoke localProcessScanner on demand', async () => {
+        const reactor = new ReactorCore();
+        expect(reactor.isEngaged).toBe(false);
+        expect(reactor.hasWeeklyLimit).toBe(false);
+
+        const mockWeeklyData = {
+            response: {
+                groups: [
+                    {
+                        displayName: 'Gemini Models',
+                        buckets: [
+                            {
+                                bucketId: 'gemini-weekly',
+                                window: 'weekly',
+                                remainingFraction: 0.9,
+                            },
+                        ],
+                    },
+                ],
+            },
+        };
+
+        (reactor as any).transmit = jest.fn().mockResolvedValue(mockWeeklyData);
+
+        let scannerCalled = false;
+        reactor.setLocalProcessScanner(async () => {
+            scannerCalled = true;
+            reactor.engage(12345, 'test-csrf-token');
+            return true;
+        });
+
+        // Trigger fetchWeeklyQuotaSummary when not yet engaged
+        const summary = await reactor.fetchWeeklyQuotaSummary();
+        expect(scannerCalled).toBe(true);
+        expect(reactor.isEngaged).toBe(true);
+        expect(reactor.hasWeeklyLimit).toBe(true);
+        expect(summary?.response?.groups?.length).toBe(1);
+
+        // Test disconnection self-healing
+        (reactor as any).transmit = jest.fn().mockRejectedValue(new Error('Connection Failed: ECONNREFUSED 127.0.0.1:12345'));
+        await reactor.fetchWeeklyQuotaSummary(true);
+        expect(reactor.isEngaged).toBe(false);
+    });
 });
 

@@ -55,9 +55,14 @@ export class ProcessHunter {
     /**
      * 扫描环境，查找 Antigravity 进程
      * @param maxAttempts 最大尝试次数（默认 3 次）
+     * @param runDiagOnFailure 失败时是否执行耗时诊断（后台巡检探测时应设为 false 避免刷屏与耗时）
      */
-    async scanEnvironment(maxAttempts: number = 3): Promise<EnvironmentScanResult | null> {
-        logger.info(`Scanning environment, max attempts: ${maxAttempts}`);
+    async scanEnvironment(maxAttempts: number = 3, runDiagOnFailure: boolean = true): Promise<EnvironmentScanResult | null> {
+        if (runDiagOnFailure) {
+            logger.info(`Scanning environment, max attempts: ${maxAttempts}`);
+        } else {
+            logger.debug(`Scanning environment (background probe), max attempts: ${maxAttempts}`);
+        }
 
         // 第一阶段：按进程名查找
         const resultByName = await this.scanByProcessName(maxAttempts);
@@ -66,14 +71,20 @@ export class ProcessHunter {
         }
 
         // 第二阶段：按关键字查找（备用方案）
-        logger.info('Process name search failed, trying keyword search (csrf_token)...');
+        if (runDiagOnFailure) {
+            logger.info('Process name search failed, trying keyword search (csrf_token)...');
+        } else {
+            logger.debug('Process name search failed, trying keyword search (csrf_token)...');
+        }
         const resultByKeyword = await this.scanByKeyword();
         if (resultByKeyword) {
             return resultByKeyword;
         }
 
-        // 所有方法都失败了，执行诊断
-        await this.runDiagnostics();
+        // 所有方法都失败了，仅在非静默模式下执行耗时诊断
+        if (runDiagOnFailure) {
+            await this.runDiagnostics();
+        }
 
         return null;
     }
@@ -310,8 +321,13 @@ export class ProcessHunter {
             return null;
         }
 
-        if (ports.length > 0) {
-            const validPort = await this.verifyConnection(ports, token);
+        const candidatePorts = new Set<number>(ports);
+        if (info.extensionPort > 0) {
+            candidatePorts.add(info.extensionPort);
+        }
+
+        if (candidatePorts.size > 0) {
+            const validPort = await this.verifyConnection(Array.from(candidatePorts), token);
             this.lastDiagnostics.verified_port = validPort ?? null;
             this.lastDiagnostics.verification_success = Boolean(validPort);
 
@@ -427,7 +443,7 @@ export class ProcessHunter {
                     'Connect-Protocol-Version': '1',
                 },
                 rejectUnauthorized: false,
-                timeout: TIMING.PROCESS_CMD_TIMEOUT_MS,
+                timeout: 3000,
                 agent: false, // 绕过代理，直接连接 localhost
             };
 

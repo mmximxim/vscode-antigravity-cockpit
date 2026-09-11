@@ -96,24 +96,19 @@ async function main() {
     const owner = 'mmximxim';
     const repo = 'vscode-antigravity-cockpit';
     const tagName = `v${version}`;
-    const releaseName = `v${version}: 修复 agy 与 Hub 架构下的周限额连接与数值获取`;
+    const releaseName = `v${version}: 增强后台自适应扫描以解决启动时序导致周限额无法获取的问题`;
     const releaseBody = `## 🚀 Antigravity Cockpit v${version}
 
 ### ✨ 修复与优化
-- **修复 agy 与 Hub 架构下的周限额连接与数值获取**：
-  - 适配新版 \`agy\` 进程，将其纳入系统进程扫描目标范围；
-  - 增强 CSRF Token 提取能力，支持同时从 HTTPS/HTTP 监听端口解析 \`window.__APP_CONFIG__\` 中的 CSRF Token；
-  - 优化本地连接判定逻辑，确保与 Antigravity Language Server 通信正常，恢复周限额实时数值获取与显示。
-- **周限额在授权与缓存模式下的丰富与显示优化**：
-  - 增强授权模式与 API 缓存模式下的周限额自动挂载，保证在本地连接扫描完成或读取本地缓存时，模型与分组均能秒级获取并显示周限额；
-  - 进程检测连接建立（\`engage\`）后，立即异步拉取最新周限额并推送 UI 刷新；
-  - Webview 卡片更新增加 DOM 节点自愈机制，防止卡片复用时缺少周限额行。
-- **新增卡片周限额显示**：
-  - 在仪表盘分组卡片和模型卡片的状态行正下方新增“周限额”行，展示当前周限额剩余比例与重置倒计时（例如 \`28.00% (21h 59m)\`），并提供重置具体时间与说明的悬浮提示；
-  - 对齐 Antigravity 官方 Models 双限额架构，通过 \`RetrieveUserQuotaSummary\` 接口实时同步 Gemini 与 3P（Claude/GPT）模型的周限额配额池；
-  - 采用基于 \`.weekly-limit-value\` 的就地增量 DOM 更新，刷新时无需重绘卡片，保持流畅与低资源占用。
-- **自适应进程检测**：
-  - 优化 Antigravity 进程与 Hub 服务检测逻辑，增强本地连接与配额同步的稳定性。
+- **增强后台自适应扫描以解决启动时序导致周限额无法获取的问题**：
+  - 针对 VS Code 窗口加载或重载时，本地 \`agy\` / \`language_server\` 进程启动时序滞后的情况，引入自适应后台扫描巡检；
+  - 启动阶段高频探测重试，并在连接建立后自动转为长效保活，确保顺利连接并获取周限额；
+  - 增加按需即时唤起探针与断线自动重连自愈，避免因偶发网络波动导致连接失效；
+  - 探测过程优化为静默轻量扫描，避免产生冗余的诊断日志。
+- **周限额展示与实时同步**：
+  - 授权模式下当本地连接就绪时，立即自动拉取最新周限额并实时推送到仪表盘；
+  - 在卡片状态行正下方展示当前周限额剩余百分比及重置倒计时（如 \`98.10% (6d 23h)\`），并支持悬浮提示说明；
+  - 采用增量 DOM 更新，刷新时无需重绘卡片，保持流畅与低资源占用。
 `;
 
     console.log(`📌 创建/更新 GitHub Release: ${tagName} (${releaseName})...`);

@@ -304,6 +304,23 @@ export class ReactorCore {
     private lastLoggedLocalModelList?: string;
     /** 上次记录的授权模型列表（避免重复日志） */
     private lastLoggedAuthorizedModelList?: string;
+    /** 本地进程扫描回调，当未连接时可自动触发探针 */
+    private localProcessScanner?: () => Promise<boolean>;
+    /** 周限额上次成功拉取时间戳 */
+    private lastWeeklySummaryFetchedAt: number = 0;
+
+    public setLocalProcessScanner(scanner: () => Promise<boolean>): void {
+        this.localProcessScanner = scanner;
+    }
+
+    public get isEngaged(): boolean {
+        return this.port > 0 && Boolean(this.token);
+    }
+
+    public get hasWeeklyLimit(): boolean {
+        return Boolean(this.lastWeeklyQuotaSummary?.response?.groups && this.lastWeeklyQuotaSummary.response.groups.length > 0);
+    }
+
     /** 当前用户在 Antigravity 中选中的模型 ID */
     private activeModelId?: string;
 
@@ -315,22 +332,19 @@ export class ReactorCore {
      * 启动反应堆，设置连接参数
      */
     engage(port: number, token: string, diagnostics?: ScanDiagnostics): void {
-        const wasEngaged = this.port === port && this.token === token;
         this.port = port;
         this.token = token;
         this.lastScanDiagnostics = diagnostics;
         logger.info(`Reactor Engaged: :${port}`);
 
-        if (!wasEngaged) {
-            this.fetchWeeklyQuotaSummary().then(summary => {
-                if (summary && this.lastSnapshot) {
-                    this.attachWeeklyLimitsToSnapshot(this.lastSnapshot, summary);
-                    this.publishTelemetry(this.lastSnapshot, this.lastSnapshotSource);
-                }
-            }).catch(err => {
-                logger.debug(`[ReactorCore] Post-engage weekly quota fetch skipped: ${err}`);
-            });
-        }
+        this.fetchWeeklyQuotaSummary(true).then(summary => {
+            if (summary && this.lastSnapshot) {
+                this.attachWeeklyLimitsToSnapshot(this.lastSnapshot, summary);
+                this.publishTelemetry(this.lastSnapshot, this.lastSnapshotSource);
+            }
+        }).catch(err => {
+            logger.debug(`[ReactorCore] Post-engage weekly quota fetch skipped: ${err}`);
+        });
     }
 
     /**
@@ -854,10 +868,25 @@ export class ReactorCore {
         return this.decodeSignal(raw, weeklySummary);
     }
 
-    public async fetchWeeklyQuotaSummary(): Promise<UserQuotaSummaryResponse | undefined> {
+    public async fetchWeeklyQuotaSummary(force: boolean = false): Promise<UserQuotaSummaryResponse | undefined> {
+        if (!this.port || !this.token) {
+            if (this.localProcessScanner) {
+                try {
+                    await this.localProcessScanner();
+                } catch {
+                    // 忽略探针错误
+                }
+            }
+        }
         if (!this.port || !this.token) {
             return this.lastWeeklyQuotaSummary;
         }
+
+        const now = Date.now();
+        if (!force && this.lastWeeklyQuotaSummary && (now - this.lastWeeklySummaryFetchedAt < 30000)) {
+            return this.lastWeeklyQuotaSummary;
+        }
+
         try {
             const weeklySummary = await this.transmit<UserQuotaSummaryResponse>(
                 API_ENDPOINTS.RETRIEVE_USER_QUOTA_SUMMARY,
@@ -865,11 +894,21 @@ export class ReactorCore {
             );
             if (weeklySummary?.response?.groups && weeklySummary.response.groups.length > 0) {
                 this.lastWeeklyQuotaSummary = weeklySummary;
+                this.lastWeeklySummaryFetchedAt = now;
                 return weeklySummary;
             }
         } catch (error) {
             const err = error instanceof Error ? error : new Error(String(error));
             logger.debug(`[ReactorCore] RetrieveUserQuotaSummary failed: ${err.message}`);
+            if (
+                err.message.includes('ECONNREFUSED') ||
+                err.message.includes('Connection Failed') ||
+                err.message.includes('EPROTO') ||
+                err.message.includes('ECONNRESET')
+            ) {
+                this.port = 0;
+                this.token = '';
+            }
         }
         return this.lastWeeklyQuotaSummary;
     }
@@ -1086,8 +1125,8 @@ export class ReactorCore {
         }
 
         let weeklySummary = this.lastWeeklyQuotaSummary;
-        if (!weeklySummary && this.port && this.token) {
-            weeklySummary = await this.fetchWeeklyQuotaSummary();
+        if (!weeklySummary || forceRefresh || !this.lastWeeklySummaryFetchedAt) {
+            weeklySummary = await this.fetchWeeklyQuotaSummary(forceRefresh);
         }
         this.attachWeeklyLimitsToSnapshot(snapshot, weeklySummary);
 

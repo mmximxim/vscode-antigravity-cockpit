@@ -43,9 +43,9 @@ export class WindowsStrategy implements PlatformStrategy {
      */
     getProcessListCommand(processName: string): string {
         const utf8Header = '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; ';
-        // 使用单引号包裹 Filter 参数，内部 name 值使用双单引号转义，支持 language_server 和 agy
+        // 使用单引号包裹 Filter 参数，内部 name 值使用双单引号转义，支持 language_server_windows_x64, agy 与 language_server
         // chcp 65001 >nul 确保 CMD 环境以 UTF-8 运行，避免乱码
-        return `chcp 65001 >nul && powershell -NoProfile -Command "${utf8Header}Get-CimInstance Win32_Process -Filter 'name=''${processName}'' or name=''agy.exe''' | Select-Object ProcessId,CommandLine | ConvertTo-Json"`;
+        return `chcp 65001 >nul && powershell -NoProfile -Command "${utf8Header}Get-CimInstance Win32_Process -Filter 'name=''${processName}'' or name=''agy.exe'' or name=''language_server.exe''' | Select-Object ProcessId,CommandLine | ConvertTo-Json"`;
     }
 
     /**

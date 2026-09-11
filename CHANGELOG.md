@@ -10,6 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.70] - 2026-09-11
+
+### Fixed & Improved
+- **Enhance Adaptive Background Scan to Resolve Startup Race Condition for Weekly Limits**:
+  - Implemented adaptive background scanning loop to gracefully handle cases where `agy` / `language_server` launches slightly after the VS Code extension host;
+  - Added fast-polling during startup with automatic transition to background keep-alive once connected;
+  - Added on-demand instant probe trigger and disconnection self-healing to maintain reliable weekly limit telemetry;
+  - Optimized scanning to run as a silent background probe, preventing unnecessary diagnostic logs.
+
 ## [2.1.69] - 2026-09-11
 
 ### Fixed & Improved
