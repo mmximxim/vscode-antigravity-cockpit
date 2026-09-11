@@ -78,6 +78,7 @@ class ConfigService {
         'quotaSource',  // 使用 globalState 存储，避免 VS Code 配置 API 写入失败问题
         'language',     // 语言设置使用 globalState 存储
         'showPromptCredits',
+        'profileHidden',
     ]);
     private static readonly stateKeyPrefix = 'state';
     private static readonly migrationKey = `${ConfigService.stateKeyPrefix}.migratedToGlobalState.v171`;
@@ -155,7 +156,7 @@ class ConfigService {
             criticalThreshold: config.get<number>(CONFIG_KEYS.CRITICAL_THRESHOLD, QUOTA_THRESHOLDS.CRITICAL_DEFAULT),
             quotaSource: 'authorized',
             displayMode: config.get<string>(CONFIG_KEYS.DISPLAY_MODE, DISPLAY_MODE.WEBVIEW),
-            profileHidden: config.get<boolean>(CONFIG_KEYS.PROFILE_HIDDEN, false),
+            profileHidden: this.getConfigStateValue<boolean>(CONFIG_KEYS.PROFILE_HIDDEN, true),
             dataMasked: config.get<boolean>(CONFIG_KEYS.DATA_MASKED, false),
             language: this.getConfigStateValue<string>(CONFIG_KEYS.LANGUAGE, 'auto'),
         };

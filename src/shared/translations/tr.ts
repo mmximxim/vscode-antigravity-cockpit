@@ -29,6 +29,7 @@ export const tr = {
     'dashboard.resetTime': 'Sıfırlama Zamanı',
     'dashboard.status': 'Durum',
     'dashboard.weeklyLimit': 'Haftalık Limit',
+    'dashboard.weeklyResetIn': 'Haftalık sıfırlamaya kalan',
     'dashboard.exhausted': 'Tükendi',
     'dashboard.active': 'Sağlıklı',
     'dashboard.warning': 'Uyarı',
@@ -127,6 +128,7 @@ export const tr = {
     'profile.expBrowserFeatures': 'Deneysel Tarayıcı Özellikleri',
     'profile.hide': 'Plan Detaylarını Gizle',
     'profile.show': 'Plan Detaylarını Göster',
+    'profile.hideCard': 'Plan detaylarını kapat',
     'profile.hideData': 'Verileri Gizle',
     'profile.showData': 'Verileri Göster',
 
@@ -134,6 +136,7 @@ export const tr = {
     'grouping.title': 'Kota Grupları',
     'grouping.enable': 'Gruplamayı Etkinleştir',
     'grouping.disable': 'Gruplamayı Devre Dışı Bırak',
+    'grouping.dismissHint': 'İpucunu kapat',
     'grouping.rename': 'Grubu Yeniden Adlandır',
     'grouping.renamePrompt': 'Bu grup için yeni bir ad girin:',
     'grouping.models': 'Modeller',

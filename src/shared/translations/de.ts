@@ -29,6 +29,7 @@ export const de = {
     'dashboard.resetTime': 'Zurücksetzzeit',
     'dashboard.status': 'Status',
     'dashboard.weeklyLimit': 'Wöchentliches Limit',
+    'dashboard.weeklyResetIn': 'Wöchentlicher Reset in',
     'dashboard.exhausted': 'Erschöpft',
     'dashboard.active': 'Gesund',
     'dashboard.warning': 'Warnung',
@@ -126,6 +127,7 @@ export const de = {
     'profile.expBrowserFeatures': 'Exp. Browser-Funktionen',
     'profile.hide': 'Plandetails ausblenden',
     'profile.show': 'Plandetails anzeigen',
+    'profile.hideCard': 'Plandetails schließen',
     'profile.hideData': 'Daten ausblenden',
     'profile.showData': 'Daten anzeigen',
 
@@ -133,6 +135,7 @@ export const de = {
     'grouping.title': 'Kontingentgruppen',
     'grouping.enable': 'Gruppierung aktivieren',
     'grouping.disable': 'Gruppierung deaktivieren',
+    'grouping.dismissHint': 'Hinweis schließen',
     'grouping.rename': 'Gruppe umbenennen',
     'grouping.renamePrompt': 'Neuen Namen für diese Gruppe eingeben:',
     'grouping.models': 'Modelle',

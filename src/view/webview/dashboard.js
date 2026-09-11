@@ -61,7 +61,7 @@ import { createAnnouncementModule } from './dashboard_announcements';
     let antigravityToolsSyncEnabled = false;
     let visibleModelIds = [];
     let renameOriginalName = ''; // 原始名称（用于重置）
-    let isProfileHidden = false;  // 控制整个计划详情卡片的显示/隐藏
+    let isProfileHidden = true;  // 控制整个计划详情卡片的显示/隐藏（默认常驻隐藏）
     let isDataMasked = false;     // 控制数据是否显示为 ***
     let modelManagerSelection = new Set();
     let modelManagerModels = [];
@@ -741,6 +741,18 @@ import { createAnnouncementModule } from './dashboard_announcements';
     }
 
     function handleToggleProfile() {
+        isProfileHidden = !isProfileHidden;
+        updateToggleProfileButton();
+        const existingProfile = dashboard.querySelector('.profile-card');
+        if (isProfileHidden) {
+            if (existingProfile) {
+                existingProfile.remove();
+            }
+        } else if (lastSnapshot && lastSnapshot.userInfo) {
+            if (!existingProfile) {
+                renderUserProfile(lastSnapshot.userInfo);
+            }
+        }
         // Send command to extension to toggle and persist in VS Code config
         vscode.postMessage({ command: 'toggleProfile' });
     }
@@ -763,8 +775,8 @@ import { createAnnouncementModule } from './dashboard_announcements';
         if (!btn) {
             return;
         }
-        const shouldShow = currentQuotaSource !== 'authorized';
-        btn.classList.toggle('hidden', !shouldShow);
+        // 始终允许用户从顶部控制计划详情面板的显示/隐藏
+        btn.classList.remove('hidden');
     }
 
     function handleToggleGrouping() {
@@ -2622,7 +2634,7 @@ import { createAnnouncementModule } from './dashboard_announcements';
             modelCards.forEach(c => c.remove());
 
             // 渲染自动分组按钮区域（若已存在则复用）
-            if (!dashboard.querySelector('.auto-group-toolbar')) {
+            if (!sessionStorage.getItem('autoGroupBarDismissed') && !dashboard.querySelector('.auto-group-toolbar')) {
                 renderAutoGroupBar();
             }
 
@@ -2850,16 +2862,22 @@ import { createAnnouncementModule } from './dashboard_announcements';
     }
 
     function renderAutoGroupBar() {
+        if (sessionStorage.getItem('autoGroupBarDismissed')) {
+            return;
+        }
         const bar = document.createElement('div');
         bar.className = 'auto-group-toolbar';
         bar.innerHTML = `
             <span class="grouping-hint">
                 ${i18n['grouping.description'] || 'This mode aggregates models sharing the same quota. Supports renaming, sorting, and status bar sync. Click "Manage Groups" to customize, or toggle "Quota Groups" above to switch back.'}
             </span>
-            <button id="manage-group-btn" class="auto-group-link" title="${i18n['customGrouping.title'] || 'Manage Groups'}">
-                <span class="icon">⚙️</span>
-                ${i18n['customGrouping.title'] || 'Manage Groups'}
-            </button>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="manage-group-btn" class="auto-group-link" title="${i18n['customGrouping.title'] || 'Manage Groups'}">
+                    <span class="icon">⚙️</span>
+                    ${i18n['customGrouping.title'] || 'Manage Groups'}
+                </button>
+                <button id="dismiss-group-hint-btn" class="icon-btn auto-group-close-btn" title="${escapeHtml(i18n['grouping.dismissHint'] || 'Dismiss Hint')}">✕</button>
+            </div>
         `;
         dashboard.appendChild(bar);
 
@@ -2867,6 +2885,14 @@ import { createAnnouncementModule } from './dashboard_announcements';
         const btn = bar.querySelector('#manage-group-btn');
         if (btn) {
             btn.addEventListener('click', openCustomGroupingModal);
+        }
+
+        const dismissBtn = bar.querySelector('#dismiss-group-hint-btn');
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', () => {
+                sessionStorage.setItem('autoGroupBarDismissed', 'true');
+                bar.remove();
+            });
         }
     }
 
@@ -3449,6 +3475,7 @@ import { createAnnouncementModule } from './dashboard_announcements';
                 <div class="profile-controls">
                     <button class="text-btn" id="profile-mask-btn">${escapeHtml(maskBtnText)}</button>
                     <div class="tier-badge">${escapeHtml(userInfo.tier)}</div>
+                    <button class="icon-btn profile-close-btn" id="profile-close-btn" title="${escapeHtml(i18n['profile.hideCard'] || i18n['profile.hide'] || 'Close Plan Details')}">✕</button>
                 </div>
             </div>
             
@@ -3502,12 +3529,25 @@ import { createAnnouncementModule } from './dashboard_announcements';
             toggleBtn.addEventListener('click', toggleProfileDetails);
         }
 
+        const closeBtn = card.querySelector('#profile-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                handleToggleProfile();
+            });
+        }
+
         const maskBtn = card.querySelector('#profile-mask-btn');
         if (maskBtn) {
             maskBtn.addEventListener('click', () => {
                 isDataMasked = !isDataMasked;
-                // 发送消息到扩展，持久化存储到配置
                 vscode.postMessage({ command: 'updateDataMasked', dataMasked: isDataMasked });
+                const existing = dashboard.querySelector('.profile-card');
+                if (existing) {
+                    existing.remove();
+                    if (!isProfileHidden && lastSnapshot && lastSnapshot.userInfo) {
+                        renderUserProfile(lastSnapshot.userInfo);
+                    }
+                }
             });
         }
     }
@@ -3769,9 +3809,13 @@ import { createAnnouncementModule } from './dashboard_announcements';
         }
         if (!wl) {
             return {
+                percentageText: '-',
+                countdownText: '-',
                 text: '-',
                 color: 'var(--text-secondary)',
                 tooltip: '',
+                limitTooltip: '',
+                resetTooltip: '',
                 hasData: false,
             };
         }
@@ -3782,29 +3826,38 @@ import { createAnnouncementModule } from './dashboard_announcements';
 
         if (pct === undefined) {
             return {
+                percentageText: '-',
+                countdownText: '-',
                 text: '-',
                 color: 'var(--text-secondary)',
                 tooltip: '',
+                limitTooltip: '',
+                resetTooltip: '',
                 hasData: false,
             };
         }
 
         const color = getHealthColor(pct);
         const countdown = wl.timeUntilResetFormatted;
-        const text = countdown && countdown !== '-'
-            ? `${pct.toFixed(2)}% (${countdown})`
-            : `${pct.toFixed(2)}%`;
+        const percentageText = `${pct.toFixed(2)}%`;
+        const countdownText = countdown && countdown !== '-' ? countdown : (wl.resetTimeDisplay || '-');
+        const text = `${percentageText} (${countdownText})`;
 
-        let tooltip = wl.description || '';
+        const limitTooltip = wl.description || '';
+        let resetTooltip = '';
         if (wl.resetTimeDisplay && wl.resetTimeDisplay !== 'N/A') {
-            const resetPrefix = `${i18n['dashboard.resetTime'] || 'Reset Time'}: ${wl.resetTimeDisplay}`;
-            tooltip = tooltip ? `${resetPrefix}\n${tooltip}` : resetPrefix;
+            resetTooltip = `${i18n['dashboard.resetTime'] || 'Reset Time'}: ${wl.resetTimeDisplay}`;
         }
+        const tooltip = limitTooltip && resetTooltip ? `${resetTooltip}\n${limitTooltip}` : (resetTooltip || limitTooltip);
 
         return {
+            percentageText,
+            countdownText,
             text,
             color,
             tooltip,
+            limitTooltip,
+            resetTooltip,
             hasData: true,
         };
     }
@@ -3814,7 +3867,8 @@ import { createAnnouncementModule } from './dashboard_announcements';
         const color = getHealthColor(pct);
         const isPinned = pinnedGroups && pinnedGroups.includes(group.groupId);
         const weeklyInfo = getWeeklyLimitDisplay(group);
-        const weeklyTooltipAttr = weeklyInfo.tooltip ? ` data-tooltip="${escapeHtml(weeklyInfo.tooltip)}"` : '';
+        const weeklyLimitTooltipAttr = weeklyInfo.limitTooltip ? ` data-tooltip="${escapeHtml(weeklyInfo.limitTooltip)}"` : '';
+        const weeklyResetTooltipAttr = weeklyInfo.resetTooltip ? ` data-tooltip="${escapeHtml(weeklyInfo.resetTooltip)}"` : '';
 
         const card = document.createElement('div');
         const enterAnimClass = isInitialDashboardRender ? ' card-enter' : '';
@@ -3891,8 +3945,14 @@ import { createAnnouncementModule } from './dashboard_announcements';
             </div>
             <div class="info-row weekly-limit-row">
                 <span>${escapeHtml(i18n['dashboard.weeklyLimit'] || 'Weekly Limit')}</span>
-                <span class="info-value weekly-limit-value"${weeklyTooltipAttr} style="color: ${weeklyInfo.color}">
-                    ${escapeHtml(weeklyInfo.text)}
+                <span class="info-value weekly-limit-value"${weeklyLimitTooltipAttr} style="color: ${weeklyInfo.color}">
+                    ${escapeHtml(weeklyInfo.percentageText)}
+                </span>
+            </div>
+            <div class="info-row weekly-reset-row">
+                <span>${escapeHtml(i18n['dashboard.weeklyResetIn'] || 'Weekly Reset In')}</span>
+                <span class="info-value weekly-reset-value"${weeklyResetTooltipAttr}>
+                    ${escapeHtml(weeklyInfo.countdownText)}
                 </span>
             </div>
             <div class="group-models">
@@ -3970,9 +4030,11 @@ import { createAnnouncementModule } from './dashboard_announcements';
             }
         }
 
-        // 更新周限额
+        // 更新周限额与周重置倒计时
         const weeklyInfo = getWeeklyLimitDisplay(group);
         let weeklyValEl = card.querySelector('.weekly-limit-value');
+        let weeklyResetValEl = card.querySelector('.weekly-reset-value');
+
         if (!weeklyValEl) {
             const rows = card.querySelectorAll('.info-row');
             if (rows.length >= 3) {
@@ -3986,17 +4048,41 @@ import { createAnnouncementModule } from './dashboard_announcements';
                 weeklyValEl = weeklyRow.querySelector('.weekly-limit-value');
             }
         }
+        if (!weeklyResetValEl) {
+            const limitRow = card.querySelector('.weekly-limit-row');
+            if (limitRow) {
+                const resetRow = document.createElement('div');
+                resetRow.className = 'info-row weekly-reset-row';
+                resetRow.innerHTML = `
+                    <span>${escapeHtml(i18n['dashboard.weeklyResetIn'] || 'Weekly Reset In')}</span>
+                    <span class="info-value weekly-reset-value"></span>
+                `;
+                limitRow.parentNode.insertBefore(resetRow, limitRow.nextSibling);
+                weeklyResetValEl = resetRow.querySelector('.weekly-reset-value');
+            }
+        }
+
         if (weeklyValEl) {
-            if (weeklyValEl.textContent.trim() !== weeklyInfo.text.trim()) {
-                weeklyValEl.textContent = weeklyInfo.text;
+            if (weeklyValEl.textContent.trim() !== weeklyInfo.percentageText.trim()) {
+                weeklyValEl.textContent = weeklyInfo.percentageText;
             }
             if (weeklyValEl.style.color !== weeklyInfo.color) {
                 weeklyValEl.style.color = weeklyInfo.color;
             }
-            if (weeklyInfo.tooltip) {
-                weeklyValEl.setAttribute('data-tooltip', weeklyInfo.tooltip);
+            if (weeklyInfo.limitTooltip) {
+                weeklyValEl.setAttribute('data-tooltip', weeklyInfo.limitTooltip);
             } else {
                 weeklyValEl.removeAttribute('data-tooltip');
+            }
+        }
+        if (weeklyResetValEl) {
+            if (weeklyResetValEl.textContent.trim() !== weeklyInfo.countdownText.trim()) {
+                weeklyResetValEl.textContent = weeklyInfo.countdownText;
+            }
+            if (weeklyInfo.resetTooltip) {
+                weeklyResetValEl.setAttribute('data-tooltip', weeklyInfo.resetTooltip);
+            } else {
+                weeklyResetValEl.removeAttribute('data-tooltip');
             }
         }
 
@@ -4045,7 +4131,8 @@ import { createAnnouncementModule } from './dashboard_announcements';
         const color = getHealthColor(pct);
         const isPinned = pinnedModels.includes(model.modelId);
         const weeklyInfo = getWeeklyLimitDisplay(model);
-        const weeklyTooltipAttr = weeklyInfo.tooltip ? ` data-tooltip="${escapeHtml(weeklyInfo.tooltip)}"` : '';
+        const weeklyLimitTooltipAttr = weeklyInfo.limitTooltip ? ` data-tooltip="${escapeHtml(weeklyInfo.limitTooltip)}"` : '';
+        const weeklyResetTooltipAttr = weeklyInfo.resetTooltip ? ` data-tooltip="${escapeHtml(weeklyInfo.resetTooltip)}"` : '';
 
         // 获取自定义名称，如果没有则使用原始 label
         const displayName = (modelCustomNames && modelCustomNames[model.modelId]) || model.label;
@@ -4114,8 +4201,14 @@ import { createAnnouncementModule } from './dashboard_announcements';
             </div>
             <div class="info-row weekly-limit-row">
                 <span>${escapeHtml(i18n['dashboard.weeklyLimit'] || 'Weekly Limit')}</span>
-                <span class="info-value weekly-limit-value"${weeklyTooltipAttr} style="color: ${weeklyInfo.color}">
-                    ${escapeHtml(weeklyInfo.text)}
+                <span class="info-value weekly-limit-value"${weeklyLimitTooltipAttr} style="color: ${weeklyInfo.color}">
+                    ${escapeHtml(weeklyInfo.percentageText)}
+                </span>
+            </div>
+            <div class="info-row weekly-reset-row">
+                <span>${escapeHtml(i18n['dashboard.weeklyResetIn'] || 'Weekly Reset In')}</span>
+                <span class="info-value weekly-reset-value"${weeklyResetTooltipAttr}>
+                    ${escapeHtml(weeklyInfo.countdownText)}
                 </span>
             </div>
         `;
@@ -4175,9 +4268,11 @@ import { createAnnouncementModule } from './dashboard_announcements';
             }
         }
 
-        // 更新周限额
+        // 更新周限额与周重置倒计时
         const weeklyInfo = getWeeklyLimitDisplay(model);
         let weeklyValEl = card.querySelector('.weekly-limit-value');
+        let weeklyResetValEl = card.querySelector('.weekly-reset-value');
+
         if (!weeklyValEl) {
             const rows = card.querySelectorAll('.info-row');
             if (rows.length >= 3) {
@@ -4191,17 +4286,41 @@ import { createAnnouncementModule } from './dashboard_announcements';
                 weeklyValEl = weeklyRow.querySelector('.weekly-limit-value');
             }
         }
+        if (!weeklyResetValEl) {
+            const limitRow = card.querySelector('.weekly-limit-row');
+            if (limitRow) {
+                const resetRow = document.createElement('div');
+                resetRow.className = 'info-row weekly-reset-row';
+                resetRow.innerHTML = `
+                    <span>${escapeHtml(i18n['dashboard.weeklyResetIn'] || 'Weekly Reset In')}</span>
+                    <span class="info-value weekly-reset-value"></span>
+                `;
+                limitRow.parentNode.insertBefore(resetRow, limitRow.nextSibling);
+                weeklyResetValEl = resetRow.querySelector('.weekly-reset-value');
+            }
+        }
+
         if (weeklyValEl) {
-            if (weeklyValEl.textContent.trim() !== weeklyInfo.text.trim()) {
-                weeklyValEl.textContent = weeklyInfo.text;
+            if (weeklyValEl.textContent.trim() !== weeklyInfo.percentageText.trim()) {
+                weeklyValEl.textContent = weeklyInfo.percentageText;
             }
             if (weeklyValEl.style.color !== weeklyInfo.color) {
                 weeklyValEl.style.color = weeklyInfo.color;
             }
-            if (weeklyInfo.tooltip) {
-                weeklyValEl.setAttribute('data-tooltip', weeklyInfo.tooltip);
+            if (weeklyInfo.limitTooltip) {
+                weeklyValEl.setAttribute('data-tooltip', weeklyInfo.limitTooltip);
             } else {
                 weeklyValEl.removeAttribute('data-tooltip');
+            }
+        }
+        if (weeklyResetValEl) {
+            if (weeklyResetValEl.textContent.trim() !== weeklyInfo.countdownText.trim()) {
+                weeklyResetValEl.textContent = weeklyInfo.countdownText;
+            }
+            if (weeklyInfo.resetTooltip) {
+                weeklyResetValEl.setAttribute('data-tooltip', weeklyInfo.resetTooltip);
+            } else {
+                weeklyResetValEl.removeAttribute('data-tooltip');
             }
         }
 

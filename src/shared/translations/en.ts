@@ -31,6 +31,7 @@ export const en = {
     'dashboard.resetTime': 'Reset Time',
     'dashboard.status': 'Status',
     'dashboard.weeklyLimit': 'Weekly Limit',
+    'dashboard.weeklyResetIn': 'Weekly Reset In',
     'dashboard.modelName': 'Model Name',
     'dashboard.name': 'Name',
     'dashboard.remainingQuota': 'Remaining Quota',
@@ -131,6 +132,7 @@ export const en = {
     'profile.expBrowserFeatures': 'Exp. Browser Features',
     'profile.hide': 'Hide Plan Details',
     'profile.show': 'Show Plan Details',
+    'profile.hideCard': 'Close Plan Details',
     'profile.hideData': 'Hide Data',
     'profile.showData': 'Show Data',
 
@@ -138,6 +140,7 @@ export const en = {
     'grouping.title': 'Quota Groups',
     'grouping.enable': 'Enable Quota Groups',
     'grouping.disable': 'Disable Quota Groups',
+    'grouping.dismissHint': 'Dismiss Hint',
     'grouping.rename': 'Rename Group',
     'grouping.renamePrompt': 'Enter new name for this group:',
     'grouping.nameLabel': 'Group Name',

@@ -29,6 +29,7 @@ export const cs = {
     'dashboard.resetTime': 'Čas Resetu',
     'dashboard.status': 'Stav',
     'dashboard.weeklyLimit': 'Týdenní limit',
+    'dashboard.weeklyResetIn': 'Týdenní reset za',
     'dashboard.exhausted': 'Vyčerpáno',
     'dashboard.active': 'Zdravý',
     'dashboard.warning': 'Varování',
@@ -126,6 +127,7 @@ export const cs = {
     'profile.expBrowserFeatures': 'Experimentální Funkce Prohlížeče',
     'profile.hide': 'Skrýt Detaily Plánu',
     'profile.show': 'Zobrazit Detaily Plánu',
+    'profile.hideCard': 'Zavřít detaily plánu',
     'profile.hideData': 'Skrýt Data',
     'profile.showData': 'Zobrazit Data',
 
@@ -133,6 +135,7 @@ export const cs = {
     'grouping.title': 'Skupiny Kvót',
     'grouping.enable': 'Povolit Seskupování',
     'grouping.disable': 'Zakázat Seskupování',
+    'grouping.dismissHint': 'Zavřít nápovědu',
     'grouping.rename': 'Přejmenovat Skupinu',
     'grouping.renamePrompt': 'Zadejte nový název pro tuto skupinu:',
     'grouping.models': 'Modely',

@@ -29,6 +29,7 @@ export const fr = {
     'dashboard.resetTime': 'Heure de Réinitialisation',
     'dashboard.status': 'Statut',
     'dashboard.weeklyLimit': 'Limite hebdomadaire',
+    'dashboard.weeklyResetIn': 'Réinitialisation hebdo dans',
     'dashboard.exhausted': 'Épuisé',
     'dashboard.active': 'Sain',
     'dashboard.warning': 'Avertissement',
@@ -128,6 +129,7 @@ export const fr = {
     'profile.expBrowserFeatures': 'Fonctions Exp. du Navigateur',
     'profile.hide': 'Masquer les Détails du Plan',
     'profile.show': 'Afficher les Détails du Plan',
+    'profile.hideCard': 'Fermer les détails du plan',
     'profile.hideData': 'Masquer les Données',
     'profile.showData': 'Afficher les Données',
 
@@ -135,6 +137,7 @@ export const fr = {
     'grouping.title': 'Groupes de Quota',
     'grouping.enable': 'Activer le Groupement',
     'grouping.disable': 'Désactiver le Groupement',
+    'grouping.dismissHint': 'Fermer l\'indice',
     'grouping.rename': 'Renommer le Groupe',
     'grouping.renamePrompt': 'Entrez le nouveau nom pour ce groupe:',
     'grouping.models': 'Modèles',

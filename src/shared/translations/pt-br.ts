@@ -29,6 +29,7 @@ export const ptBR = {
     'dashboard.resetTime': 'Hora do Reinício',
     'dashboard.status': 'Status',
     'dashboard.weeklyLimit': 'Limite semanal',
+    'dashboard.weeklyResetIn': 'Reinicialização semanal em',
     'dashboard.exhausted': 'Esgotado',
     'dashboard.active': 'Saudável',
     'dashboard.warning': 'Aviso',
@@ -126,6 +127,7 @@ export const ptBR = {
     'profile.expBrowserFeatures': 'Recursos Exp. do Navegador',
     'profile.hide': 'Ocultar Detalhes do Plano',
     'profile.show': 'Mostrar Detalhes do Plano',
+    'profile.hideCard': 'Fechar detalhes do plano',
     'profile.hideData': 'Ocultar Dados',
     'profile.showData': 'Mostrar Dados',
 
@@ -133,6 +135,7 @@ export const ptBR = {
     'grouping.title': 'Grupos de Cota',
     'grouping.enable': 'Habilitar Agrupamento',
     'grouping.disable': 'Desabilitar Agrupamento',
+    'grouping.dismissHint': 'Fechar dica',
     'grouping.rename': 'Renomear Grupo',
     'grouping.renamePrompt': 'Digite o novo nome para este grupo:',
     'grouping.models': 'Modelos',

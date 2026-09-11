@@ -10,7 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## [2.1.71] - 2026-09-11
+## [2.1.72] - 2026-09-11
+
+### Fixed & Improved
+- **Split Weekly Limit into Two Dedicated Rows**:
+  - Split weekly quota into two separate rows on model and group cards: "Weekly Limit" (percentage) and "Weekly Reset In" (countdown), mirroring the structure of standard reset rows;
+  - Added rich tooltip support to show exact reset timestamp on hover.
+- **Improve Plan Details & Hint Banner Visibility Controls**:
+  - Defaulted Plan Details card to hidden to prevent dashboard clutter;
+  - Added a direct close button (`✕`) to the Plan Details card header with persistent state saving;
+  - Ensured header "Plan" button remains accessible in authorized mode to easily toggle plan visibility anytime;
+  - Clarified data masking button label to avoid confusion with card hiding;
+  - Added close button (`✕`) to the auto-grouping hint toolbar.
 
 ### Fixed & Improved
 - **Decouple Weekly Limit Display from Account Data Masking**:

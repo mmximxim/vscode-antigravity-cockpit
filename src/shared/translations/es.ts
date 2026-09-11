@@ -29,6 +29,7 @@ export const es = {
     'dashboard.resetTime': 'Hora de Reinicio',
     'dashboard.status': 'Estado',
     'dashboard.weeklyLimit': 'Límite semanal',
+    'dashboard.weeklyResetIn': 'Reinicio semanal en',
     'dashboard.exhausted': 'Agotado',
     'dashboard.active': 'Saludable',
     'dashboard.warning': 'Advertencia',
@@ -126,6 +127,7 @@ export const es = {
     'profile.expBrowserFeatures': 'Funciones Exp. del Navegador',
     'profile.hide': 'Ocultar Detalles del Plan',
     'profile.show': 'Mostrar Detalles del Plan',
+    'profile.hideCard': 'Cerrar detalles del plan',
     'profile.hideData': 'Ocultar Datos',
     'profile.showData': 'Mostrar Datos',
 
@@ -133,6 +135,7 @@ export const es = {
     'grouping.title': 'Grupos de Cuota',
     'grouping.enable': 'Habilitar Agrupación',
     'grouping.disable': 'Deshabilitar Agrupación',
+    'grouping.dismissHint': 'Cerrar sugerencia',
     'grouping.rename': 'Renombrar Grupo',
     'grouping.renamePrompt': 'Ingrese el nuevo nombre para este grupo:',
     'grouping.models': 'Modelos',

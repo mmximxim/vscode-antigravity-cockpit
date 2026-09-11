@@ -475,6 +475,19 @@
     justify-content: center;
 }
 
+.profile-close-btn {
+    font-size: 13px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    transition: color 0.15s, background-color 0.15s;
+}
+
+.profile-close-btn:hover {
+    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
 .icon-btn:hover {
     color: var(--text-primary);
     background-color: rgba(255, 255, 255, 0.1);
@@ -1022,6 +1035,19 @@
 
 .auto-group-link:active {
     transform: translateY(0);
+}
+
+.auto-group-close-btn {
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    transition: color 0.15s, background-color 0.15s;
+}
+
+.auto-group-close-btn:hover {
+    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.15);
 }
 
 .auto-group-link .icon {

@@ -29,6 +29,7 @@ export const ja = {
     'dashboard.resetTime': 'リセット時刻',
     'dashboard.status': 'ステータス',
     'dashboard.weeklyLimit': '週間制限',
+    'dashboard.weeklyResetIn': '週間リセットカウントダウン',
     'dashboard.exhausted': '枯渇',
     'dashboard.active': '正常',
     'dashboard.warning': '警告',
@@ -126,6 +127,7 @@ export const ja = {
     'profile.expBrowserFeatures': '実験的ブラウザ機能',
     'profile.hide': 'プラン詳細を非表示',
     'profile.show': 'プラン詳細を表示',
+    'profile.hideCard': 'プラン詳細を閉じる',
     'profile.hideData': 'データを非表示',
     'profile.showData': 'データを表示',
 
@@ -133,6 +135,7 @@ export const ja = {
     'grouping.title': 'クォータグループ',
     'grouping.enable': 'グループ化を有効化',
     'grouping.disable': 'グループ化を無効化',
+    'grouping.dismissHint': 'ヒントを閉じる',
     'grouping.rename': 'グループ名を変更',
     'grouping.renamePrompt': 'グループの新しい名前を入力:',
     'grouping.models': 'モデル',

@@ -31,6 +31,7 @@ export const zhCN = {
     'dashboard.resetTime': '重置时间',
     'dashboard.status': '状态',
     'dashboard.weeklyLimit': '周限额',
+    'dashboard.weeklyResetIn': '周重置倒计时',
     'dashboard.modelName': '模型名称',
     'dashboard.name': '名称',
     'dashboard.remainingQuota': '剩余配额',
@@ -131,8 +132,10 @@ export const zhCN = {
     'profile.expBrowserFeatures': '实验性浏览器功能',
     'profile.hide': '隐藏计划详情',
     'profile.show': '显示计划详情',
-    'profile.hideData': '隐藏数据',
-    'profile.showData': '显示数据',
+    'profile.hideCard': '关闭计划详情',
+    'profile.hideData': '数据脱敏',
+    'profile.showData': '显示明文',
+    'grouping.dismissHint': '关闭提示',
 
     // Grouping
     'grouping.title': '配额分组',

@@ -31,6 +31,7 @@ export const ar = {
     'dashboard.resetTime': 'وقت إعادة التعيين',
     'dashboard.status': 'الحالة',
     'dashboard.weeklyLimit': 'الحد الأسبوعي',
+    'dashboard.weeklyResetIn': 'إعادة التعيين الأسبوعية خلال',
     'dashboard.modelName': 'اسم النموذج',
     'dashboard.name': 'الاسم',
     'dashboard.remainingQuota': 'الحصة المتبقية',
@@ -131,6 +132,7 @@ export const ar = {
     'profile.expBrowserFeatures': 'ميزات المتصفح التجريبية',
     'profile.hide': 'إخفاء تفاصيل الخطة',
     'profile.show': 'عرض تفاصيل الخطة',
+    'profile.hideCard': 'إغلاق تفاصيل الخطة',
     'profile.hideData': 'إخفاء البيانات',
     'profile.showData': 'عرض البيانات',
 
@@ -138,6 +140,7 @@ export const ar = {
     'grouping.title': 'مجموعات الحصص',
     'grouping.enable': 'تفعيل مجموعات الحصص',
     'grouping.disable': 'تعطيل مجموعات الحصص',
+    'grouping.dismissHint': 'إغلاق التلميح',
     'grouping.rename': 'إعادة تسمية المجموعة',
     'grouping.renamePrompt': 'أدخل اسماً جديداً لهذه المجموعة:',
     'grouping.nameLabel': 'اسم المجموعة',

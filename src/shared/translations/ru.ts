@@ -29,6 +29,7 @@ export const ru = {
     'dashboard.resetTime': 'Время сброса',
     'dashboard.status': 'Статус',
     'dashboard.weeklyLimit': 'Недельный лимит',
+    'dashboard.weeklyResetIn': 'Сброс недели через',
     'dashboard.exhausted': 'Исчерпано',
     'dashboard.active': 'Здоров',
     'dashboard.warning': 'Предупреждение',
@@ -126,6 +127,7 @@ export const ru = {
     'profile.expBrowserFeatures': 'Эксп. функции браузера',
     'profile.hide': 'Скрыть детали плана',
     'profile.show': 'Показать детали плана',
+    'profile.hideCard': 'Закрыть детали плана',
     'profile.hideData': 'Скрыть данные',
     'profile.showData': 'Показать данные',
 
@@ -133,6 +135,7 @@ export const ru = {
     'grouping.title': 'Группы квот',
     'grouping.enable': 'Включить группировку',
     'grouping.disable': 'Отключить группировку',
+    'grouping.dismissHint': 'Закрыть подсказку',
     'grouping.rename': 'Переименовать группу',
     'grouping.renamePrompt': 'Введите новое имя для этой группы:',
     'grouping.models': 'Модели',

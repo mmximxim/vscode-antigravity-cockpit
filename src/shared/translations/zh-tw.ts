@@ -31,6 +31,7 @@ export const zhTW = {
     'dashboard.resetTime': '重置時間',
     'dashboard.status': '狀態',
     'dashboard.weeklyLimit': '週限額',
+    'dashboard.weeklyResetIn': '週重置倒數',
     'dashboard.exhausted': '已耗盡',
     'dashboard.active': '健康',
     'dashboard.warning': '警告',
@@ -128,6 +129,7 @@ export const zhTW = {
     'profile.expBrowserFeatures': '實驗性瀏覽器功能',
     'profile.hide': '隱藏方案詳情',
     'profile.show': '顯示方案詳情',
+    'profile.hideCard': '關閉方案詳情',
     'profile.hideData': '隱藏資料',
     'profile.showData': '顯示資料',
 
@@ -135,6 +137,7 @@ export const zhTW = {
     'grouping.title': '配額分組',
     'grouping.enable': '開啟分組',
     'grouping.disable': '關閉分組',
+    'grouping.dismissHint': '關閉提示',
     'grouping.rename': '重新命名分組',
     'grouping.renamePrompt': '請輸入新的分組名稱:',
     'grouping.models': '包含模型',

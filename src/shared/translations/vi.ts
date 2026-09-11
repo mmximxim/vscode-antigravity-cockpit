@@ -33,6 +33,7 @@ export const vi = {
     'dashboard.resetTime': 'Thời gian đặt lại',
     'dashboard.status': 'Trạng thái',
     'dashboard.weeklyLimit': 'Hạn mức tuần',
+    'dashboard.weeklyResetIn': 'Đặt lại tuần sau',
     'dashboard.modelName': 'Tên mô hình',
     'dashboard.name': 'Tên',
     'dashboard.remainingQuota': 'Hạn mức còn lại',
@@ -134,6 +135,7 @@ export const vi = {
     'profile.expBrowserFeatures': 'Tính năng trình duyệt thử nghiệm',
     'profile.hide': 'Ẩn chi tiết gói',
     'profile.show': 'Hiện chi tiết gói',
+    'profile.hideCard': 'Đóng chi tiết gói',
     'profile.hideData': 'Ẩn dữ liệu',
     'profile.showData': 'Hiện dữ liệu',
 
@@ -141,6 +143,7 @@ export const vi = {
     'grouping.title': 'Nhóm hạn mức',
     'grouping.enable': 'Bật nhóm hạn mức',
     'grouping.disable': 'Tắt nhóm hạn mức',
+    'grouping.dismissHint': 'Đóng gợi ý',
     'grouping.rename': 'Đổi tên nhóm',
     'grouping.renamePrompt': 'Nhập tên mới cho nhóm này:',
     'grouping.nameLabel': 'Tên nhóm',

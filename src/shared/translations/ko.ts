@@ -29,6 +29,7 @@ export const ko = {
     'dashboard.resetTime': '재설정 시간',
     'dashboard.status': '상태',
     'dashboard.weeklyLimit': '주간 한도',
+    'dashboard.weeklyResetIn': '주간 재설정 카운트다운',
     'dashboard.exhausted': '소진됨',
     'dashboard.active': '정상',
     'dashboard.warning': '경고',
@@ -126,6 +127,7 @@ export const ko = {
     'profile.expBrowserFeatures': '실험적 브라우저 기능',
     'profile.hide': '플랜 상세 숨기기',
     'profile.show': '플랜 상세 표시',
+    'profile.hideCard': '플랜 상세 닫기',
     'profile.hideData': '데이터 숨기기',
     'profile.showData': '데이터 표시',
 
@@ -133,6 +135,7 @@ export const ko = {
     'grouping.title': '할당량 그룹',
     'grouping.enable': '그룹화 활성화',
     'grouping.disable': '그룹화 비활성화',
+    'grouping.dismissHint': '힌트 닫기',
     'grouping.rename': '그룹 이름 변경',
     'grouping.renamePrompt': '이 그룹의 새 이름을 입력하세요:',
     'grouping.models': '모델',

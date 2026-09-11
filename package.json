@@ -1,7 +1,7 @@
 {
   "name": "antigravity-cockpit-github-style",
   "description": "A premium, dashboard-style quota monitor for Antigravity AI with GitHub Contribution Style statistics.",
-  "version": "2.1.71",
+  "version": "2.1.72",
   "publisher": "mmxmxm",
   "engines": {
     "vscode": "^1.90.0"
@@ -267,7 +267,7 @@
         },
         "agCockpit.profileHidden": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Hide the Plan Details panel in the dashboard."
         },
         "agCockpit.dataMasked": {

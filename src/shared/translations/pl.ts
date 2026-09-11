@@ -29,6 +29,7 @@ export const pl = {
     'dashboard.resetTime': 'Czas Resetu',
     'dashboard.status': 'Status',
     'dashboard.weeklyLimit': 'Limit tygodniowy',
+    'dashboard.weeklyResetIn': 'Tygodniowy reset za',
     'dashboard.exhausted': 'Wyczerpane',
     'dashboard.active': 'Zdrowy',
     'dashboard.warning': 'Ostrzeżenie',
@@ -126,6 +127,7 @@ export const pl = {
     'profile.expBrowserFeatures': 'Eksperymentalne Funkcje Przeglądarki',
     'profile.hide': 'Ukryj Szczegóły Planu',
     'profile.show': 'Pokaż Szczegóły Planu',
+    'profile.hideCard': 'Zamknij szczegóły planu',
     'profile.hideData': 'Ukryj Dane',
     'profile.showData': 'Pokaż Dane',
 
@@ -133,6 +135,7 @@ export const pl = {
     'grouping.title': 'Grupy Limitów',
     'grouping.enable': 'Włącz Grupowanie',
     'grouping.disable': 'Wyłącz Grupowanie',
+    'grouping.dismissHint': 'Zamknij wskazówkę',
     'grouping.rename': 'Zmień Nazwę Grupy',
     'grouping.renamePrompt': 'Wprowadź nową nazwę dla tej grupy:',
     'grouping.models': 'Modele',
