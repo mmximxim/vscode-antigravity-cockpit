@@ -1714,7 +1714,6 @@ export class MessageController {
     private async handleSwitchToClientAccount(): Promise<void> {
         try {
             let currentEmail: string | null = null;
-            const source = 'local' as const;
             
             // 仅检测本地 Antigravity 客户端读取当前账户
             try {
@@ -1770,19 +1769,33 @@ export class MessageController {
                     || `已切换至: ${existingEmail}`,
                 );
             } else {
-                // 账户不存在，走导入弹框流程
-                logger.info(`[SwitchToClient] Account not found, showing import prompt for: ${currentEmail} (source: ${source})`);
-                this.hud.sendMessage({
-                    type: 'antigravityToolsSyncPrompt',
-                    data: {
-                        promptType: 'new_accounts',
-                        newEmails: [currentEmail],
-                        currentEmail: currentEmail,
-                        localEmail: source === 'local' ? currentEmail : undefined,
-                        sameAccount: false,
-                        autoConfirm: false,
-                    },
-                });
+                // 账户在 Cockpit 中不存在，自动从客户端导入并切换
+                logger.info(`[SwitchToClient] Account ${currentEmail} not in Cockpit, importing and switching...`);
+                try {
+                    const result = await commitLocalCredential({ overwrite: true, fallbackEmail: currentEmail });
+                    await autoTriggerController.switchAccount(result.email);
+                    const state = await autoTriggerController.getState();
+                    this.hud.sendMessage({ type: 'autoTriggerState', data: state });
+
+                    // 刷新配额
+                    const quotaSource = configService.getConfig().quotaSource === 'authorized' ? 'authorized' : 'local';
+                    const usedCache = await this.reactor.tryUseQuotaCache(quotaSource, result.email);
+                    if (!usedCache) {
+                        this.reactor.syncTelemetry();
+                    }
+
+                    vscode.window.showInformationMessage(
+                        t('quotaSource.importLocalSuccess', { email: result.email })
+                        || `已导入并切换至客户端账户: ${result.email}`,
+                    );
+                } catch (importErr) {
+                    const err = importErr instanceof Error ? importErr.message : String(importErr);
+                    logger.error(`[SwitchToClient] Import failed: ${err}`);
+                    vscode.window.showErrorMessage(
+                        t('quotaSource.importLocalFailed', { message: err })
+                        || `导入客户端账户失败: ${err}`,
+                    );
+                }
             }
         } catch (error) {
             const err = error instanceof Error ? error.message : String(error);

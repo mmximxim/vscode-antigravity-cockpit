@@ -136,6 +136,50 @@ export function getCockpitToolsSharedDir(): string {
     return path.join(os.homedir(), '.antigravity_cockpit');
 }
 
+export function getAntigravityStateDbCandidates(): string[] {
+    const list: string[] = [];
+
+    if (overrideUserDataDir) {
+        list.push(path.join(overrideUserDataDir, 'User', 'globalStorage', 'state.vscdb'));
+    }
+
+    if (isAntigravityWslRemote()) {
+        try {
+            const wslWinAppData = resolveWslWindowsAppDataDir();
+            list.push(
+                path.posix.join(wslWinAppData, 'Antigravity IDE', 'User', 'globalStorage', 'state.vscdb'),
+                path.posix.join(wslWinAppData, 'Antigravity', 'User', 'globalStorage', 'state.vscdb'),
+            );
+        } catch {
+            // ignore
+        }
+    } else {
+        const homeDir = os.homedir();
+        if (process.platform === 'win32') {
+            const appData = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
+            list.push(
+                path.join(appData, 'Antigravity IDE', 'User', 'globalStorage', 'state.vscdb'),
+                path.join(appData, 'Antigravity', 'User', 'globalStorage', 'state.vscdb'),
+            );
+        } else if (process.platform === 'darwin') {
+            const appSupport = path.join(homeDir, 'Library', 'Application Support');
+            list.push(
+                path.join(appSupport, 'Antigravity IDE', 'User', 'globalStorage', 'state.vscdb'),
+                path.join(appSupport, 'Antigravity', 'User', 'globalStorage', 'state.vscdb'),
+            );
+        } else {
+            list.push(
+                path.join(homeDir, '.config', 'Antigravity IDE', 'User', 'globalStorage', 'state.vscdb'),
+                path.join(homeDir, '.config', 'Antigravity', 'User', 'globalStorage', 'state.vscdb'),
+            );
+        }
+    }
+
+    const unique = Array.from(new Set(list));
+    const existing = unique.filter(p => fs.existsSync(p));
+    return existing.length > 0 ? existing : unique;
+}
+
 export function getAntigravityStateDbPath(): string {
     if (isAntigravityWslRemote()) {
         const wslWinAppData = resolveWslWindowsAppDataDir();

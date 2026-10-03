@@ -7,7 +7,7 @@ import { credentialStorage } from './credential_storage';
 import { oauthService } from './oauth_service';
 import { OAuthCredential } from './types';
 import { logger } from '../shared/log_service';
-import { getAntigravityStateDbPath, getAntigravityUserDataDir } from '../shared/antigravity_paths';
+import { getAntigravityStateDbPath, getAntigravityStateDbCandidates, getAntigravityUserDataDir } from '../shared/antigravity_paths';
 
 const LEGACY_STATE_KEY = 'jetskiStateSync.agentManagerInitState';
 const UNIFIED_STATE_KEY = 'antigravityUnifiedStateSync.oauthToken';
@@ -55,6 +55,7 @@ interface LocalTokenInfo {
     refreshToken?: string;
     tokenType?: string;
     expirySeconds?: number;
+    email?: string;
 }
 
 interface PendingLocalCredential {
@@ -139,8 +140,9 @@ function skipField(data: Buffer, offset: number, wireType: number): number {
     throw new Error(`Unknown wire type: ${wireType}`);
 }
 
-function findField(data: Buffer, targetField: number): Buffer | undefined {
+function findFields(data: Buffer, targetField: number): Buffer[] {
     let offset = 0;
+    const results: Buffer[] = [];
     while (offset < data.length) {
         let tag = 0;
         let newOffset = 0;
@@ -153,11 +155,89 @@ function findField(data: Buffer, targetField: number): Buffer | undefined {
         const fieldNum = tag >> 3;
         if (fieldNum === targetField && wireType === 2) {
             const [length, contentOffset] = readVarint(data, newOffset);
-            return data.subarray(contentOffset, contentOffset + length);
+            results.push(data.subarray(contentOffset, contentOffset + length));
+            offset = contentOffset + length;
+        } else {
+            try {
+                offset = skipField(data, newOffset, wireType);
+            } catch {
+                break;
+            }
         }
-        offset = skipField(data, newOffset, wireType);
     }
-    return undefined;
+    return results;
+}
+
+function findField(data: Buffer, targetField: number): Buffer | undefined {
+    return findFields(data, targetField)[0];
+}
+
+function extractEmailFromUserStatus(stateValue: string): string | null {
+    try {
+        const raw = Buffer.from(stateValue.trim(), 'base64');
+        const inners = findFields(raw, 1);
+        for (const inner of inners) {
+            const sub2List = findFields(inner, 2);
+            for (const sub2 of sub2List) {
+                const sub2Str = sub2.toString('utf8');
+                try {
+                    const decoded = Buffer.from(sub2Str, 'base64').toString('utf8');
+                    const match = decoded.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+                    if (match) {
+                        return match[1];
+                    }
+                } catch {
+                    // ignore
+                }
+                const matchDirect = sub2Str.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+                if (matchDirect) {
+                    return matchDirect[1];
+                }
+            }
+        }
+        const rawText = raw.toString('utf8');
+        const matchRaw = rawText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        if (matchRaw) {
+            return matchRaw[1];
+        }
+    } catch (e) {
+        logger.debug(`[LocalAuth] Error extracting email from userStatus: ${e}`);
+    }
+    return null;
+}
+
+async function tryReadEmailFromStateDb(dbPath: string): Promise<string | null> {
+    try {
+        if (await hasStateValueForKey(dbPath, 'antigravityAuthStatus')) {
+            const val = await readStateValueByKey(dbPath, 'antigravityAuthStatus');
+            try {
+                const parsed = JSON.parse(val);
+                if (parsed && typeof parsed.email === 'string' && parsed.email.includes('@')) {
+                    logger.info(`[LocalAuth] Discovered email from antigravityAuthStatus: ${parsed.email}`);
+                    return parsed.email;
+                }
+            } catch {
+                // ignore
+            }
+        }
+    } catch {
+        // ignore
+    }
+
+    try {
+        if (await hasStateValueForKey(dbPath, 'antigravityUnifiedStateSync.userStatus')) {
+            const val = await readStateValueByKey(dbPath, 'antigravityUnifiedStateSync.userStatus');
+            const email = extractEmailFromUserStatus(val);
+            if (email) {
+                logger.info(`[LocalAuth] Discovered email from userStatus: ${email}`);
+                return email;
+            }
+        }
+    } catch {
+        // ignore
+    }
+
+    return null;
 }
 
 function parseTimestamp(data: Buffer): number | undefined {
@@ -210,28 +290,61 @@ function parseOAuthTokenInfo(data: Buffer): LocalTokenInfo {
 
 function parseUnifiedOAuthTokenInfo(stateValue: string): LocalTokenInfo {
     const outerRaw = Buffer.from(stateValue.trim(), 'base64');
-    const inner = findField(outerRaw, 1);
-    if (!inner) {
+    const innerList = findFields(outerRaw, 1);
+    if (innerList.length === 0) {
         throw new Error('Unified oauth outer field not found');
     }
 
-    const sentinel = findField(inner, 1)?.toString();
-    if (sentinel !== 'oauthTokenInfoSentinelKey') {
+    let targetInner: Buffer | undefined;
+    for (const inner of innerList) {
+        const sentinel = findField(inner, 1)?.toString();
+        if (sentinel === 'oauthTokenInfoSentinelKey') {
+            targetInner = inner;
+            break;
+        }
+    }
+
+    if (!targetInner) {
+        for (const inner of innerList) {
+            if (inner.includes('oauthTokenInfoSentinelKey')) {
+                targetInner = inner;
+                break;
+            }
+        }
+    }
+
+    if (!targetInner) {
         throw new Error('Unified oauth sentinel mismatch');
     }
 
-    const inner2 = findField(inner, 2);
-    if (!inner2) {
-        throw new Error('Unified oauth inner field not found');
+    const inner2List = findFields(targetInner, 2);
+    for (const inner2 of inner2List) {
+        // Try field 1 as base64 string
+        const sub1 = findField(inner2, 1);
+        if (sub1) {
+            const oauthInfoB64 = sub1.toString('utf8').trim();
+            try {
+                const oauthInfoRaw = Buffer.from(oauthInfoB64, 'base64');
+                const info = parseOAuthTokenInfo(oauthInfoRaw);
+                if (info.refreshToken || info.accessToken) {
+                    return info;
+                }
+            } catch {
+                // ignore
+            }
+        }
+        // Try inner2 directly as raw protobuf
+        try {
+            const info = parseOAuthTokenInfo(inner2);
+            if (info.refreshToken || info.accessToken) {
+                return info;
+            }
+        } catch {
+            // ignore
+        }
     }
 
-    const oauthInfoB64 = findField(inner2, 1)?.toString();
-    if (!oauthInfoB64) {
-        throw new Error('Unified oauth info not found');
-    }
-
-    const oauthInfoRaw = Buffer.from(oauthInfoB64.trim(), 'base64');
-    return parseOAuthTokenInfo(oauthInfoRaw);
+    throw new Error('Unified oauth info not found');
 }
 
 async function hasStateValueForKey(dbPath: string, key: string): Promise<boolean> {
@@ -263,27 +376,43 @@ async function readLegacyTokenInfo(dbPath: string): Promise<LocalTokenInfo> {
 }
 
 async function readLocalTokenInfo(): Promise<LocalTokenInfo> {
-    const dbPath = getAntigravityStateDbPath();
-    logger.info(`[LocalAuth] state.vscdb path: ${dbPath}`);
+    const candidates = getAntigravityStateDbCandidates();
+    logger.info(`[LocalAuth] state.vscdb candidate paths (${candidates.length}): ${candidates.join(', ')}`);
 
-    const hasUnifiedState = await hasStateValueForKey(dbPath, UNIFIED_STATE_KEY);
-    const hasLegacyState = await hasStateValueForKey(dbPath, LEGACY_STATE_KEY);
+    let lastError: Error | null = null;
+    for (const dbPath of candidates) {
+        try {
+            const hasUnifiedState = await hasStateValueForKey(dbPath, UNIFIED_STATE_KEY);
+            const hasLegacyState = await hasStateValueForKey(dbPath, LEGACY_STATE_KEY);
 
-    if (hasUnifiedState && !hasLegacyState) {
-        logger.info(`[LocalAuth] Token state source selected: ${UNIFIED_STATE_KEY}`);
-        return readUnifiedTokenInfo(dbPath);
+            let tokenInfo: LocalTokenInfo | null = null;
+            if (hasUnifiedState && !hasLegacyState) {
+                logger.info(`[LocalAuth] Token state source selected: ${UNIFIED_STATE_KEY} (db: ${dbPath})`);
+                tokenInfo = await readUnifiedTokenInfo(dbPath);
+            } else if (!hasUnifiedState && hasLegacyState) {
+                logger.info(`[LocalAuth] Token state source selected: ${LEGACY_STATE_KEY} (db: ${dbPath})`);
+                tokenInfo = await readLegacyTokenInfo(dbPath);
+            } else if (hasUnifiedState && hasLegacyState) {
+                logger.info(`[LocalAuth] Token state source selected: ${UNIFIED_STATE_KEY} (both-keys-present, db: ${dbPath})`);
+                tokenInfo = await readUnifiedTokenInfo(dbPath);
+            }
+
+            if (tokenInfo && (tokenInfo.refreshToken || tokenInfo.accessToken)) {
+                const discoveredEmail = await tryReadEmailFromStateDb(dbPath);
+                if (discoveredEmail && !tokenInfo.email) {
+                    tokenInfo.email = discoveredEmail;
+                }
+                return tokenInfo;
+            }
+        } catch (err) {
+            lastError = err instanceof Error ? err : new Error(String(err));
+            logger.debug(`[LocalAuth] Failed reading candidate ${dbPath}: ${lastError.message}`);
+        }
     }
 
-    if (!hasUnifiedState && hasLegacyState) {
-        logger.info(`[LocalAuth] Token state source selected: ${LEGACY_STATE_KEY}`);
-        return readLegacyTokenInfo(dbPath);
+    if (lastError) {
+        throw lastError;
     }
-
-    if (hasUnifiedState && hasLegacyState) {
-        logger.info(`[LocalAuth] Token state source selected: ${UNIFIED_STATE_KEY} (both-keys-present)`);
-        return readUnifiedTokenInfo(dbPath);
-    }
-
     throw new Error(`No oauth token state key found (${UNIFIED_STATE_KEY} / ${LEGACY_STATE_KEY})`);
 }
 
@@ -311,18 +440,34 @@ export async function previewLocalCredential(
     fallbackEmail?: string,
 ): Promise<{ email: string; exists: boolean }> {
     const tokenInfo = await readLocalTokenInfo();
+    const effectiveEmail = fallbackEmail || tokenInfo.email;
+
     if (!tokenInfo.refreshToken) {
+        if (effectiveEmail) {
+            const exists = await credentialStorage.hasAccount(effectiveEmail);
+            return { email: effectiveEmail, exists };
+        }
         throw new Error('refresh_token not found');
     }
 
     logger.info(`[LocalAuthImport] Found local refresh token (len=${tokenInfo.refreshToken.length})`);
 
-    const credential = await oauthService.buildCredentialFromRefreshToken(
-        tokenInfo.refreshToken,
-        fallbackEmail,
-    );
+    let credential: OAuthCredential | null = null;
+    try {
+        credential = await oauthService.buildCredentialFromRefreshToken(
+            tokenInfo.refreshToken,
+            effectiveEmail,
+        );
+    } catch (e) {
+        logger.warn(`[LocalAuthImport] buildCredentialFromRefreshToken failed: ${e instanceof Error ? e.message : e}`);
+        if (effectiveEmail) {
+            const exists = await credentialStorage.hasAccount(effectiveEmail);
+            return { email: effectiveEmail, exists };
+        }
+        throw e;
+    }
 
-    if (!credential.email) {
+    if (!credential?.email) {
         throw new Error('无法确定账号邮箱');
     }
 
@@ -348,12 +493,13 @@ export async function commitLocalCredential(
 
     if (!credential) {
         const tokenInfo = await readLocalTokenInfo();
+        const effectiveFallback = options.fallbackEmail || tokenInfo.email;
         if (!tokenInfo.refreshToken) {
             throw new Error('refresh_token not found');
         }
         credential = await oauthService.buildCredentialFromRefreshToken(
             tokenInfo.refreshToken,
-            options.fallbackEmail,
+            effectiveFallback,
         );
     }
 
