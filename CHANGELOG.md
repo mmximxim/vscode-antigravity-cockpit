@@ -10,6 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.73] - 2026-10-03
+
+### Added & Improved
+- **Add Today's Token Usage Card to Stats Dashboard**:
+  - Added a dedicated "今日使用 Tokens" (Today's Token Usage) summary card to the quota statistics dashboard grid;
+  - Displays token count formatted with smart units (`万`/`k`) alongside estimated official API USD value (`≈ $X.XX 价值`);
+  - Added informative hover tooltip explaining today's token consumption metrics;
+  - Restores grid balance and symmetry to 4 cards across all viewport sizes.
+
 ## [2.1.72] - 2026-09-11
 
 ### Fixed & Improved

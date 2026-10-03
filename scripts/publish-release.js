@@ -96,19 +96,15 @@ async function main() {
     const owner = 'mmximxim';
     const repo = 'vscode-antigravity-cockpit';
     const tagName = `v${version}`;
-    const releaseName = `v${version}: 周限额拆分为两行展示，优化计划详情与提示卡片控制`;
-    const releaseBody = `## 🚀 Antigravity Cockpit v\${version}
+    const releaseName = `v${version}: 数据看板新增今日使用Token指标卡片`;
+    const releaseBody = `## 🚀 Antigravity Cockpit v${version}
 
-### ✨ 界面优化与功能修复
-- **周限额信息拆分为独立两行展示**：
-  - 将模型与分组卡片底部的周限额拆分为「周限额」与「周重置倒计时」两行，与「重置倒计时」和「重置时间」结构保持统一，信息展示更加清晰直观；
-  - 悬停周重置倒计时即可查看完整的具体重置时间。
-- **优化计划详情卡片控制与常驻关闭**：
-  - 默认隐藏计划详情面板，避免遮挡模型监控区域；
-  - 计划详情卡片右上角新增关闭按钮（✕），支持一键快速关闭，并持久化保存关闭状态；
-  - 修复 authorized 授权模式下顶部导航栏「计划」按钮被隐藏的问题，支持随时从顶部重新展开或收起计划详情；
-  - 明确「数据脱敏/显示明文」按钮命名，避免与隐藏卡片产生混淆；
-  - 分组模式提示横幅支持点击（✕）关闭，不再反复弹出。
+### ✨ 界面优化与功能新增
+- **数据看板新增「今日使用 Tokens」指标卡片**：
+  - 在配额历史与数据看板顶部的核心统计网格中新增「今日使用 Tokens」卡片；
+  - 实时展示今日（本地日期）产生的消耗总量（支持万/k智能单位换算）与预估官方 API 折算价值（\`≈ $X.XX 价值\`）；
+  - 支持鼠标悬停查看详细的计算口径说明 Tooltip；
+  - 汇总网格扩展为 4 张卡片对称布局，在不同分辨率下视觉排版更加规整美观。
 `;
 
     console.log(`📌 创建/更新 GitHub Release: ${tagName} (${releaseName})...`);

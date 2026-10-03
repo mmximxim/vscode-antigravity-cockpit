@@ -26,6 +26,7 @@ export interface DailyModelStat {
 /** Summary card data */
 export interface StatsSummaryCards {
     totalConsumed: number;          // All-time cumulative consumed units
+    todayConsumed?: number;         // Consumed units today
     peakDailyConsumed: number;      // Max consumed in a single day
     currentStreak: number;          // Current consecutive active days
     longestStreak: number;          // Historical longest streak

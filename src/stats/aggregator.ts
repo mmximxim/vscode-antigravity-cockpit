@@ -232,7 +232,7 @@ export class StatsAggregator {
 
     private computeSummaryCards(records: UsageRecord[]): StatsSummaryCards {
         if (records.length === 0) {
-            return { totalConsumed: 0, peakDailyConsumed: 0, currentStreak: 0, longestStreak: 0 };
+            return { totalConsumed: 0, todayConsumed: 0, peakDailyConsumed: 0, currentStreak: 0, longestStreak: 0 };
         }
 
         const totalConsumed = records.reduce((s, r) => s + r.consumed, 0);
@@ -244,6 +244,8 @@ export class StatsAggregator {
             dailyMap.set(d, (dailyMap.get(d) ?? 0) + r.consumed);
         }
 
+        const todayStr = this.toDateStr(Date.now());
+        const todayConsumed = dailyMap.get(todayStr) ?? 0;
         const peakDailyConsumed = Math.max(...Array.from(dailyMap.values()));
 
         // Streak computation
@@ -251,6 +253,7 @@ export class StatsAggregator {
 
         return {
             totalConsumed: Math.round(totalConsumed),
+            todayConsumed: Math.round(todayConsumed),
             peakDailyConsumed: Math.round(peakDailyConsumed),
             currentStreak: current,
             longestStreak: longest,

@@ -78,17 +78,24 @@
     function renderSummaryCards(cards) {
         if (!cards) { return; }
         let totalEl      = document.getElementById('stats-total-tokens');
+        let todayEl      = document.getElementById('stats-today-tokens');
         let peakEl       = document.getElementById('stats-peak-tokens');
         let streakEl     = document.getElementById('stats-streak');
         let recordEl     = document.getElementById('stats-record-streak');
         let totalValueEl = document.getElementById('stats-total-value');
+        let todayValueEl = document.getElementById('stats-today-value');
 
         if (totalEl)  { totalEl.textContent  = formatTokens(cards.totalConsumed); }
         if (totalValueEl) {
             // 基于 Antigravity 逆向抓包与 Google 官方 Context Caching 真实计费标准：
             // 100% 满额配额对应 5 小时 $4.00 API 价值（全天约 $19.2），即约 $4.00 / 百万 Tokens
-            let estUsd = ((cards.totalConsumed / 1000000) * 4).toFixed(2);
+            let estUsd = (((cards.totalConsumed || 0) / 1000000) * 4).toFixed(2);
             totalValueEl.textContent = '≈ $' + estUsd + ' 价值';
+        }
+        if (todayEl) { todayEl.textContent = formatTokens(cards.todayConsumed || 0); }
+        if (todayValueEl) {
+            let estTodayUsd = (((cards.todayConsumed || 0) / 1000000) * 4).toFixed(2);
+            todayValueEl.textContent = '≈ $' + estTodayUsd + ' 价值';
         }
         if (peakEl)   { peakEl.textContent   = formatTokens(cards.peakDailyConsumed); }
         if (streakEl) { streakEl.textContent = (cards.currentStreak || 0) + ' 天'; }
@@ -539,6 +546,14 @@
                 showTooltip(e, '<strong>💡 累计 Token 与真实价值估算说明</strong><br>基于 Antigravity 逆向计费与官方真实 Token 量换算：<br>• <strong>Token 换算</strong>：内置提示词约 1.7万 Tokens 起步，配额每下降 1% 约对应 <strong>10,000 (1万) Tokens</strong>（100% 满额配额 ≈ 100万 Tokens）。<br>• <strong>价值换算</strong>：参考 Google 官方 Context Caching 真实计费标准（5小时满额约对应 <strong>$4.00 官方 API 价值</strong>，全天约 $19.2），按约 <strong>$4.00 / 百万 Tokens</strong> 真实折算。<br>• <strong>智能去重</strong>：已自动合并 Gemini 与 Claude 共享模型池并过滤周期重置波动。');
             });
             cardTokens.addEventListener('mouseleave', hideTooltip);
+        }
+
+        let cardToday = document.querySelector('.stats-card-today');
+        if (cardToday) {
+            cardToday.addEventListener('mouseenter', function (e) {
+                showTooltip(e, '<strong>🎯 今日使用 Token 说明</strong><br>今日（本地日期）产生的 Token 消耗总量与预估官方 API 价值。');
+            });
+            cardToday.addEventListener('mouseleave', hideTooltip);
         }
 
         let cardPeak = document.querySelector('.stats-card-peak');

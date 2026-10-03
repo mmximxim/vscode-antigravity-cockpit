@@ -133,6 +133,7 @@
 
 /* Card accent colors */
 .stats-card-tokens { --stats-card-accent: #2f81f7; }
+.stats-card-today  { --stats-card-accent: #d2a8ff; }
 .stats-card-peak   { --stats-card-accent: #f78166; }
 .stats-card-streak { --stats-card-accent: #3fb950; }
 .stats-card-record { --stats-card-accent: #d2a8ff; }
