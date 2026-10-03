@@ -1048,6 +1048,13 @@ export class CockpitHUD {
                         <option value="all">🌐 全部账号 (All)</option>
                     </select>
                 </div>
+                <div class="stats-unit-switcher-group">
+                    <span class="stats-unit-label">单位：</span>
+                    <div class="stats-filter-group" id="stats-unit-filter-group">
+                        <button class="stats-filter-btn active" id="stats-unit-compact" data-unit="compact" title="行业与开发者标准：百万 (M) / 十亿 (B)">M / B (行业标准)</button>
+                        <button class="stats-filter-btn" id="stats-unit-chinese" data-unit="chinese" title="中文习惯大数进阶：万 / 亿">万 / 亿 (中文习惯)</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Summary Cards -->

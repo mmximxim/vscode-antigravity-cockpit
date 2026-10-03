@@ -10,6 +10,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.76] - 2026-10-03
+
+### Refined & Enhanced
+- **Refined Token Metrics Display & Typography**:
+  - Implemented dual-mode unit formatting: compact industry standard (`M / B`, e.g. `1.63 B`, `39.07 M`) and Chinese natural tiering (`万 / 亿`, e.g. `16.34 亿`, `3906.67 万`), completely resolving jarring oversized numbers like `163381.94 万`;
+  - Added dedicated unit switcher (`M / B` ↔ `万 / 亿`) in the top toolbar with persistent preferences in local storage;
+  - Decoupled number and unit typography: large bold tabular numbers paired with sleek muted unit labels (`B`, `M`, `亿`, `万`, `天`);
+  - Added interactive card hover tooltips displaying full exact comma-separated token counts (`1,633,819,400 Tokens`) and click-to-toggle unit functionality;
+  - Enhanced chart Y-axis and tooltip formatting with exact counts.
+
 ## [2.1.75] - 2026-10-03
 
 ### Restored & Enhanced

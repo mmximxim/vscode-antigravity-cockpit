@@ -65,12 +65,62 @@
         if (tooltip) { tooltip.classList.remove('visible'); }
     }
 
-    // ─── Number formatting ────────────────────────────────────────
-    function formatTokens(n) {
-        if (n === null || n === undefined || isNaN(n)) { return '0'; }
-        if (n >= 10000)     { return (n / 10000).toFixed(2) + ' 万'; }
-        if (n >= 1000)      { return (n / 1000).toFixed(1) + 'k'; }
-        return String(Math.round(n));
+    // ─── Unit Mode & Number formatting ────────────────────────────
+    let currentUnitMode = 'compact'; // 'compact' (M / B) or 'chinese' (万 / 亿)
+    try {
+        let savedUnit = localStorage.getItem('stats_unit_mode');
+        if (savedUnit === 'chinese' || savedUnit === 'compact') {
+            currentUnitMode = savedUnit;
+        }
+    } catch {
+        // ignore storage error
+    }
+
+    function formatTokensSplit(n, mode) {
+        mode = mode || currentUnitMode || 'compact';
+        if (n === null || n === undefined || isNaN(n)) {
+            return { num: '0', unit: '' };
+        }
+        if (mode === 'chinese') {
+            // Chinese Tier: 万 / 亿
+            if (n >= 1e8) {
+                return { num: (n / 1e8).toFixed(2), unit: '亿' };
+            }
+            if (n >= 1e4) {
+                return { num: (n / 1e4).toFixed(2), unit: '万' };
+            }
+            if (n >= 1e3) {
+                return { num: (n / 1e3).toFixed(1), unit: 'k' };
+            }
+            return { num: String(Math.round(n)), unit: '' };
+        } else {
+            // Compact Industry Standard: k / M / B
+            if (n >= 1e9) {
+                return { num: (n / 1e9).toFixed(2), unit: 'B' };
+            }
+            if (n >= 1e6) {
+                return { num: (n / 1e6).toFixed(2), unit: 'M' };
+            }
+            if (n >= 1e3) {
+                return { num: (n / 1e3).toFixed(1), unit: 'k' };
+            }
+            return { num: String(Math.round(n)), unit: '' };
+        }
+    }
+
+    function formatTokens(n, mode) {
+        let parts = formatTokensSplit(n, mode);
+        if (!parts.unit) { return parts.num; }
+        return parts.num + ' ' + parts.unit;
+    }
+
+    function renderMetricValue(element, num, unit, rawVal) {
+        if (!element) { return; }
+        element.innerHTML = '<span class="stats-metric-num">' + num + '</span>' +
+            (unit ? '<span class="stats-card-unit">' + unit + '</span>' : '');
+        if (rawVal !== undefined && rawVal !== null) {
+            element.setAttribute('data-val', String(rawVal));
+        }
     }
 
     // ─── Summary Cards ────────────────────────────────────────────
@@ -84,23 +134,43 @@
         let totalValueEl = document.getElementById('stats-total-value');
         let todayValueEl = document.getElementById('stats-today-value');
 
-        if (totalEl)  { totalEl.textContent  = formatTokens(cards.totalConsumed); }
-        if (totalValueEl) {
-            let estUsd = (typeof cards.apiCost === 'number'
-                ? cards.apiCost
-                : (((cards.totalConsumed || 0) / 1000000) * 4)).toFixed(2);
-            totalValueEl.textContent = '≈ $' + estUsd + ' API价值';
+        if (todayEl) {
+            let val = cards.todayConsumed || 0;
+            let parts = formatTokensSplit(val);
+            renderMetricValue(todayEl, parts.num, parts.unit, val);
         }
-        if (todayEl) { todayEl.textContent = formatTokens(cards.todayConsumed || 0); }
         if (todayValueEl) {
             let estTodayUsd = (typeof cards.todayApiCost === 'number'
                 ? cards.todayApiCost
                 : (((cards.todayConsumed || 0) / 1000000) * 4)).toFixed(2);
             todayValueEl.textContent = '≈ $' + estTodayUsd + ' API价值';
         }
-        if (peakEl)   { peakEl.textContent   = formatTokens(cards.peakDailyConsumed); }
-        if (streakEl) { streakEl.textContent = (cards.currentStreak || 0) + ' 天'; }
-        if (recordEl) { recordEl.textContent = '最长 ' + (cards.longestStreak || 0) + ' 天'; }
+
+        if (totalEl) {
+            let val = cards.totalConsumed || 0;
+            let parts = formatTokensSplit(val);
+            renderMetricValue(totalEl, parts.num, parts.unit, val);
+        }
+        if (totalValueEl) {
+            let estUsd = (typeof cards.apiCost === 'number'
+                ? cards.apiCost
+                : (((cards.totalConsumed || 0) / 1000000) * 4)).toFixed(2);
+            totalValueEl.textContent = '≈ $' + estUsd + ' API价值';
+        }
+
+        if (peakEl) {
+            let val = cards.peakDailyConsumed || 0;
+            let parts = formatTokensSplit(val);
+            renderMetricValue(peakEl, parts.num, parts.unit, val);
+        }
+
+        if (streakEl) {
+            let streakVal = cards.currentStreak || 0;
+            renderMetricValue(streakEl, String(streakVal), '天', streakVal);
+        }
+        if (recordEl) {
+            recordEl.textContent = '最长 ' + (cards.longestStreak || 0) + ' 天';
+        }
     }
 
     let currentHeatmapMode = 'daily';
@@ -295,6 +365,14 @@
                             // Only show lines with non-zero consumption on that day to prevent tooltip clutter
                             return tooltipItem.raw > 0;
                         },
+                        callbacks: {
+                            label: function (context) {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                let val = context.raw || 0;
+                                return label + formatTokens(val) + ' (' + val.toLocaleString('en-US') + ')';
+                            },
+                        },
                     },
                 },
                 scales: {
@@ -429,6 +507,7 @@
                 let tokens = document.createElement('span');
                 tokens.className = 'stats-donut-legend-tokens';
                 tokens.textContent = formatTokens(d.consumed || 0);
+                tokens.title = (d.consumed || 0).toLocaleString('en-US') + ' Tokens';
 
                 let pct = document.createElement('span');
                 pct.className = 'stats-donut-legend-pct';
@@ -564,6 +643,63 @@
             });
             infoPeak.addEventListener('mouseleave', hideTooltip);
         }
+
+        // Unit Mode Toggle & Card Click Interactions
+        function setUnitMode(newMode) {
+            if (currentUnitMode === newMode) { return; }
+            currentUnitMode = newMode;
+            try {
+                localStorage.setItem('stats_unit_mode', newMode);
+            } catch {
+                // ignore storage error
+            }
+            updateUnitButtonsUI();
+            if (statsData) {
+                renderAll(statsData);
+            }
+        }
+
+        function toggleUnitMode() {
+            setUnitMode(currentUnitMode === 'compact' ? 'chinese' : 'compact');
+        }
+
+        function updateUnitButtonsUI() {
+            let btnCompact = document.getElementById('stats-unit-compact');
+            let btnChinese = document.getElementById('stats-unit-chinese');
+            if (btnCompact) { btnCompact.classList.toggle('active', currentUnitMode === 'compact'); }
+            if (btnChinese) { btnChinese.classList.toggle('active', currentUnitMode === 'chinese'); }
+        }
+
+        function bindCardHoverAndClick(elementId, labelName) {
+            let el = document.getElementById(elementId);
+            if (!el) { return; }
+            el.addEventListener('mouseenter', function (e) {
+                let rawStr = el.getAttribute('data-val');
+                let rawNum = rawStr ? Number(rawStr) : 0;
+                let exactFormatted = rawNum.toLocaleString('en-US');
+                showTooltip(e, '<strong>' + labelName + '</strong><br>' +
+                    '精确数值：<code>' + exactFormatted + '</code> Tokens<br>' +
+                    '<span style="opacity:0.75; font-size:11px; margin-top:3px; display:inline-block;">💡 点击卡片可切换单位显示 (M/B ↔ 万/亿)</span>');
+            });
+            el.addEventListener('mouseleave', hideTooltip);
+            el.addEventListener('click', function () {
+                toggleUnitMode();
+            });
+        }
+
+        bindCardHoverAndClick('stats-today-tokens', '今日使用 Tokens');
+        bindCardHoverAndClick('stats-total-tokens', '累计消耗 Tokens');
+        bindCardHoverAndClick('stats-peak-tokens', '单日峰值 Tokens');
+
+        let btnCompact = document.getElementById('stats-unit-compact');
+        if (btnCompact) {
+            btnCompact.addEventListener('click', function () { setUnitMode('compact'); });
+        }
+        let btnChinese = document.getElementById('stats-unit-chinese');
+        if (btnChinese) {
+            btnChinese.addEventListener('click', function () { setUnitMode('chinese'); });
+        }
+        updateUnitButtonsUI();
 
         // On window resize, re-render heatmap to adjust weeks
         window.addEventListener('resize', function () {

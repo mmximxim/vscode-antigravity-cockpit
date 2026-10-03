@@ -113,15 +113,18 @@ async function main() {
     const owner = 'mmximxim';
     const repo = 'vscode-antigravity-cockpit';
     const tagName = `v${version}`;
-    const releaseName = `v${version}: 原生集成真实Token统计与API商业价值折算`;
+    const releaseName = `v${version}: 重构Token数值显示排版与双模单位系统`;
     const releaseBody = `## 🚀 Antigravity Cockpit v${version}
 
-### 💎 原生集成本地真实 Token 统计与商业 API 价值折算
-- **原生提取与解析**：直接从 Antigravity 本地对话数据库（\`~/.gemini/antigravity/conversations/*.db\`）精确解析底层 Protobuf 的实际使用 Token（包含输入、输出、思考、缓存命中等）；
-- **商业 API 价值折算**：恢复并原生内置细分模型级别的官方商业 API 价值折算公式（Gemini Flash: $0.75/$3.75/$0.075 每百万 tokens；Claude: $3.00/$15.00/$0.30 每百万 tokens）；
-- **统一单位显示**：Token 显示格式统一恢复为带有 2 位小数的「万」为单位（如 \`162533.54 万\`，取消过大的「亿」单位）；
-- **高性能本地缓存**：内置本地增量时间戳文件缓存（\`real_tokens_cache.json\`），毫秒级极速载入；
-- **今日消耗统计**：核心卡片支持实时呈现今日真实消耗 Tokens 与今日商业 API 价值。
+### 🎨 优雅重构 Token 数值显示与排版体系
+- **彻底告别视觉突兀**：解决单一「万」单位导致的大数视觉臃肿问题（如 \`163381.94 万\`），重构为行业标准与中文自然进阶双模体系；
+- **双模单位自由切换**：
+  - **M / B（行业标准）**：采用全球 AI 平台与开发者通用标准（如 \`1.63 B\`、\`39.07 M\`）；
+  - **万 / 亿（中文习惯）**：采用中文大数自然进阶（如 \`16.34 亿\`、\`3906.67 万\`）；
+  - 支持在顶部工具栏一键切换，并持久化保存至本地存储；
+- **排版字号落差分离**：大号加粗等宽数值搭配精致小号副单位标签（\`B\`、\`M\`、\`亿\`、\`万\`、\`天\`），布局极富呼吸感与现代感；
+- **卡片交互式精度查看**：鼠标悬停在卡片数值上即刻浮现完整千分位精确 Token 计数（如 \`1,633,819,400 Tokens\`），点击数值卡片亦可瞬间切换单位模式；
+- **图表与列表同步精简**：趋势图 Y 轴、悬停浮层、分布饼图和模型列表同步更新为统一的规整格式。
 `;
 
     console.log(`📌 创建/更新 GitHub Release: ${tagName} (${releaseName})...`);
