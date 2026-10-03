@@ -10,6 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.77] - 2026-10-03
+
+### Refined & Simplified
+- **Bind Token Unit System to Interface Language**:
+  - Automatically binds token units to the current locale: Chinese (`zh-cn`/`zh-tw`) automatically uses natural `万 / 亿` units, while other languages automatically use standard `M / B` units;
+  - Cleaned up redundant unit toggle buttons from the top toolbar, restoring a clean single-row layout without unnecessary toolbar wrapping;
+  - Retained interactive card click to seamlessly toggle units on demand with locale-aware precision tooltips.
+
 ## [2.1.76] - 2026-10-03
 
 ### Refined & Enhanced

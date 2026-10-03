@@ -65,12 +65,19 @@
         if (tooltip) { tooltip.classList.remove('visible'); }
     }
 
-    // ─── Unit Mode & Number formatting ────────────────────────────
-    let currentUnitMode = 'compact'; // 'compact' (M / B) or 'chinese' (万 / 亿)
+    // ─── Unit Mode & Number formatting (Bound to Language) ────────
+    function getLanguageUnitMode() {
+        let lang = (document.documentElement && document.documentElement.lang) || navigator.language || 'zh-cn';
+        return lang.toLowerCase().startsWith('zh') ? 'chinese' : 'compact';
+    }
+
+    let currentUnitMode = getLanguageUnitMode();
     try {
-        let savedUnit = localStorage.getItem('stats_unit_mode');
-        if (savedUnit === 'chinese' || savedUnit === 'compact') {
-            currentUnitMode = savedUnit;
+        // Remove legacy key if present so language binding takes precedence
+        localStorage.removeItem('stats_unit_mode');
+        let savedOverride = localStorage.getItem('stats_unit_override');
+        if (savedOverride === 'chinese' || savedOverride === 'compact') {
+            currentUnitMode = savedOverride;
         }
     } catch {
         // ignore storage error
@@ -649,11 +656,10 @@
             if (currentUnitMode === newMode) { return; }
             currentUnitMode = newMode;
             try {
-                localStorage.setItem('stats_unit_mode', newMode);
+                localStorage.setItem('stats_unit_override', newMode);
             } catch {
                 // ignore storage error
             }
-            updateUnitButtonsUI();
             if (statsData) {
                 renderAll(statsData);
             }
@@ -663,13 +669,6 @@
             setUnitMode(currentUnitMode === 'compact' ? 'chinese' : 'compact');
         }
 
-        function updateUnitButtonsUI() {
-            let btnCompact = document.getElementById('stats-unit-compact');
-            let btnChinese = document.getElementById('stats-unit-chinese');
-            if (btnCompact) { btnCompact.classList.toggle('active', currentUnitMode === 'compact'); }
-            if (btnChinese) { btnChinese.classList.toggle('active', currentUnitMode === 'chinese'); }
-        }
-
         function bindCardHoverAndClick(elementId, labelName) {
             let el = document.getElementById(elementId);
             if (!el) { return; }
@@ -677,9 +676,12 @@
                 let rawStr = el.getAttribute('data-val');
                 let rawNum = rawStr ? Number(rawStr) : 0;
                 let exactFormatted = rawNum.toLocaleString('en-US');
-                showTooltip(e, '<strong>' + labelName + '</strong><br>' +
-                    '精确数值：<code>' + exactFormatted + '</code> Tokens<br>' +
-                    '<span style="opacity:0.75; font-size:11px; margin-top:3px; display:inline-block;">💡 点击卡片可切换单位显示 (M/B ↔ 万/亿)</span>');
+                let isZh = currentUnitMode === 'chinese';
+                let tip = '<strong>' + labelName + '</strong><br>' +
+                    (isZh ? '精确数值：' : 'Exact count: ') + '<code>' + exactFormatted + '</code> Tokens<br>' +
+                    '<span style="opacity:0.75; font-size:11px; margin-top:3px; display:inline-block;">💡 ' +
+                    (isZh ? '点击卡片可切换单位显示 (万/亿 ↔ M/B)' : 'Click card to toggle unit (M/B ↔ 万/亿)') + '</span>';
+                showTooltip(e, tip);
             });
             el.addEventListener('mouseleave', hideTooltip);
             el.addEventListener('click', function () {
@@ -690,16 +692,6 @@
         bindCardHoverAndClick('stats-today-tokens', '今日使用 Tokens');
         bindCardHoverAndClick('stats-total-tokens', '累计消耗 Tokens');
         bindCardHoverAndClick('stats-peak-tokens', '单日峰值 Tokens');
-
-        let btnCompact = document.getElementById('stats-unit-compact');
-        if (btnCompact) {
-            btnCompact.addEventListener('click', function () { setUnitMode('compact'); });
-        }
-        let btnChinese = document.getElementById('stats-unit-chinese');
-        if (btnChinese) {
-            btnChinese.addEventListener('click', function () { setUnitMode('chinese'); });
-        }
-        updateUnitButtonsUI();
 
         // On window resize, re-render heatmap to adjust weeks
         window.addEventListener('resize', function () {
