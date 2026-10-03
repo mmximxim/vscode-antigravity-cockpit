@@ -1,4 +1,5 @@
 import * as childProcess from 'child_process';
+import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
@@ -137,8 +138,19 @@ export function getCockpitToolsSharedDir(): string {
 
 export function getAntigravityStateDbPath(): string {
     if (isAntigravityWslRemote()) {
+        const wslWinAppData = resolveWslWindowsAppDataDir();
+        const candidateIde = path.posix.join(
+            wslWinAppData,
+            'Antigravity IDE',
+            'User',
+            'globalStorage',
+            'state.vscdb',
+        );
+        if (fs.existsSync(candidateIde)) {
+            return candidateIde;
+        }
         return path.posix.join(
-            resolveWslWindowsAppDataDir(),
+            wslWinAppData,
             'Antigravity',
             'User',
             'globalStorage',
@@ -152,6 +164,18 @@ export function getAntigravityStateDbPath(): string {
 
     const homeDir = os.homedir();
     if (process.platform === 'darwin') {
+        const candidateIde = path.join(
+            homeDir,
+            'Library',
+            'Application Support',
+            'Antigravity IDE',
+            'User',
+            'globalStorage',
+            'state.vscdb',
+        );
+        if (fs.existsSync(candidateIde)) {
+            return candidateIde;
+        }
         return path.join(
             homeDir,
             'Library',
@@ -164,7 +188,15 @@ export function getAntigravityStateDbPath(): string {
     }
     if (process.platform === 'win32') {
         const appData = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
+        const candidateIde = path.join(appData, 'Antigravity IDE', 'User', 'globalStorage', 'state.vscdb');
+        if (fs.existsSync(candidateIde)) {
+            return candidateIde;
+        }
         return path.join(appData, 'Antigravity', 'User', 'globalStorage', 'state.vscdb');
+    }
+    const candidateIde = path.join(homeDir, '.config', 'Antigravity IDE', 'User', 'globalStorage', 'state.vscdb');
+    if (fs.existsSync(candidateIde)) {
+        return candidateIde;
     }
     return path.join(homeDir, '.config', 'Antigravity', 'User', 'globalStorage', 'state.vscdb');
 }

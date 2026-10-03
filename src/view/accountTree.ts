@@ -425,7 +425,7 @@ export function registerAccountTreeCommands(
             }
             
             const result = await accountSwitchService.switchAccount(node.email, {
-                requestedMode: 'default',
+                requestedMode: 'auto',
             });
             if (!result.success) {
                 if (result.errorCode === 'tools_offline' && result.mode === 'default') {
@@ -462,7 +462,14 @@ export function registerAccountTreeCommands(
         vscode.commands.registerCommand('agCockpit.accountTree.openManager', async () => {
             const opened = await openCockpitToolsDesktop('AccountTree');
             if (!opened) {
-                vscode.window.showWarningMessage(t('accountTree.cannotOpenCockpitTools'));
+                const downloadAction = t('accountTree.downloadCockpitTools');
+                const action = await vscode.window.showWarningMessage(
+                    t('accountTree.cannotOpenCockpitTools'),
+                    downloadAction,
+                );
+                if (action === downloadAction) {
+                    vscode.env.openExternal(vscode.Uri.parse('https://github.com/jlcodes99/antigravity-cockpit-tools/releases'));
+                }
             }
         }),
     );

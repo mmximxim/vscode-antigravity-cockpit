@@ -1012,7 +1012,7 @@ export class MessageController {
                         logger.info(`User switching login account to: ${message.email}`);
                         const execution = await this.executeAccountSwitch({
                             targetEmail: message.email,
-                            switchMode: 'default',
+                            switchMode: 'auto',
                             triggerType: 'manual',
                             triggerSource: 'webview.autoTrigger.switchLoginAccount',
                         });
@@ -1086,7 +1086,7 @@ export class MessageController {
                         });
                         const execution = await this.executeAccountSwitch({
                             targetEmail: email,
-                            switchMode: 'default',
+                            switchMode: 'auto',
                             triggerType: 'manual',
                             triggerSource: 'webview.accounts.switchAccount',
                         });

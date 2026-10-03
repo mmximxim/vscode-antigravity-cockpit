@@ -1,15 +1,41 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { logger } from './log_service';
 import { isAntigravityWslRemote } from './antigravity_paths';
 
 const COCKPIT_TOOLS_DEEP_LINK = 'cockpit-tools://';
 
-function getLaunchCommand(): string {
+function findWindowsCockpitToolsExe(): string | null {
+    const localAppData = process.env.LOCALAPPDATA || '';
+    const programFiles = process.env.ProgramFiles || '';
+    const programFilesX86 = process.env['ProgramFiles(x86)'] || '';
+
+    const candidates = [
+        path.join(localAppData, 'Programs', 'Cockpit Tools', 'Cockpit Tools.exe'),
+        path.join(localAppData, 'Programs', 'antigravity-cockpit-tools', 'Cockpit Tools.exe'),
+        path.join(programFiles, 'Cockpit Tools', 'Cockpit Tools.exe'),
+        path.join(programFilesX86, 'Cockpit Tools', 'Cockpit Tools.exe'),
+    ];
+
+    for (const candidate of candidates) {
+        if (candidate && fs.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+    return null;
+}
+
+function getLaunchCommand(): string | null {
     if (process.platform === 'darwin') {
         return 'open -a "Cockpit Tools"';
     }
     if (process.platform === 'win32') {
-        return 'start "" "Cockpit Tools"';
+        const exePath = findWindowsCockpitToolsExe();
+        if (exePath) {
+            return `start "" "${exePath}"`;
+        }
+        return null;
     }
     if (process.platform === 'linux' && isAntigravityWslRemote()) {
         return 'cmd.exe /d /c start "" "cockpit-tools://"';
@@ -70,29 +96,37 @@ async function launchByDeepLink(sourceTag: string): Promise<boolean> {
 
 export async function openCockpitToolsDesktop(sourceTag: string): Promise<boolean> {
     const command = getLaunchCommand();
-    const result = await launchByCommand(command);
-    if (result.opened) {
+    if (command) {
+        const result = await launchByCommand(command);
+        if (result.opened) {
+            return true;
+        }
+
+        const errorMessage = result.errorMessage ?? '';
+        if (process.platform === 'win32' && isWindowsNotFoundError(errorMessage)) {
+            logger.warn(
+                `[${sourceTag}] Cockpit Tools command not found, trying deep link fallback: ${errorMessage}`,
+            );
+            return launchByDeepLink(sourceTag);
+        }
+        if (process.platform === 'linux' && isAntigravityWslRemote()) {
+            logger.warn(
+                `[${sourceTag}] WSL launch command failed, trying deep link fallback: ${errorMessage || 'unknown error'}`,
+            );
+            return launchByDeepLink(sourceTag);
+        }
+        if (errorMessage) {
+            logger.warn(`[${sourceTag}] Failed to open Cockpit Tools: ${errorMessage}`);
+        }
+    }
+
+    // Command not found or failed, try deep link fallback
+    logger.info(`[${sourceTag}] Attempting deep link fallback for Cockpit Tools`);
+    const deepLinkOpened = await launchByDeepLink(sourceTag);
+    if (deepLinkOpened) {
         return true;
     }
 
-    const errorMessage = result.errorMessage ?? '';
-    if (process.platform === 'win32' && isWindowsNotFoundError(errorMessage)) {
-        logger.warn(
-            `[${sourceTag}] Cockpit Tools command not found, trying deep link fallback: ${errorMessage}`,
-        );
-        return launchByDeepLink(sourceTag);
-    }
-    if (process.platform === 'linux' && isAntigravityWslRemote()) {
-        logger.warn(
-            `[${sourceTag}] WSL launch command failed, trying deep link fallback: ${errorMessage || 'unknown error'}`,
-        );
-        return launchByDeepLink(sourceTag);
-    }
-
-    if (errorMessage) {
-        logger.warn(`[${sourceTag}] Failed to open Cockpit Tools: ${errorMessage}`);
-    } else {
-        logger.warn(`[${sourceTag}] Failed to open Cockpit Tools`);
-    }
+    logger.warn(`[${sourceTag}] Cockpit Tools desktop is not installed or could not be opened`);
     return false;
 }

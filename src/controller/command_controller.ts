@@ -9,6 +9,7 @@ import { logger } from '../shared/log_service';
 import { t } from '../shared/i18n';
 import { DISPLAY_MODE, FEEDBACK_URL } from '../shared/constants';
 import { announcementService } from '../announcement';
+import { accountSwitchService, AccountSwitchModeInput } from '../services/accountSwitchService';
 
 export class CommandController {
     constructor(
@@ -174,10 +175,44 @@ export class CommandController {
             }),
         );
 
-        // 设置账号切换方式（默认 / 无感）
+        // 设置账号切换方式（自动 / 无感 / Cockpit Tools）
         this.context.subscriptions.push(
             vscode.commands.registerCommand('agCockpit.setAccountSwitchMode', async () => {
-                vscode.window.showInformationMessage('账号切换方式已改为由 Cockpit Tools 通过 WebSocket 统一下发管理。');
+                const currentMode = accountSwitchService.getMode();
+                const items: Array<{
+                    label: string;
+                    description: string;
+                    mode: AccountSwitchModeInput;
+                    detail?: string;
+                }> = [
+                    {
+                        label: '$(sparkle) 自动模式 (Auto)',
+                        description: currentMode === 'auto' ? '当前生效' : '智能检测',
+                        detail: '优先尝试无感切号；无感接口不可用或 Tools 已连接时自动选用适配方式',
+                        mode: 'auto',
+                    },
+                    {
+                        label: '$(zap) 无感切号 (Seamless)',
+                        description: currentMode === 'seamless' ? '当前生效' : '直接注入',
+                        detail: '直接向编辑器宿主注入目标凭据，无需启动外部桌面客户端',
+                        mode: 'seamless',
+                    },
+                    {
+                        label: '$(desktop-download) Cockpit Tools (Default)',
+                        description: currentMode === 'default' ? '当前生效' : '桌面客户端',
+                        detail: '通过已连接的 Cockpit Tools 客户端切换（未运行时自动兜底无感切号）',
+                        mode: 'default',
+                    },
+                ];
+
+                const selected = await vscode.window.showQuickPick(items, {
+                    placeHolder: '请选择账号切换方式',
+                });
+
+                if (selected) {
+                    await accountSwitchService.setMode(selected.mode);
+                    vscode.window.showInformationMessage(`账号切换方式已更新为：${selected.label}`);
+                }
             }),
         );
 

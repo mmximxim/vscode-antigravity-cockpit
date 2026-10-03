@@ -7,7 +7,6 @@ import { cockpitToolsLocal } from './cockpitToolsLocal';
 import { cockpitToolsWs } from './cockpitToolsWs';
 
 const ACCOUNT_SWITCH_MODE_STATE_KEY = 'accountSwitchMode';
-const DEFAULT_WS_WAIT_MS = 5000;
 const DEFAULT_SEAMLESS_TIMEOUT_MS = 8000;
 
 export type AccountSwitchMode = 'default' | 'seamless';
@@ -65,55 +64,123 @@ interface SeamlessApiSelection {
 }
 
 class AccountSwitchService {
-    getMode(): AccountSwitchMode {
-        const mode = configService.getStateValue<string>(ACCOUNT_SWITCH_MODE_STATE_KEY, 'default');
+    getMode(): AccountSwitchModeInput {
+        const mode = configService.getStateValue<string>(ACCOUNT_SWITCH_MODE_STATE_KEY, 'auto');
         if (mode === 'seamlessLegacy') {
             return 'seamless';
         }
-        return mode === 'seamless' ? 'seamless' : 'default';
+        if (mode === 'seamless' || mode === 'default' || mode === 'auto') {
+            return mode;
+        }
+        return 'auto';
     }
 
-    isSeamlessMode(mode: AccountSwitchMode = this.getMode()): boolean {
+    isSeamlessMode(mode: AccountSwitchMode = 'seamless'): boolean {
         return mode === 'seamless';
     }
 
-    async setMode(mode: AccountSwitchMode): Promise<void> {
-        await configService.setStateValue<AccountSwitchMode>(ACCOUNT_SWITCH_MODE_STATE_KEY, mode);
+    async setMode(mode: AccountSwitchModeInput): Promise<void> {
+        await configService.setStateValue<AccountSwitchModeInput>(ACCOUNT_SWITCH_MODE_STATE_KEY, mode);
         logger.info(`[AccountSwitchService] Switch mode set to ${mode}`);
     }
 
-    resolveRequestedMode(requestedMode?: AccountSwitchModeInput): AccountSwitchMode {
-        if (requestedMode === 'default' || requestedMode === 'seamless') {
+    resolveRequestedMode(requestedMode?: AccountSwitchModeInput): AccountSwitchModeInput {
+        if (requestedMode === 'default' || requestedMode === 'seamless' || requestedMode === 'auto') {
             return requestedMode;
         }
         return this.getMode();
     }
 
     async switchAccount(email: string, options?: AccountSwitchOptions): Promise<AccountSwitchResult> {
-        const mode = this.resolveRequestedMode(options?.requestedMode);
-        logger.info(`[AccountSwitchService] Switching ${email} with mode=${mode}`);
+        const requested = options?.requestedMode ?? 'auto';
+        const configured = this.getMode();
+        const mode = requested === 'auto' ? configured : requested;
+
+        logger.info(
+            `[AccountSwitchService] Switching ${email} (requested=${requested}, configured=${configured}, effective=${mode})`,
+        );
+
         if (mode === 'seamless') {
             return this.switchViaSeamless(email);
         }
-        return this.switchViaDefault(email);
+
+        if (mode === 'default') {
+            if (cockpitToolsWs.isConnected) {
+                const defaultResult = await this.switchViaDefault(email);
+                if (defaultResult.success) {
+                    return defaultResult;
+                }
+                logger.warn(
+                    `[AccountSwitchService] Cockpit Tools switch failed (${defaultResult.errorCode ?? 'unknown'}), auto-falling back to seamless: ${defaultResult.message}`,
+                );
+            } else {
+                logger.info(
+                    `[AccountSwitchService] Cockpit Tools offline, auto-falling back to seamless switch for ${email}`,
+                );
+            }
+            return this.switchViaSeamless(email);
+        }
+
+        // 'auto' mode
+        // 1. If host seamless API is available, prioritize seamless (instant, in-process)
+        const seamlessApi = this.selectSeamlessApi();
+        if (seamlessApi.tokenApi && seamlessApi.apiName !== 'none') {
+            logger.info(
+                `[AccountSwitchService] Auto mode: host token API available (${seamlessApi.apiName}), using seamless switch`,
+            );
+            const seamlessResult = await this.switchViaSeamless(email);
+            if (seamlessResult.success) {
+                return seamlessResult;
+            }
+            logger.warn(
+                `[AccountSwitchService] Seamless switch failed in auto mode: ${seamlessResult.message}, trying fallback`,
+            );
+        }
+
+        // 2. If Cockpit Tools is connected, try Cockpit Tools
+        if (cockpitToolsWs.isConnected) {
+            logger.info('[AccountSwitchService] Auto mode: Cockpit Tools connected, trying default switch');
+            const defaultResult = await this.switchViaDefault(email);
+            if (defaultResult.success) {
+                return defaultResult;
+            }
+            logger.warn(
+                `[AccountSwitchService] Cockpit Tools switch failed in auto mode: ${defaultResult.message}`,
+            );
+        }
+
+        // 3. Fallback to seamless/local switch
+        return this.switchViaSeamless(email);
     }
 
     private async switchViaDefault(email: string): Promise<AccountSwitchResult> {
         try {
             if (!cockpitToolsWs.isConnected) {
-                const connected = await cockpitToolsWs.waitForConnection(DEFAULT_WS_WAIT_MS);
-                if (!connected) {
-                    return {
-                        success: false,
-                        mode: 'default',
-                        email,
-                        errorCode: 'tools_offline',
-                        message: 'Cockpit Tools 未运行或未连接',
-                    };
+                return {
+                    success: false,
+                    mode: 'default',
+                    email,
+                    errorCode: 'tools_offline',
+                    message: 'Cockpit Tools 未运行或未连接',
+                };
+            }
+
+            let accountId = cockpitToolsLocal.getAccountIdByEmail(email);
+            if (!accountId) {
+                try {
+                    const wsAccounts = await cockpitToolsWs.getAccounts();
+                    const target = email.trim().toLowerCase();
+                    const matched = wsAccounts.accounts.find(
+                        (a) => a.email.trim().toLowerCase() === target,
+                    );
+                    if (matched?.id) {
+                        accountId = matched.id;
+                    }
+                } catch {
+                    // ignore
                 }
             }
 
-            const accountId = cockpitToolsLocal.getAccountIdByEmail(email);
             if (!accountId) {
                 return {
                     success: false,
@@ -161,13 +228,13 @@ class AccountSwitchService {
             `[AccountSwitchService] Seamless strategy: ideVersion=${ideVersion ?? 'unknown'}, selected=${selected.apiName}, reason=${selected.reason}`,
         );
         if (!selected.tokenApi || selected.apiName === 'none') {
-            return {
-                success: false,
-                mode: 'seamless',
+            logger.warn(
+                `[AccountSwitchService] Host seamless API unavailable (${selected.reason}), falling back to local credential switch`,
+            );
+            return this.switchViaLocalCredential(
                 email,
-                errorCode: 'host_unavailable',
-                message: `无感切号不可用：当前宿主不支持可用的切号接口（${selected.reason}），请改用默认方式。`,
-            };
+                `宿主无感接口不可用（${selected.reason}），已切换为本地凭据模式`,
+            );
         }
         return this.switchViaTokenApi(
             email,
@@ -175,9 +242,32 @@ class AccountSwitchService {
             selected.tokenApi,
             selected.apiName,
             selected.apiName === 'OAuthPreferences'
-                ? '无感切号不可用：当前宿主不支持 OAuthPreferences.setOAuthTokenInfo，请切回默认方式。'
-                : '无感切号不可用：当前宿主不支持 antigravityAuth.setOAuthTokenInfo，请切回默认方式。',
+                ? '无感切号不可用：当前宿主不支持 OAuthPreferences.setOAuthTokenInfo，已切回本地模式。'
+                : '无感切号不可用：当前宿主不支持 antigravityAuth.setOAuthTokenInfo，已切回本地模式。',
         );
+    }
+
+    private async switchViaLocalCredential(email: string, reasonMessage?: string): Promise<AccountSwitchResult> {
+        const requestedEmail = email.trim();
+        const resolvedEmail = await this.resolveCredentialEmail(requestedEmail);
+        if (!resolvedEmail) {
+            return {
+                success: false,
+                mode: 'seamless',
+                email: requestedEmail,
+                errorCode: 'account_not_found',
+                message: '未找到该账号的本地凭据',
+            };
+        }
+
+        await credentialStorage.setActiveAccount(resolvedEmail, true);
+        logger.info(`[AccountSwitchService] Local credential switch success: ${resolvedEmail}`);
+        return {
+            success: true,
+            mode: 'seamless',
+            email: resolvedEmail,
+            message: reasonMessage || `已切换激活账号为 ${resolvedEmail}`,
+        };
     }
 
     private async switchViaTokenApi(
