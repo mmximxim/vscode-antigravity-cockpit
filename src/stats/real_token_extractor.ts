@@ -7,10 +7,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { UsageRecord } from './types';
 import { getSqlJs } from '../auto_trigger/local_auth_importer';
 import { logger } from '../shared/log_service';
+import { getAntigravityConversationsDir, getCockpitToolsSharedDir } from '../shared/antigravity_paths';
 
 const CACHE_VERSION = 2;
 
@@ -93,6 +93,9 @@ function readVarint(buf: Uint8Array, startIndex: number): [number, number] {
     let s = 0;
     let i = startIndex;
     for (;;) {
+        if (i >= buf.length) {
+            throw new Error('Incomplete varint');
+        }
         const b = buf[i];
         v += (b & 127) * Math.pow(2, s);
         if (!(b & 128)) {
@@ -283,9 +286,8 @@ let lastSerializedCache = '';
 let skipPersist = false;
 
 export async function extractRealTokenRecords(): Promise<RealTokenExtractionResult> {
-    const homeDir = os.homedir();
-    const dir = path.join(homeDir, '.gemini', 'antigravity', 'conversations');
-    const cacheFile = path.join(homeDir, '.antigravity_cockpit', 'real_tokens_cache.json');
+    const dir = getAntigravityConversationsDir();
+    const cacheFile = path.join(getCockpitToolsSharedDir(), 'real_tokens_cache.json');
 
     if (!memoryDiskCache) {
         try {
@@ -372,11 +374,15 @@ export async function extractRealTokenRecords(): Promise<RealTokenExtractionResu
                 };
 
                 const genRows: Uint8Array[] = [];
-                const st1 = db.prepare('SELECT idx, data FROM gen_metadata ORDER BY idx');
-                while (st1.step()) {
-                    genRows.push(st1.get()[1] as Uint8Array);
+                try {
+                    const st1 = db.prepare('SELECT idx, data FROM gen_metadata ORDER BY idx');
+                    while (st1.step()) {
+                        genRows.push(st1.get()[1] as Uint8Array);
+                    }
+                    st1.free();
+                } catch {
+                    // gen_metadata table may not exist
                 }
-                st1.free();
 
                 const identityModel = new Map<string, string>();
                 const genEvents: Array<[UsageMetadata, string, number | null]> = [];
@@ -445,11 +451,15 @@ export async function extractRealTokenRecords(): Promise<RealTokenExtractionResu
                 }
 
                 const stepRows: Uint8Array[] = [];
-                const st2 = db.prepare('SELECT idx, metadata FROM steps ORDER BY idx');
-                while (st2.step()) {
-                    stepRows.push(st2.get()[1] as Uint8Array);
+                try {
+                    const st2 = db.prepare('SELECT idx, metadata FROM steps ORDER BY idx');
+                    while (st2.step()) {
+                        stepRows.push(st2.get()[1] as Uint8Array);
+                    }
+                    st2.free();
+                } catch {
+                    // steps table may not exist
                 }
-                st2.free();
 
                 for (const meta of stepRows) {
                     if (!meta) {

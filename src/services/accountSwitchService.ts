@@ -75,8 +75,16 @@ class AccountSwitchService {
         return 'auto';
     }
 
-    isSeamlessMode(mode: AccountSwitchMode = 'seamless'): boolean {
-        return mode === 'seamless';
+    isSeamlessMode(mode?: AccountSwitchModeInput): boolean {
+        const resolved = mode ?? this.getMode();
+        if (resolved === 'seamless') {
+            return true;
+        }
+        if (resolved === 'default') {
+            return false;
+        }
+        const seamlessApi = this.selectSeamlessApi();
+        return Boolean(seamlessApi.tokenApi && seamlessApi.apiName !== 'none') || !cockpitToolsWs.isConnected;
     }
 
     async setMode(mode: AccountSwitchModeInput): Promise<void> {
@@ -123,6 +131,7 @@ class AccountSwitchService {
 
         // 'auto' mode
         // 1. If host seamless API is available, prioritize seamless (instant, in-process)
+        let seamlessFailedReason: string | undefined;
         const seamlessApi = this.selectSeamlessApi();
         if (seamlessApi.tokenApi && seamlessApi.apiName !== 'none') {
             logger.info(
@@ -132,6 +141,7 @@ class AccountSwitchService {
             if (seamlessResult.success) {
                 return seamlessResult;
             }
+            seamlessFailedReason = seamlessResult.message;
             logger.warn(
                 `[AccountSwitchService] Seamless switch failed in auto mode: ${seamlessResult.message}, trying fallback`,
             );
@@ -149,7 +159,10 @@ class AccountSwitchService {
             );
         }
 
-        // 3. Fallback to seamless/local switch
+        // 3. Fallback to local credential switch (or seamless if not yet attempted)
+        if (seamlessFailedReason) {
+            return this.switchViaLocalCredential(email, seamlessFailedReason);
+        }
         return this.switchViaSeamless(email);
     }
 

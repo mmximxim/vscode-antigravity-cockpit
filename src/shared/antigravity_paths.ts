@@ -136,6 +136,17 @@ export function getCockpitToolsSharedDir(): string {
     return path.join(os.homedir(), '.antigravity_cockpit');
 }
 
+export function getAntigravityConversationsDir(): string {
+    if (isAntigravityWslRemote()) {
+        try {
+            return path.posix.join(resolveWslWindowsUserProfileDir(), '.gemini', 'antigravity', 'conversations');
+        } catch {
+            // fallback
+        }
+    }
+    return path.join(os.homedir(), '.gemini', 'antigravity', 'conversations');
+}
+
 export function getAntigravityStateDbCandidates(): string[] {
     const list: string[] = [];
 

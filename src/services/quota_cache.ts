@@ -45,11 +45,6 @@ function getCacheFilePath(source: QuotaCacheSource, email: string): string {
     return path.join(getCacheRoot(), source, filename);
 }
 
-async function ensureCacheDir(source: QuotaCacheSource): Promise<void> {
-    const dir = path.join(getCacheRoot(), source);
-    await fs.mkdir(dir, { recursive: true });
-}
-
 export async function readQuotaCache(
     source: QuotaCacheSource,
     email: string,

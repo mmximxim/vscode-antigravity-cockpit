@@ -138,7 +138,7 @@ export class MessageController {
             logger.error(`[MsgCtrl] Account switch exception for ${targetEmail}: ${err}`);
             return {
                 success: false,
-                mode: effectiveMode,
+                mode: accountSwitchService.isSeamlessMode(effectiveMode) ? 'seamless' : 'default',
                 email: targetEmail,
                 errorCode: 'unknown',
                 message: err,
@@ -168,7 +168,7 @@ export class MessageController {
                 executionId,
                 requestId,
                 success: false,
-                effectiveMode: accountSwitchService.resolveRequestedMode(requestedMode),
+                effectiveMode: accountSwitchService.isSeamlessMode(requestedMode) ? 'seamless' : 'default',
                 fromEmail: fromEmail ?? null,
                 toEmail: '',
                 durationMs: Date.now() - startedAt,
@@ -1227,10 +1227,13 @@ export class MessageController {
                                 const refreshToken = item.refresh_token as string | undefined;
                                 if (typeof refreshToken === 'string' && refreshToken) {
                                     try {
-                                        // 显式断言 email 为 string | undefined
                                         const emailArg = typeof item.email === 'string' ? item.email : undefined;
                                         const credential = await oauthService.buildCredentialFromRefreshToken(refreshToken, emailArg);
-                                        await credentialStorage.saveCredentialForAccount(credential.email, credential);
+                                        const targetEmail = credential.email || emailArg;
+                                        if (!targetEmail) {
+                                            throw new Error('Credential missing email');
+                                        }
+                                        await credentialStorage.saveCredentialForAccount(targetEmail, credential);
                                         count++;
                                     } catch (error) {
                                         const err = error instanceof Error ? error : new Error(String(error));

@@ -282,7 +282,7 @@ export class StatusBarController {
                 });
             }
 
-            md.appendMarkdown(' | | | |\n');
+            md.appendMarkdown('| | | |\n');
             md.appendMarkdown('| :--- | :--- | :--- |\n');
 
             for (const model of sortedModels) {

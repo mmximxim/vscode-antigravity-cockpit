@@ -1099,7 +1099,7 @@ export class ReactorCore {
                 const match = localSnapshot.models.find(lm =>
                     lm.modelId === model.modelId ||
                     (this.resolveAutoGroupFamily(lm.modelId, lm.label) &&
-                     this.resolveAutoGroupFamily(lm.modelId, lm.label) === this.resolveAutoGroupFamily(model.modelId, model.label))
+                     this.resolveAutoGroupFamily(lm.modelId, lm.label) === this.resolveAutoGroupFamily(model.modelId, model.label)),
                 );
                 if (match?.weeklyLimit) {
                     model.weeklyLimit = match.weeklyLimit;
@@ -1110,7 +1110,7 @@ export class ReactorCore {
                     const match = localSnapshot.models.find(lm =>
                         lm.modelId === model.modelId ||
                         (this.resolveAutoGroupFamily(lm.modelId, lm.label) &&
-                         this.resolveAutoGroupFamily(lm.modelId, lm.label) === this.resolveAutoGroupFamily(model.modelId, model.label))
+                         this.resolveAutoGroupFamily(lm.modelId, lm.label) === this.resolveAutoGroupFamily(model.modelId, model.label)),
                     );
                     if (match?.weeklyLimit) {
                         model.weeklyLimit = match.weeklyLimit;
@@ -1402,7 +1402,7 @@ export class ReactorCore {
                 || data.models['gemini-3.8-flash-tiered']
                 || data.models['MODEL_PLACEHOLDER_M318']
                 || data.models['MODEL_PLACEHOLDER_M322']
-                || Object.values(data.models).some(m => m?.model === 'MODEL_PLACEHOLDER_M318' || m?.model === 'MODEL_PLACEHOLDER_M322')
+                || Object.values(data.models).some(m => m?.model === 'MODEL_PLACEHOLDER_M318' || m?.model === 'MODEL_PLACEHOLDER_M322'),
             );
             if (!has38) {
                 data.models['gemini-3.8-flash-tiered'] = {
@@ -1416,7 +1416,7 @@ export class ReactorCore {
                 data.models['gemini-3.7-flash']
                 || data.models['gemini-3.7-flash-tiered']
                 || data.models['MODEL_PLACEHOLDER_M301']
-                || Object.values(data.models).some(m => m?.model === 'MODEL_PLACEHOLDER_M301')
+                || Object.values(data.models).some(m => m?.model === 'MODEL_PLACEHOLDER_M301'),
             );
             if (!has37) {
                 data.models['gemini-3.7-flash-tiered'] = {
@@ -1720,7 +1720,7 @@ export class ReactorCore {
 
             const now = new Date();
             let reset = new Date(weeklyBucket.resetTime || '');
-            let resetTimeValid = !Number.isNaN(reset.getTime());
+            const resetTimeValid = !Number.isNaN(reset.getTime());
             if (!resetTimeValid) {
                 reset = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
             }

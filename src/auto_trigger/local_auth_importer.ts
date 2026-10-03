@@ -68,12 +68,25 @@ let pendingLocalCredential: PendingLocalCredential | null = null;
 
 // 注意：state.vscdb 路径统一由 shared/antigravity_paths 提供，避免多处维护。
 
-async function readStateValueByKey(dbPath: string, key: string): Promise<string> {
-    // 检查数据库文件是否存在
+function extractStringFromRow(val: unknown): string {
+    if (val === null || val === undefined) {
+        return '';
+    }
+    if (typeof val === 'string') {
+        return val.trim();
+    }
+    if (val instanceof Uint8Array || Buffer.isBuffer(val)) {
+        return Buffer.from(val).toString('utf8').trim();
+    }
+    return String(val).trim();
+}
+
+async function readStateValuesByKeys(dbPath: string, keys: string[]): Promise<Map<string, string>> {
+    const results = new Map<string, string>();
     try {
         await fs.promises.access(dbPath);
     } catch {
-        throw new Error(`Database file not found: ${dbPath}`);
+        return results;
     }
 
     const SQL = await getSqlJs();
@@ -82,28 +95,32 @@ async function readStateValueByKey(dbPath: string, key: string): Promise<string>
 
     try {
         db = new SQL.Database(fileBuffer);
-        const stmt = db.prepare('SELECT value FROM ItemTable WHERE key = ?');
-        stmt.bind([key]);
-
-        if (stmt.step()) {
-            const row = stmt.get();
-            stmt.free();
-            if (row && row[0]) {
-                const value = String(row[0]).trim();
-                if (value.length > 0) {
-                    return value;
+        for (const key of keys) {
+            try {
+                const stmt = db.prepare('SELECT value FROM ItemTable WHERE key = ?');
+                stmt.bind([key]);
+                if (stmt.step()) {
+                    const row = stmt.get();
+                    stmt.free();
+                    if (row && row[0] !== null && row[0] !== undefined) {
+                        const str = extractStringFromRow(row[0]);
+                        if (str.length > 0) {
+                            results.set(key, str);
+                        }
+                    }
+                } else {
+                    stmt.free();
                 }
+            } catch {
+                // ignore single key error
             }
-        } else {
-            stmt.free();
         }
-
-        throw new Error('No state value found');
     } finally {
         if (db) {
             db.close();
         }
     }
+    return results;
 }
 
 function readVarint(data: Buffer, offset: number): [number, number] {
@@ -203,40 +220,6 @@ function extractEmailFromUserStatus(stateValue: string): string | null {
     } catch (e) {
         logger.debug(`[LocalAuth] Error extracting email from userStatus: ${e}`);
     }
-    return null;
-}
-
-async function tryReadEmailFromStateDb(dbPath: string): Promise<string | null> {
-    try {
-        if (await hasStateValueForKey(dbPath, 'antigravityAuthStatus')) {
-            const val = await readStateValueByKey(dbPath, 'antigravityAuthStatus');
-            try {
-                const parsed = JSON.parse(val);
-                if (parsed && typeof parsed.email === 'string' && parsed.email.includes('@')) {
-                    logger.info(`[LocalAuth] Discovered email from antigravityAuthStatus: ${parsed.email}`);
-                    return parsed.email;
-                }
-            } catch {
-                // ignore
-            }
-        }
-    } catch {
-        // ignore
-    }
-
-    try {
-        if (await hasStateValueForKey(dbPath, 'antigravityUnifiedStateSync.userStatus')) {
-            const val = await readStateValueByKey(dbPath, 'antigravityUnifiedStateSync.userStatus');
-            const email = extractEmailFromUserStatus(val);
-            if (email) {
-                logger.info(`[LocalAuth] Discovered email from userStatus: ${email}`);
-                return email;
-            }
-        }
-    } catch {
-        // ignore
-    }
-
     return null;
 }
 
@@ -347,34 +330,6 @@ function parseUnifiedOAuthTokenInfo(stateValue: string): LocalTokenInfo {
     throw new Error('Unified oauth info not found');
 }
 
-async function hasStateValueForKey(dbPath: string, key: string): Promise<boolean> {
-    try {
-        await readStateValueByKey(dbPath, key);
-        return true;
-    } catch {
-        return false;
-    }
-}
-
-async function readUnifiedTokenInfo(dbPath: string): Promise<LocalTokenInfo> {
-    const unifiedValue = await readStateValueByKey(dbPath, UNIFIED_STATE_KEY);
-    const unifiedInfo = parseUnifiedOAuthTokenInfo(unifiedValue);
-    if (!unifiedInfo.refreshToken) {
-        throw new Error('Unified state key parsed but refresh_token missing');
-    }
-    return unifiedInfo;
-}
-
-async function readLegacyTokenInfo(dbPath: string): Promise<LocalTokenInfo> {
-    const legacyValue = await readStateValueByKey(dbPath, LEGACY_STATE_KEY);
-    const raw = Buffer.from(legacyValue.trim(), 'base64');
-    const oauthField = findField(raw, 6);
-    if (!oauthField) {
-        throw new Error('OAuth field not found in legacy state');
-    }
-    return parseOAuthTokenInfo(oauthField);
-}
-
 async function readLocalTokenInfo(): Promise<LocalTokenInfo> {
     const candidates = getAntigravityStateDbCandidates();
     logger.info(`[LocalAuth] state.vscdb candidate paths (${candidates.length}): ${candidates.join(', ')}`);
@@ -382,23 +337,67 @@ async function readLocalTokenInfo(): Promise<LocalTokenInfo> {
     let lastError: Error | null = null;
     for (const dbPath of candidates) {
         try {
-            const hasUnifiedState = await hasStateValueForKey(dbPath, UNIFIED_STATE_KEY);
-            const hasLegacyState = await hasStateValueForKey(dbPath, LEGACY_STATE_KEY);
+            const stateValues = await readStateValuesByKeys(dbPath, [
+                UNIFIED_STATE_KEY,
+                LEGACY_STATE_KEY,
+                'antigravityAuthStatus',
+                'antigravityUnifiedStateSync.userStatus',
+            ]);
+
+            const unifiedValue = stateValues.get(UNIFIED_STATE_KEY);
+            const legacyValue = stateValues.get(LEGACY_STATE_KEY);
 
             let tokenInfo: LocalTokenInfo | null = null;
-            if (hasUnifiedState && !hasLegacyState) {
-                logger.info(`[LocalAuth] Token state source selected: ${UNIFIED_STATE_KEY} (db: ${dbPath})`);
-                tokenInfo = await readUnifiedTokenInfo(dbPath);
-            } else if (!hasUnifiedState && hasLegacyState) {
-                logger.info(`[LocalAuth] Token state source selected: ${LEGACY_STATE_KEY} (db: ${dbPath})`);
-                tokenInfo = await readLegacyTokenInfo(dbPath);
-            } else if (hasUnifiedState && hasLegacyState) {
-                logger.info(`[LocalAuth] Token state source selected: ${UNIFIED_STATE_KEY} (both-keys-present, db: ${dbPath})`);
-                tokenInfo = await readUnifiedTokenInfo(dbPath);
+            if (unifiedValue) {
+                try {
+                    tokenInfo = parseUnifiedOAuthTokenInfo(unifiedValue);
+                    if (tokenInfo.refreshToken) {
+                        logger.info(`[LocalAuth] Token state source selected: ${UNIFIED_STATE_KEY} (db: ${dbPath})`);
+                    } else {
+                        tokenInfo = null;
+                    }
+                } catch (e) {
+                    logger.debug(`[LocalAuth] Failed parsing unified token info from ${dbPath}: ${e}`);
+                }
             }
 
-            if (tokenInfo && (tokenInfo.refreshToken || tokenInfo.accessToken)) {
-                const discoveredEmail = await tryReadEmailFromStateDb(dbPath);
+            if (!tokenInfo && legacyValue) {
+                try {
+                    const raw = Buffer.from(legacyValue.trim(), 'base64');
+                    const oauthField = findField(raw, 6);
+                    if (oauthField) {
+                        tokenInfo = parseOAuthTokenInfo(oauthField);
+                        if (tokenInfo.refreshToken) {
+                            logger.info(`[LocalAuth] Token state source selected: ${LEGACY_STATE_KEY} (db: ${dbPath})`);
+                        } else {
+                            tokenInfo = null;
+                        }
+                    }
+                } catch (e) {
+                    logger.debug(`[LocalAuth] Failed parsing legacy token info from ${dbPath}: ${e}`);
+                }
+            }
+
+            if (tokenInfo && tokenInfo.refreshToken) {
+                let discoveredEmail: string | null = null;
+                const authStatusVal = stateValues.get('antigravityAuthStatus');
+                if (authStatusVal) {
+                    try {
+                        const parsed = JSON.parse(authStatusVal);
+                        if (parsed && typeof parsed.email === 'string' && parsed.email.includes('@')) {
+                            discoveredEmail = parsed.email;
+                        }
+                    } catch {
+                        // ignore
+                    }
+                }
+                if (!discoveredEmail) {
+                    const userStatusVal = stateValues.get('antigravityUnifiedStateSync.userStatus');
+                    if (userStatusVal) {
+                        discoveredEmail = extractEmailFromUserStatus(userStatusVal);
+                    }
+                }
+
                 if (discoveredEmail && !tokenInfo.email) {
                     tokenInfo.email = discoveredEmail;
                 }
@@ -425,7 +424,7 @@ async function loadCredentialFromStateDb(): Promise<OAuthCredential | null> {
 
     const credential = await oauthService.buildCredentialFromRefreshToken(
         tokenInfo.refreshToken,
-        undefined,
+        tokenInfo.email,
     );
 
     if (!credential.email || !credential.accessToken) {

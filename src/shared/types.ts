@@ -524,6 +524,8 @@ export interface WebviewMessage {
     mode?: string;
     /** Stats 时间范围 (stats_request) */
     range?: '7d' | '30d';
+    /** Stats 账号筛选 (stats_request) */
+    account?: string;
 }
 
 /** 调度配置 */

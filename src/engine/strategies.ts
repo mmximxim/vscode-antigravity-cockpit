@@ -102,7 +102,7 @@ export class WindowsStrategy implements PlatformStrategy {
                 const hubPortMatch = commandLine.match(/--hub-port[=\s]+(\d+)/);
 
                 let extensionPort = portMatch?.[1] ? parseInt(portMatch[1], 10) : 0;
-                let csrfToken = tokenMatch?.[1] || '';
+                const csrfToken = tokenMatch?.[1] || '';
 
                 if (!csrfToken && hubPortMatch?.[1]) {
                     extensionPort = parseInt(hubPortMatch[1], 10);
@@ -283,7 +283,7 @@ export class UnixStrategy implements PlatformStrategy {
             const hubPortMatch = cmd.match(/--hub-port[=\s]+(\d+)/);
 
             let extensionPort = portMatch?.[1] ? parseInt(portMatch[1], 10) : 0;
-            let csrfToken = tokenMatch?.[1] || '';
+            const csrfToken = tokenMatch?.[1] || '';
 
             if (!csrfToken && hubPortMatch?.[1]) {
                 extensionPort = parseInt(hubPortMatch[1], 10);
