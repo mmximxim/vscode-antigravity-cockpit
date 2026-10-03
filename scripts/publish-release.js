@@ -7,10 +7,27 @@ function getGitHubToken() {
     if (process.env.GITHUB_TOKEN) {
         return process.env.GITHUB_TOKEN;
     }
+    if (process.env.GITHUB_PERSONAL_ACCESS_TOKEN) {
+        return process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+    }
+    try {
+        const homeDir = process.env.USERPROFILE || process.env.HOME || '';
+        const mcpConfigPath = path.join(homeDir, '.gemini', 'config', 'mcp_config.json');
+        if (fs.existsSync(mcpConfigPath)) {
+            const mcpCfg = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf8'));
+            const ghToken = mcpCfg?.mcpServers?.['github-mcp-server']?.env?.GITHUB_PERSONAL_ACCESS_TOKEN;
+            if (ghToken) {
+                return ghToken;
+            }
+        }
+    } catch {
+        // ignore
+    }
     try {
         const output = execSync('git credential fill', {
-            input: 'protocol=https\nhost=github.com\n',
-            encoding: 'utf8'
+            input: 'protocol=https\nhost=github.com\n\n',
+            encoding: 'utf8',
+            timeout: 5000
         });
         const match = output.match(/password=(.+)/);
         if (match) {
