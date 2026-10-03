@@ -102,10 +102,19 @@
     transform: translateY(-2px);
 }
 
-.stats-card-icon {
-    font-size: 24px;
-    margin-bottom: 12px;
-    display: block;
+.stats-card-info-icon {
+    display: inline-block;
+    opacity: 0.65;
+    font-size: 11px;
+    cursor: help;
+    margin-left: 4px;
+    vertical-align: middle;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.stats-card-info-icon:hover {
+    opacity: 1;
+    transform: scale(1.2);
 }
 
 .stats-card-label {

@@ -10,6 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.74] - 2026-10-03
+
+### Improved & Refined
+- **Reorder & Clean Up Summary Cards on Stats Dashboard**:
+  - Reordered cards to place "今日使用 Tokens" (Today's Tokens) ahead of "累计消耗 Tokens" (Total Tokens);
+  - Removed decorative card emojis (lightning, target, mountain, flame) for a cleaner, modern layout;
+  - Scoped hover tooltips exclusively to the info badge (`ℹ️`), preventing accidental triggers when moving the mouse across cards;
+  - Removed tooltip on "连续活跃" (Streak) card as requested.
+
 ## [2.1.73] - 2026-10-03
 
 ### Added & Improved

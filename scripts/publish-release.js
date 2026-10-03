@@ -113,15 +113,15 @@ async function main() {
     const owner = 'mmximxim';
     const repo = 'vscode-antigravity-cockpit';
     const tagName = `v${version}`;
-    const releaseName = `v${version}: 数据看板新增今日使用Token指标卡片`;
+    const releaseName = `v${version}: 优化数据看板卡片排序与提示交互`;
     const releaseBody = `## 🚀 Antigravity Cockpit v${version}
 
-### ✨ 界面优化与功能新增
-- **数据看板新增「今日使用 Tokens」指标卡片**：
-  - 在配额历史与数据看板顶部的核心统计网格中新增「今日使用 Tokens」卡片；
-  - 实时展示今日（本地日期）产生的消耗总量（支持万/k智能单位换算）与预估官方 API 折算价值（\`≈ $X.XX 价值\`）；
-  - 支持鼠标悬停查看详细的计算口径说明 Tooltip；
-  - 汇总网格扩展为 4 张卡片对称布局，在不同分辨率下视觉排版更加规整美观。
+### ✨ 界面优化与交互精简
+- **优化核心指标卡片排版与顺序**：
+  - 将「今日使用 Tokens」指标卡片置于「累计消耗 Tokens」前列，优先呈现当日用量；
+  - 移除卡片装饰图标（闪电、靶子、雪山、火焰），界面整体更加简洁规整；
+  - Tooltip 提示浮窗触发范围精确限制为信息小图标（\`ℹ️\`），避免鼠标划过卡片时意外遮挡视图；
+  - 移除「连续活跃」卡片的冗余提示浮窗。
 `;
 
     console.log(`📌 创建/更新 GitHub Release: ${tagName} (${releaseName})...`);

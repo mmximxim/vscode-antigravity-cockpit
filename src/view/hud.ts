@@ -1052,26 +1052,22 @@ export class CockpitHUD {
 
             <!-- Summary Cards -->
             <div class="stats-summary-grid">
-                <div class="stats-card stats-card-tokens" style="cursor: help;">
-                    <span class="stats-card-icon">⚡</span>
-                    <div class="stats-card-label">累计消耗 Tokens <span style="opacity: 0.6; font-size: 10px;">ℹ️</span></div>
-                    <div class="stats-card-value" id="stats-total-tokens">–</div>
-                    <div class="stats-card-sub" id="stats-total-value">≈ $0.00 价值</div>
-                </div>
-                <div class="stats-card stats-card-today" style="cursor: help;">
-                    <span class="stats-card-icon">🎯</span>
-                    <div class="stats-card-label">今日使用 Tokens <span style="opacity: 0.6; font-size: 10px;">ℹ️</span></div>
+                <div class="stats-card stats-card-today">
+                    <div class="stats-card-label">今日使用 Tokens <span class="stats-card-info-icon" id="stats-info-today">ℹ️</span></div>
                     <div class="stats-card-value" id="stats-today-tokens">–</div>
                     <div class="stats-card-sub" id="stats-today-value">≈ $0.00 价值</div>
                 </div>
-                <div class="stats-card stats-card-peak" style="cursor: help;">
-                    <span class="stats-card-icon">🏔️</span>
-                    <div class="stats-card-label">单日峰值 Tokens <span style="opacity: 0.6; font-size: 10px;">ℹ️</span></div>
+                <div class="stats-card stats-card-tokens">
+                    <div class="stats-card-label">累计消耗 Tokens <span class="stats-card-info-icon" id="stats-info-tokens">ℹ️</span></div>
+                    <div class="stats-card-value" id="stats-total-tokens">–</div>
+                    <div class="stats-card-sub" id="stats-total-value">≈ $0.00 价值</div>
+                </div>
+                <div class="stats-card stats-card-peak">
+                    <div class="stats-card-label">单日峰值 Tokens <span class="stats-card-info-icon" id="stats-info-peak">ℹ️</span></div>
                     <div class="stats-card-value" id="stats-peak-tokens">–</div>
                     <div class="stats-card-sub">最高单日消耗</div>
                 </div>
-                <div class="stats-card stats-card-streak" style="cursor: help;">
-                    <span class="stats-card-icon">🔥</span>
+                <div class="stats-card stats-card-streak">
                     <div class="stats-card-label">连续活跃</div>
                     <div class="stats-card-value" id="stats-streak">–</div>
                     <div class="stats-card-sub" id="stats-record-streak">最长 – 天</div>

@@ -539,37 +539,29 @@
             }
         }
 
-        // Summary cards tooltips (explain quota calculation)
-        let cardTokens = document.querySelector('.stats-card-tokens');
-        if (cardTokens) {
-            cardTokens.addEventListener('mouseenter', function (e) {
-                showTooltip(e, '<strong>💡 累计 Token 与真实价值估算说明</strong><br>基于 Antigravity 逆向计费与官方真实 Token 量换算：<br>• <strong>Token 换算</strong>：内置提示词约 1.7万 Tokens 起步，配额每下降 1% 约对应 <strong>10,000 (1万) Tokens</strong>（100% 满额配额 ≈ 100万 Tokens）。<br>• <strong>价值换算</strong>：参考 Google 官方 Context Caching 真实计费标准（5小时满额约对应 <strong>$4.00 官方 API 价值</strong>，全天约 $19.2），按约 <strong>$4.00 / 百万 Tokens</strong> 真实折算。<br>• <strong>智能去重</strong>：已自动合并 Gemini 与 Claude 共享模型池并过滤周期重置波动。');
-            });
-            cardTokens.addEventListener('mouseleave', hideTooltip);
-        }
-
-        let cardToday = document.querySelector('.stats-card-today');
-        if (cardToday) {
-            cardToday.addEventListener('mouseenter', function (e) {
+        // Summary cards tooltips (explain quota calculation only on info icon hover)
+        let infoToday = document.getElementById('stats-info-today');
+        if (infoToday) {
+            infoToday.addEventListener('mouseenter', function (e) {
                 showTooltip(e, '<strong>🎯 今日使用 Token 说明</strong><br>今日（本地日期）产生的 Token 消耗总量与预估官方 API 价值。');
             });
-            cardToday.addEventListener('mouseleave', hideTooltip);
+            infoToday.addEventListener('mouseleave', hideTooltip);
         }
 
-        let cardPeak = document.querySelector('.stats-card-peak');
-        if (cardPeak) {
-            cardPeak.addEventListener('mouseenter', function (e) {
+        let infoTokens = document.getElementById('stats-info-tokens');
+        if (infoTokens) {
+            infoTokens.addEventListener('mouseenter', function (e) {
+                showTooltip(e, '<strong>💡 累计 Token 与真实价值估算说明</strong><br>基于 Antigravity 逆向计费与官方真实 Token 量换算：<br>• <strong>Token 换算</strong>：内置提示词约 1.7万 Tokens 起步，配额每下降 1% 约对应 <strong>10,000 (1万) Tokens</strong>（100% 满额配额 ≈ 100万 Tokens）。<br>• <strong>价值换算</strong>：参考 Google 官方 Context Caching 真实计费标准（5小时满额约对应 <strong>$4.00 官方 API 价值</strong>，全天约 $19.2），按约 <strong>$4.00 / 百万 Tokens</strong> 真实折算。<br>• <strong>智能去重</strong>：已自动合并 Gemini 与 Claude 共享模型池并过滤周期重置波动。');
+            });
+            infoTokens.addEventListener('mouseleave', hideTooltip);
+        }
+
+        let infoPeak = document.getElementById('stats-info-peak');
+        if (infoPeak) {
+            infoPeak.addEventListener('mouseenter', function (e) {
                 showTooltip(e, '<strong>🏔️ 单日峰值 Token 说明</strong><br>历史记录中单个自然日内消耗 Token 数量的最高峰值记录。');
             });
-            cardPeak.addEventListener('mouseleave', hideTooltip);
-        }
-
-        let cardStreak = document.querySelector('.stats-card-streak');
-        if (cardStreak) {
-            cardStreak.addEventListener('mouseenter', function (e) {
-                showTooltip(e, '<strong>🔥 连续活跃说明</strong><br>连续产生配额消耗的天数。当日或前一日有使用记录即保持连续活跃。');
-            });
-            cardStreak.addEventListener('mouseleave', hideTooltip);
+            infoPeak.addEventListener('mouseleave', hideTooltip);
         }
 
         // On window resize, re-render heatmap to adjust weeks
