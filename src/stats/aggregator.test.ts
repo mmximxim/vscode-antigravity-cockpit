@@ -1,5 +1,6 @@
 import { StatsAggregator } from './aggregator';
 import { UsageRecord } from './types';
+import { extractRealTokenRecords } from './real_token_extractor';
 
 describe('StatsAggregator - Summary Cards and Today Usage', () => {
     const mockContext: any = {
@@ -50,5 +51,13 @@ describe('StatsAggregator - Summary Cards and Today Usage', () => {
         expect(cards.todayConsumed).toBe(80000);
         expect(cards.totalConsumed).toBe(200000);
         expect(cards.peakDailyConsumed).toBe(120000);
+    });
+
+    it('should extract real token records when available or return empty on error', async () => {
+        const res = await extractRealTokenRecords();
+        expect(res).toBeDefined();
+        expect(Array.isArray(res.records)).toBe(true);
+        expect(typeof res.apiCost).toBe('number');
+        expect(typeof res.todayApiCost).toBe('number');
     });
 });

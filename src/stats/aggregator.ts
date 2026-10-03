@@ -19,6 +19,8 @@ import {
 import { logger } from '../shared/log_service';
 import { getCockpitToolsSharedDir } from '../shared/antigravity_paths';
 
+import { extractRealTokenRecords } from './real_token_extractor';
+
 function getHistoryRoot(): string {
     return path.join(getCockpitToolsSharedDir(), 'cache', 'quota_history');
 }
@@ -78,14 +80,41 @@ export class StatsAggregator {
     }
 
     /**
-     * Compute the full stats payload for a given range by reading quota_history asynchronously.
+     * Compute the full stats payload for a given range by reading real token DBs or quota_history asynchronously.
      */
     public async getStatsPayload(range: '7d' | '30d', filterEmail?: string): Promise<StatsPayload> {
-        const records = await this.extractRecordsFromQuotaHistory(filterEmail);
+        let records: UsageRecord[] = [];
+        let apiCost: number | undefined;
+        let todayApiCost: number | undefined;
+
+        try {
+            const realResult = await extractRealTokenRecords();
+            if (realResult && realResult.records && realResult.records.length > 0) {
+                records = realResult.records;
+                apiCost = realResult.apiCost;
+                todayApiCost = realResult.todayApiCost;
+            }
+        } catch (err) {
+            logger.warn(`[StatsAggregator] Real token extraction failed, falling back to quota history: ${err}`);
+        }
+
+        if (records.length === 0) {
+            records = await this.extractRecordsFromQuotaHistory(filterEmail);
+        }
+
         const rangeDays = range === '7d' ? 7 : 30;
+        const summaryCards = this.computeSummaryCards(records);
+        if (typeof apiCost === 'number') {
+            summaryCards.apiCost = apiCost;
+        }
+        if (typeof todayApiCost === 'number') {
+            summaryCards.todayApiCost = todayApiCost;
+        }
 
         return {
-            summaryCards: this.computeSummaryCards(records),
+            summaryCards,
+            apiCost,
+            todayApiCost,
             heatmap: this.computeHeatmap(records),
             trendLines: this.computeTrendLines(records, rangeDays),
             donut: this.computeDonut(records, rangeDays),

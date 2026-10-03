@@ -27,6 +27,8 @@ export interface DailyModelStat {
 export interface StatsSummaryCards {
     totalConsumed: number;          // All-time cumulative consumed units
     todayConsumed?: number;         // Consumed units today
+    apiCost?: number;               // Estimated API cost in USD
+    todayApiCost?: number;          // Estimated today's API cost in USD
     peakDailyConsumed: number;      // Max consumed in a single day
     currentStreak: number;          // Current consecutive active days
     longestStreak: number;          // Historical longest streak
@@ -50,6 +52,8 @@ export interface DonutEntry {
 /** Full stats payload sent to webview */
 export interface StatsPayload {
     summaryCards: StatsSummaryCards;
+    apiCost?: number;
+    todayApiCost?: number;
     heatmap: HeatmapCell[];          // Last 365 days
     trendLines: DailyModelStat[];    // Last N days (7 or 30)
     donut: DonutEntry[];             // All-time or range

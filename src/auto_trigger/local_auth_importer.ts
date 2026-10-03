@@ -15,12 +15,32 @@ const UNIFIED_STATE_KEY = 'antigravityUnifiedStateSync.oauthToken';
 // sql.js 初始化缓存
 let sqlJsPromise: ReturnType<typeof initSqlJs> | null = null;
 
-async function getSqlJs(): Promise<Awaited<ReturnType<typeof initSqlJs>>> {
+export async function getSqlJs(): Promise<Awaited<ReturnType<typeof initSqlJs>>> {
     if (!sqlJsPromise) {
         sqlJsPromise = initSqlJs({
-            // 使用 file:// URL 格式，避免在某些 VS Code 环境下 sql.js 内部通过 fetch()
-            // 加载 wasm 时将本地路径传入 new URL() 导致 "Invalid URL protocol" 错误
-            locateFile: (file: string) => pathToFileURL(path.join(__dirname, file)).href,
+            locateFile: (file: string) => {
+                const candidate1 = path.join(__dirname, file);
+                if (fs.existsSync(candidate1)) {
+                    return pathToFileURL(candidate1).href;
+                }
+                const candidate2 = path.join(__dirname, '..', '..', 'out', file);
+                if (fs.existsSync(candidate2)) {
+                    return pathToFileURL(candidate2).href;
+                }
+                const candidate3 = path.join(__dirname, '..', 'out', file);
+                if (fs.existsSync(candidate3)) {
+                    return pathToFileURL(candidate3).href;
+                }
+                try {
+                    const candidate4 = require.resolve(`sql.js/dist/${file}`);
+                    if (fs.existsSync(candidate4)) {
+                        return pathToFileURL(candidate4).href;
+                    }
+                } catch {
+                    // ignore
+                }
+                return pathToFileURL(candidate1).href;
+            },
         }).catch((err: unknown) => {
             // 初始化失败时重置缓存，避免后续调用永远使用已失败的 Promise
             sqlJsPromise = null;

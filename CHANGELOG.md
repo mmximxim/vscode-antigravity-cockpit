@@ -10,6 +10,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.75] - 2026-10-03
+
+### Restored & Enhanced
+- **Restore & Native Integrate Real Token Usage Calculation**:
+  - Restored real token extraction from Antigravity local conversation databases (`~/.gemini/antigravity/conversations/*.db`);
+  - Accurately captures full usageMetadata (input, output, reasoning, cache read/creation) with incremental disk caching for instant loads;
+  - Restored precise per-model API commercial valuation ($0.75/$3.75/$0.075 for Gemini Flash, $3.00/$15.00/$0.30 for Claude Sonnet);
+  - Restored token formatting to standard two-decimal `万` notation (`≥10000` -> `(n / 10000).toFixed(2) + ' 万'`);
+  - Added support for today's real token count and today's accurate API valuation in the dashboard.
+
 ## [2.1.74] - 2026-10-03
 
 ### Improved & Refined

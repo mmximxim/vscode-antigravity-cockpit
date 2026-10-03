@@ -68,8 +68,7 @@
     // ─── Number formatting ────────────────────────────────────────
     function formatTokens(n) {
         if (n === null || n === undefined || isNaN(n)) { return '0'; }
-        if (n >= 100000000) { return (n / 100000000).toFixed(2) + ' 亿'; }
-        if (n >= 10000)     { return (n / 10000).toFixed(1) + ' 万'; }
+        if (n >= 10000)     { return (n / 10000).toFixed(2) + ' 万'; }
         if (n >= 1000)      { return (n / 1000).toFixed(1) + 'k'; }
         return String(Math.round(n));
     }
@@ -87,15 +86,17 @@
 
         if (totalEl)  { totalEl.textContent  = formatTokens(cards.totalConsumed); }
         if (totalValueEl) {
-            // 基于 Antigravity 逆向抓包与 Google 官方 Context Caching 真实计费标准：
-            // 100% 满额配额对应 5 小时 $4.00 API 价值（全天约 $19.2），即约 $4.00 / 百万 Tokens
-            let estUsd = (((cards.totalConsumed || 0) / 1000000) * 4).toFixed(2);
-            totalValueEl.textContent = '≈ $' + estUsd + ' 价值';
+            let estUsd = (typeof cards.apiCost === 'number'
+                ? cards.apiCost
+                : (((cards.totalConsumed || 0) / 1000000) * 4)).toFixed(2);
+            totalValueEl.textContent = '≈ $' + estUsd + ' API价值';
         }
         if (todayEl) { todayEl.textContent = formatTokens(cards.todayConsumed || 0); }
         if (todayValueEl) {
-            let estTodayUsd = (((cards.todayConsumed || 0) / 1000000) * 4).toFixed(2);
-            todayValueEl.textContent = '≈ $' + estTodayUsd + ' 价值';
+            let estTodayUsd = (typeof cards.todayApiCost === 'number'
+                ? cards.todayApiCost
+                : (((cards.todayConsumed || 0) / 1000000) * 4)).toFixed(2);
+            todayValueEl.textContent = '≈ $' + estTodayUsd + ' API价值';
         }
         if (peakEl)   { peakEl.textContent   = formatTokens(cards.peakDailyConsumed); }
         if (streakEl) { streakEl.textContent = (cards.currentStreak || 0) + ' 天'; }
@@ -543,7 +544,7 @@
         let infoToday = document.getElementById('stats-info-today');
         if (infoToday) {
             infoToday.addEventListener('mouseenter', function (e) {
-                showTooltip(e, '<strong>🎯 今日使用 Token 说明</strong><br>今日（本地日期）产生的 Token 消耗总量与预估官方 API 价值。');
+                showTooltip(e, '<strong>🎯 今日使用 Token 说明</strong><br>基于 Antigravity 本地对话库解析的今日真实 Token 消耗总量（含输入、输出、思考与缓存读），并按模型官方商业 API 计价标准精确折算 API 价值。');
             });
             infoToday.addEventListener('mouseleave', hideTooltip);
         }
@@ -551,7 +552,7 @@
         let infoTokens = document.getElementById('stats-info-tokens');
         if (infoTokens) {
             infoTokens.addEventListener('mouseenter', function (e) {
-                showTooltip(e, '<strong>💡 累计 Token 与真实价值估算说明</strong><br>基于 Antigravity 逆向计费与官方真实 Token 量换算：<br>• <strong>Token 换算</strong>：内置提示词约 1.7万 Tokens 起步，配额每下降 1% 约对应 <strong>10,000 (1万) Tokens</strong>（100% 满额配额 ≈ 100万 Tokens）。<br>• <strong>价值换算</strong>：参考 Google 官方 Context Caching 真实计费标准（5小时满额约对应 <strong>$4.00 官方 API 价值</strong>，全天约 $19.2），按约 <strong>$4.00 / 百万 Tokens</strong> 真实折算。<br>• <strong>智能去重</strong>：已自动合并 Gemini 与 Claude 共享模型池并过滤周期重置波动。');
+                showTooltip(e, '<strong>💡 真实 Token 与 API 价值说明</strong><br>基于 Antigravity 本地对话库解析的真实 Token 消耗（含输入、输出、思考与缓存读），并按模型官方商业 API 计价标准精确折算：<br>• <strong>模型定价</strong>：Gemini Flash 输入 $0.75 / 输出 $3.75 / 缓存读 $0.075；Claude Sonnet 输入 $3.00 / 输出 $15.00 / 缓存读 $0.30 等。<br>• <strong>极速缓存</strong>：基于文件增量解析与磁盘缓存，保证即时加载。');
             });
             infoTokens.addEventListener('mouseleave', hideTooltip);
         }

@@ -1055,12 +1055,12 @@ export class CockpitHUD {
                 <div class="stats-card stats-card-today">
                     <div class="stats-card-label">今日使用 Tokens <span class="stats-card-info-icon" id="stats-info-today">ℹ️</span></div>
                     <div class="stats-card-value" id="stats-today-tokens">–</div>
-                    <div class="stats-card-sub" id="stats-today-value">≈ $0.00 价值</div>
+                    <div class="stats-card-sub" id="stats-today-value">≈ $0.00 API价值</div>
                 </div>
                 <div class="stats-card stats-card-tokens">
                     <div class="stats-card-label">累计消耗 Tokens <span class="stats-card-info-icon" id="stats-info-tokens">ℹ️</span></div>
                     <div class="stats-card-value" id="stats-total-tokens">–</div>
-                    <div class="stats-card-sub" id="stats-total-value">≈ $0.00 价值</div>
+                    <div class="stats-card-sub" id="stats-total-value">≈ $0.00 API价值</div>
                 </div>
                 <div class="stats-card stats-card-peak">
                     <div class="stats-card-label">单日峰值 Tokens <span class="stats-card-info-icon" id="stats-info-peak">ℹ️</span></div>

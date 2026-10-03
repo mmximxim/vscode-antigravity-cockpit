@@ -113,15 +113,15 @@ async function main() {
     const owner = 'mmximxim';
     const repo = 'vscode-antigravity-cockpit';
     const tagName = `v${version}`;
-    const releaseName = `v${version}: 优化数据看板卡片排序与提示交互`;
+    const releaseName = `v${version}: 原生集成真实Token统计与API商业价值折算`;
     const releaseBody = `## 🚀 Antigravity Cockpit v${version}
 
-### ✨ 界面优化与交互精简
-- **优化核心指标卡片排版与顺序**：
-  - 将「今日使用 Tokens」指标卡片置于「累计消耗 Tokens」前列，优先呈现当日用量；
-  - 移除卡片装饰图标（闪电、靶子、雪山、火焰），界面整体更加简洁规整；
-  - Tooltip 提示浮窗触发范围精确限制为信息小图标（\`ℹ️\`），避免鼠标划过卡片时意外遮挡视图；
-  - 移除「连续活跃」卡片的冗余提示浮窗。
+### 💎 原生集成本地真实 Token 统计与商业 API 价值折算
+- **原生提取与解析**：直接从 Antigravity 本地对话数据库（\`~/.gemini/antigravity/conversations/*.db\`）精确解析底层 Protobuf 的实际使用 Token（包含输入、输出、思考、缓存命中等）；
+- **商业 API 价值折算**：恢复并原生内置细分模型级别的官方商业 API 价值折算公式（Gemini Flash: $0.75/$3.75/$0.075 每百万 tokens；Claude: $3.00/$15.00/$0.30 每百万 tokens）；
+- **统一单位显示**：Token 显示格式统一恢复为带有 2 位小数的「万」为单位（如 \`162533.54 万\`，取消过大的「亿」单位）；
+- **高性能本地缓存**：内置本地增量时间戳文件缓存（\`real_tokens_cache.json\`），毫秒级极速载入；
+- **今日消耗统计**：核心卡片支持实时呈现今日真实消耗 Tokens 与今日商业 API 价值。
 `;
 
     console.log(`📌 创建/更新 GitHub Release: ${tagName} (${releaseName})...`);
