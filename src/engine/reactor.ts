@@ -294,6 +294,10 @@ export class ReactorCore {
     private localAccountEmail?: string;
     /** 当前正在执行的同步操作 Promise（并发锁） */
     private syncInFlight: Promise<void> | null = null;
+    /** 是否有后续的同步请求排队 */
+    private hasPendingSync: boolean = false;
+    /** 排队的同步请求是否要求强制刷新 */
+    private pendingForceRefresh: boolean = false;
 
     isSyncInFlight(): boolean {
         return this.syncInFlight !== null;
@@ -377,12 +381,14 @@ export class ReactorCore {
             return false;
         }
         const record = await readQuotaApiCache('authorized', email);
-        if (!isApiCacheValid(record)) {
+        if (!record || !record.payload) {
+            this.lastAuthorizedModels = undefined;
             return false;
         }
         try {
-            const models = this.buildModelsFromAuthorizedResponse(record!.payload as AuthorizedQuotaResponse);
+            const models = this.buildModelsFromAuthorizedResponse(record.payload as AuthorizedQuotaResponse);
             if (models.length === 0) {
+                this.lastAuthorizedModels = undefined;
                 return false;
             }
             this.lastAuthorizedModels = models;
@@ -395,6 +401,7 @@ export class ReactorCore {
             this.publishTelemetry(telemetry, 'authorized');
             return true;
         } catch (error) {
+            this.lastAuthorizedModels = undefined;
             logger.warn(`[QuotaApiCache] Failed to decode cached response: ${error instanceof Error ? error.message : String(error)}`);
             return false;
         }
@@ -729,38 +736,54 @@ export class ReactorCore {
      */
     async syncTelemetry(forceRefresh: boolean = false): Promise<void> {
         if (this.syncInFlight) {
-            logger.debug('[ReactorCore] syncTelemetry already in flight, awaiting existing operation');
+            logger.debug('[ReactorCore] syncTelemetry already in flight, queueing follow-up sync');
+            this.hasPendingSync = true;
+            if (forceRefresh) {
+                this.pendingForceRefresh = true;
+            }
             await this.syncInFlight;
             return;
         }
 
         this.syncInFlight = (async () => {
-            try {
-                await this.syncTelemetryCore(forceRefresh);
-            } catch (error) {
-                const err = error instanceof Error ? error : new Error(String(error));
-                if (this.shouldIgnoreSyncError(err)) {
-                    logger.info(`[ReactorCore] Ignoring ${this.getSyncErrorSource(err)} sync error after source switch: ${err.message}`);
-                    return;
+            let nextForceRefresh = forceRefresh;
+            do {
+                this.hasPendingSync = false;
+                this.pendingForceRefresh = false;
+                try {
+                    await this.syncTelemetryCore(nextForceRefresh);
+                } catch (error) {
+                    const err = error instanceof Error ? error : new Error(String(error));
+                    if (this.shouldIgnoreSyncError(err)) {
+                        logger.info(`[ReactorCore] Ignoring ${this.getSyncErrorSource(err)} sync error after source switch: ${err.message}`);
+                    } else {
+                        const source = this.getSyncErrorSource(err);
+                        const currentSource = configService.getConfig().quotaSource === 'authorized' ? 'authorized' : 'local';
+                        const sourceInfo = source ? `source=${source}` : 'source=unknown';
+                        const endpoint = source === 'authorized'
+                            ? 'v1internal:fetchAvailableModels'
+                            : API_ENDPOINTS.GET_USER_STATUS;
+                        logger.error(`Telemetry Sync Failed (${sourceInfo}, current=${currentSource}, endpoint=${endpoint}): ${err.message}`);
+                        
+                        if (this.errorHandler) {
+                            this.errorHandler(err);
+                        }
+                    }
                 }
-                const source = this.getSyncErrorSource(err);
-                const currentSource = configService.getConfig().quotaSource === 'authorized' ? 'authorized' : 'local';
-                const sourceInfo = source ? `source=${source}` : 'source=unknown';
-                const endpoint = source === 'authorized'
-                    ? 'v1internal:fetchAvailableModels'
-                    : API_ENDPOINTS.GET_USER_STATUS;
-                logger.error(`Telemetry Sync Failed (${sourceInfo}, current=${currentSource}, endpoint=${endpoint}): ${err.message}`);
-                
-                if (this.errorHandler) {
-                    this.errorHandler(err);
+
+                if (this.hasPendingSync) {
+                    logger.info('[ReactorCore] Executing queued follow-up syncTelemetry');
+                    nextForceRefresh = this.pendingForceRefresh;
                 }
-            }
+            } while (this.hasPendingSync);
         })();
 
         try {
             await this.syncInFlight;
         } finally {
             this.syncInFlight = null;
+            this.hasPendingSync = false;
+            this.pendingForceRefresh = false;
         }
     }
 
@@ -783,7 +806,13 @@ export class ReactorCore {
                     this.publishTelemetry(telemetry, 'authorized');
                     return;
                 }
+                const activeBefore = await credentialStorage.getActiveAccount();
                 const telemetry = await this.fetchAuthorizedTelemetry(0, forceRefresh);
+                const activeAfter = await credentialStorage.getActiveAccount();
+                if (this.normalizeAccount(activeBefore) !== this.normalizeAccount(activeAfter)) {
+                    logger.info(`[ReactorCore] Active account changed during fetch (${activeBefore} -> ${activeAfter}), skipping stale publish`);
+                    return;
+                }
                 this.lastAuthorizedFetchedAt = Date.now();
                 this.publishTelemetry(telemetry, 'authorized');
                 return;
@@ -1090,9 +1119,14 @@ export class ReactorCore {
                 : this.getCachedAuthorizedAvailableAICredits(),
         );
         const localSnapshot = await this.tryFetchLocalTelemetry();
-        if (localSnapshot?.promptCredits || localSnapshot?.userInfo) {
+        if (localSnapshot?.promptCredits) {
             snapshot.promptCredits = localSnapshot.promptCredits;
-            snapshot.userInfo = localSnapshot.userInfo;
+        }
+        if (localSnapshot?.userInfo) {
+            snapshot.userInfo = {
+                ...localSnapshot.userInfo,
+                email: activeAccount || localSnapshot.userInfo.email,
+            };
         }
         if (localSnapshot) {
             for (const model of snapshot.models) {

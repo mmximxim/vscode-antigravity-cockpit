@@ -128,7 +128,10 @@ export class MessageController {
                     reason: requestedMode === 'auto' ? 'manualAccountSwitch' : `manualAccountSwitch:${requestedMode}`,
                 });
             }
-            this.reactor.syncTelemetry();
+            if (configService.getConfig().quotaSource === 'authorized') {
+                await this.reactor.tryUseQuotaCache('authorized', targetEmail);
+            }
+            void this.reactor.syncTelemetry(true);
             logger.info(
                 `[MsgCtrl] Account switch succeeded: target=${targetEmail}, resolved=${result.email ?? targetEmail}, mode=${result.mode}`,
             );
@@ -193,6 +196,14 @@ export class MessageController {
         logger.info(
             `[MsgCtrl] Switch execution done: executionId=${executionId}, success=${success}, effectiveMode=${result.mode}, from=${fromEmail ?? 'none'}, to=${toEmail}, durationMs=${durationMs}, errorCode=${errorCode ?? 'none'}`,
         );
+
+        if (success) {
+            const state = await autoTriggerController.getState();
+            this.hud.sendMessage({
+                type: 'autoTriggerState',
+                data: state,
+            });
+        }
 
         return {
             executionId,
@@ -592,12 +603,12 @@ export class MessageController {
                             const state = await autoTriggerController.getState();
                             this.hud.sendMessage({ type: 'autoTriggerState', data: state });
                             this.hud.sendMessage({ type: 'antigravityToolsSyncComplete', data: { success: true } });
-                            // 修复：切换账号后必须强制执行 syncTelemetry 来获取新账号配额，而不是 reprocess 旧缓存
+                            // 刷新配额：先乐观加载缓存，再强制执行在线同步
                             if (configService.getConfig().quotaSource === 'authorized') {
-                                const usedCache = await this.reactor.tryUseQuotaCache('authorized', targetEmail);
-                                if (!usedCache) {
-                                    this.reactor.syncTelemetry();
-                                }
+                                await this.reactor.tryUseQuotaCache('authorized', targetEmail);
+                                void this.reactor.syncTelemetry(true);
+                            } else {
+                                void this.reactor.syncTelemetry(true);
                             }
                             vscode.window.showInformationMessage(
                                 t('autoTrigger.accountSwitched', { email: targetEmail }) 
@@ -996,12 +1007,9 @@ export class MessageController {
                             type: 'autoTriggerState',
                             data: state,
                         });
-                        if (configService.getConfig().quotaSource === 'authorized') {
-                            const usedCache = await this.reactor.tryUseQuotaCache('authorized', message.email);
-                            if (!usedCache) {
-                                this.reactor.syncTelemetry();
-                            }
-                        }
+                        const source = configService.getConfig().quotaSource === 'authorized' ? 'authorized' : 'local';
+                        await this.reactor.tryUseQuotaCache(source, message.email);
+                        void this.reactor.syncTelemetry(true);
                     } else {
                         logger.warn('switchAccount missing email');
                     }
@@ -1044,7 +1052,7 @@ export class MessageController {
                                 data: state,
                             });
                             if (configService.getConfig().quotaSource === 'authorized') {
-                                this.reactor.syncTelemetry();
+                                void this.reactor.syncTelemetry(true);
                             }
                             vscode.window.showInformationMessage(t('autoTrigger.reauthorizeSuccess'));
                         } catch (error) {
@@ -1448,7 +1456,8 @@ export class MessageController {
                 data: state,
             });
             if (configService.getConfig().quotaSource === 'authorized') {
-                this.reactor.syncTelemetry();
+                await this.reactor.tryUseQuotaCache('authorized', result.email);
+                void this.reactor.syncTelemetry(true);
             }
             vscode.window.showInformationMessage(
                 t('quotaSource.importLocalSuccess', { email: result.email })
@@ -1607,7 +1616,7 @@ export class MessageController {
 
             // 如果配额来源是授权模式，自动刷新配额数据
             if (configService.getConfig().quotaSource === 'authorized' && result.currentAvailable) {
-                this.reactor.syncTelemetry();
+                void this.reactor.syncTelemetry(true);
             }
 
             if (result.skipped.length > 0) {
@@ -1683,7 +1692,7 @@ export class MessageController {
             });
 
             if (configService.getConfig().quotaSource === 'authorized') {
-                this.reactor.syncTelemetry();
+                void this.reactor.syncTelemetry(true);
             }
 
             if (result.skipped.length > 0) {
@@ -1760,12 +1769,10 @@ export class MessageController {
                 const state = await autoTriggerController.getState();
                 this.hud.sendMessage({ type: 'autoTriggerState', data: state });
                 
-                // 刷新配额
+                // 刷新配额：先乐观加载缓存，再强制执行在线同步
                 const source = configService.getConfig().quotaSource === 'authorized' ? 'authorized' : 'local';
-                const usedCache = await this.reactor.tryUseQuotaCache(source, existingEmail);
-                if (!usedCache) {
-                    this.reactor.syncTelemetry();
-                }
+                await this.reactor.tryUseQuotaCache(source, existingEmail);
+                void this.reactor.syncTelemetry(true);
                 
                 vscode.window.showInformationMessage(
                     t('autoTrigger.accountSwitched', { email: existingEmail }) 
@@ -1780,12 +1787,10 @@ export class MessageController {
                     const state = await autoTriggerController.getState();
                     this.hud.sendMessage({ type: 'autoTriggerState', data: state });
 
-                    // 刷新配额
+                    // 刷新配额：先乐观加载缓存，再强制执行在线同步
                     const quotaSource = configService.getConfig().quotaSource === 'authorized' ? 'authorized' : 'local';
-                    const usedCache = await this.reactor.tryUseQuotaCache(quotaSource, result.email);
-                    if (!usedCache) {
-                        this.reactor.syncTelemetry();
-                    }
+                    await this.reactor.tryUseQuotaCache(quotaSource, result.email);
+                    void this.reactor.syncTelemetry(true);
 
                     vscode.window.showInformationMessage(
                         t('quotaSource.importLocalSuccess', { email: result.email })
