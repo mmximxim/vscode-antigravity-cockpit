@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
+import * as childProcess from 'child_process';
 import { pathToFileURL } from 'url';
 // 使用 sql.js 的 wasm 版本（需要 .wasm 文件）
 import initSqlJs, { Database } from 'sql.js/dist/sql-wasm.js';
@@ -330,13 +331,184 @@ function parseUnifiedOAuthTokenInfo(stateValue: string): LocalTokenInfo {
     throw new Error('Unified oauth info not found');
 }
 
-async function readLocalTokenInfo(): Promise<LocalTokenInfo> {
-    const candidates = getAntigravityStateDbCandidates();
-    logger.info(`[LocalAuth] state.vscdb candidate paths (${candidates.length}): ${candidates.join(', ')}`);
+interface TokenSource {
+    tokenInfo: LocalTokenInfo;
+    mtimeMs: number;
+    source: string;
+}
 
-    let lastError: Error | null = null;
+function readWindowsGenericCredential(target: string): TokenSource | null {
+    const psScript = `
+$code = @'
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public class CR {
+    [DllImport("Advapi32.dll", EntryPoint = "CredReadW", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern bool CredRead(string t, int type, int reservedFlag, out IntPtr p);
+    [DllImport("Advapi32.dll", EntryPoint = "CredFree")]
+    public static extern void CredFree(IntPtr p);
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct C {
+        public int Flags; public int Type; public string TargetName; public string Comment;
+        public long LastWritten; public int BlobSize; public IntPtr Blob;
+        public int Persist; public int AttrCount; public IntPtr Attrs;
+        public string TargetAlias; public string UserName;
+    }
+    public static string Read(string target) {
+        IntPtr p;
+        if (CredRead(target, 1, 0, out p)) {
+            try {
+                C c = (C)Marshal.PtrToStructure(p, typeof(C));
+                if (c.Blob != IntPtr.Zero && c.BlobSize > 0) {
+                    byte[] b = new byte[c.BlobSize];
+                    Marshal.Copy(c.Blob, b, 0, c.BlobSize);
+                    return c.LastWritten + ":" + Encoding.UTF8.GetString(b);
+                }
+            } finally { CredFree(p); }
+        }
+        return "";
+    }
+}
+'@
+Add-Type -TypeDefinition $code
+[CR]::Read("${target}")
+`;
+
+    try {
+        const out = childProcess.execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', psScript], {
+            encoding: 'utf8',
+            timeout: 5000,
+            windowsHide: true,
+        }).trim();
+        if (!out) {
+            return null;
+        }
+        const idx = out.indexOf(':');
+        if (idx === -1) {
+            return null;
+        }
+        const fileTime = out.substring(0, idx);
+        const jsonStr = out.substring(idx + 1);
+        const fileTimeBigInt = BigInt(fileTime);
+        const unixEpochBigInt = 116444736000000000n;
+        const jsMs = Number((fileTimeBigInt - unixEpochBigInt) / 10000n);
+        const data = JSON.parse(jsonStr);
+        const refreshToken = data?.token?.refresh_token;
+        if (refreshToken) {
+            return {
+                mtimeMs: jsMs,
+                source: `WindowsCredential(${target})`,
+                tokenInfo: {
+                    accessToken: data?.token?.access_token,
+                    refreshToken,
+                    tokenType: data?.token?.token_type || 'Bearer',
+                    expirySeconds: data?.token?.expiry
+                        ? Math.floor(new Date(data.token.expiry).getTime() / 1000)
+                        : undefined,
+                },
+            };
+        }
+    } catch (e) {
+        logger.debug(`[LocalAuth] Failed reading Windows Credential Manager (${target}): ${e}`);
+    }
+    return null;
+}
+
+function readSystemCredential(): TokenSource | null {
+    if (process.platform === 'win32') {
+        const targets = ['gemini:antigravity', 'antigravity', 'google:antigravity'];
+        for (const target of targets) {
+            const res = readWindowsGenericCredential(target);
+            if (res) {
+                return res;
+            }
+        }
+    } else if (process.platform === 'darwin') {
+        const targets = ['gemini:antigravity', 'antigravity'];
+        for (const target of targets) {
+            try {
+                const out = childProcess.execFileSync('security', ['find-generic-password', '-s', target, '-w'], {
+                    encoding: 'utf8',
+                    timeout: 3000,
+                }).trim();
+                if (out) {
+                    const data = JSON.parse(out);
+                    const refreshToken = data?.token?.refresh_token;
+                    if (refreshToken) {
+                        return {
+                            mtimeMs: Date.now(),
+                            source: `macOSKeychain(${target})`,
+                            tokenInfo: {
+                                accessToken: data?.token?.access_token,
+                                refreshToken,
+                                tokenType: data?.token?.token_type || 'Bearer',
+                                expirySeconds: data?.token?.expiry
+                                    ? Math.floor(new Date(data.token.expiry).getTime() / 1000)
+                                    : undefined,
+                            },
+                        };
+                    }
+                }
+            } catch {
+                // ignore
+            }
+        }
+    } else if (process.platform === 'linux') {
+        const targets = ['gemini:antigravity', 'antigravity'];
+        for (const target of targets) {
+            try {
+                const out = childProcess.execFileSync('secret-tool', ['lookup', 'service', target], {
+                    encoding: 'utf8',
+                    timeout: 3000,
+                }).trim();
+                if (out) {
+                    const data = JSON.parse(out);
+                    const refreshToken = data?.token?.refresh_token;
+                    if (refreshToken) {
+                        return {
+                            mtimeMs: Date.now(),
+                            source: `LinuxSecretService(${target})`,
+                            tokenInfo: {
+                                accessToken: data?.token?.access_token,
+                                refreshToken,
+                                tokenType: data?.token?.token_type || 'Bearer',
+                                expirySeconds: data?.token?.expiry
+                                    ? Math.floor(new Date(data.token.expiry).getTime() / 1000)
+                                    : undefined,
+                            },
+                        };
+                    }
+                }
+            } catch {
+                // ignore
+            }
+        }
+    }
+    return null;
+}
+
+async function readLocalTokenInfo(): Promise<LocalTokenInfo> {
+    const sources: TokenSource[] = [];
+
+    // 1. 优先检测系统凭证管理器 (Windows Generic Credentials / macOS Keychain / Linux Secret Service)
+    try {
+        const sysCred = readSystemCredential();
+        if (sysCred) {
+            sources.push(sysCred);
+        }
+    } catch (err) {
+        logger.debug(`[LocalAuth] readSystemCredential error: ${err}`);
+    }
+
+    // 2. 检测所有候选 SQLite 数据库
+    const candidates = getAntigravityStateDbCandidates();
     for (const dbPath of candidates) {
         try {
+            if (!fs.existsSync(dbPath)) {
+                continue;
+            }
+            const stat = await fs.promises.stat(dbPath);
             const stateValues = await readStateValuesByKeys(dbPath, [
                 UNIFIED_STATE_KEY,
                 LEGACY_STATE_KEY,
@@ -351,9 +523,7 @@ async function readLocalTokenInfo(): Promise<LocalTokenInfo> {
             if (unifiedValue) {
                 try {
                     tokenInfo = parseUnifiedOAuthTokenInfo(unifiedValue);
-                    if (tokenInfo.refreshToken) {
-                        logger.info(`[LocalAuth] Token state source selected: ${UNIFIED_STATE_KEY} (db: ${dbPath})`);
-                    } else {
+                    if (!tokenInfo.refreshToken) {
                         tokenInfo = null;
                     }
                 } catch (e) {
@@ -367,9 +537,7 @@ async function readLocalTokenInfo(): Promise<LocalTokenInfo> {
                     const oauthField = findField(raw, 6);
                     if (oauthField) {
                         tokenInfo = parseOAuthTokenInfo(oauthField);
-                        if (tokenInfo.refreshToken) {
-                            logger.info(`[LocalAuth] Token state source selected: ${LEGACY_STATE_KEY} (db: ${dbPath})`);
-                        } else {
+                        if (!tokenInfo.refreshToken) {
                             tokenInfo = null;
                         }
                     }
@@ -401,18 +569,28 @@ async function readLocalTokenInfo(): Promise<LocalTokenInfo> {
                 if (discoveredEmail && !tokenInfo.email) {
                     tokenInfo.email = discoveredEmail;
                 }
-                return tokenInfo;
+                sources.push({
+                    tokenInfo,
+                    mtimeMs: stat.mtimeMs,
+                    source: `SQLite(${dbPath})`,
+                });
             }
         } catch (err) {
-            lastError = err instanceof Error ? err : new Error(String(err));
-            logger.debug(`[LocalAuth] Failed reading candidate ${dbPath}: ${lastError.message}`);
+            logger.debug(`[LocalAuth] Failed reading candidate ${dbPath}: ${err instanceof Error ? err.message : err}`);
         }
     }
 
-    if (lastError) {
-        throw lastError;
+    if (sources.length === 0) {
+        throw new Error('No local authentication credentials found (checked System Credential Store and state.vscdb)');
     }
-    throw new Error(`No oauth token state key found (${UNIFIED_STATE_KEY} / ${LEGACY_STATE_KEY})`);
+
+    // 按修改时间降序排序，最新写入的凭证源优先
+    sources.sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+    logger.info(`[LocalAuth] Available token sources (${sources.length}): ${sources.map(s => `${s.source} [${new Date(s.mtimeMs).toISOString()}]`).join(', ')}`);
+    logger.info(`[LocalAuth] Selected primary source: ${sources[0].source}`);
+
+    return sources[0].tokenInfo;
 }
 
 async function loadCredentialFromStateDb(): Promise<OAuthCredential | null> {
