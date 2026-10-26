@@ -187,19 +187,11 @@ describe('Gemini 3.8 Flash and Grouping Verification', () => {
                         resetTime: '2026-09-03T18:00:00Z',
                     },
                 },
-                'gemini-3.7-flash-tiered': {
-                    model: 'MODEL_PLACEHOLDER_M301',
-                    displayName: null,
+                'claude-opus-5-5-medium': {
+                    model: 'MODEL_PLACEHOLDER_M401',
+                    displayName: 'Claude Opus 5.5 (Medium)',
                     quotaInfo: {
-                        remainingFraction: 0.8393,
-                        resetTime: '2026-09-03T18:00:00Z',
-                    },
-                },
-                'gemini-3.6-flash-high': {
-                    model: 'MODEL_PLACEHOLDER_M71',
-                    displayName: 'Gemini 3.6 Flash (High)',
-                    quotaInfo: {
-                        remainingFraction: 0.8393,
+                        remainingFraction: 1.0,
                         resetTime: '2026-09-03T18:00:00Z',
                     },
                 },
@@ -227,7 +219,7 @@ describe('Gemini 3.8 Flash and Grouping Verification', () => {
         const spy = jest.spyOn(configService, 'getConfig').mockReturnValue({
             groupingEnabled: true,
             groupMappings: {
-                'MODEL_PLACEHOLDER_M71': 'group-flash',
+                'MODEL_PLACEHOLDER_M322': 'group-flash',
             },
             visibleModels: [],
             pinnedModels: [],
@@ -329,8 +321,8 @@ describe('Gemini 3.8 Flash and Grouping Verification', () => {
                             },
                         },
                         {
-                            label: 'Claude Sonnet 4.6 (Thinking)',
-                            modelOrAlias: { model: 'MODEL_PLACEHOLDER_M35' },
+                            label: 'Claude Sonnet 5.5',
+                            modelOrAlias: { model: 'MODEL_PLACEHOLDER_M404' },
                             quotaInfo: {
                                 remainingFraction: 0.9,
                                 resetTime: '2026-09-10T18:00:00Z',
@@ -506,6 +498,110 @@ describe('Gemini 3.8 Flash and Grouping Verification', () => {
         (reactor as any).transmit = jest.fn().mockRejectedValue(new Error('Connection Failed: ECONNREFUSED 127.0.0.1:12345'));
         await reactor.fetchWeeklyQuotaSummary(true);
         expect(reactor.isEngaged).toBe(false);
+    });
+
+    it('should exclude retired models and only keep active selectable models in IDE', () => {
+        // Retired models should be completely excluded
+        expect(isSelectableModel('gemini-3.7-flash')).toBe(false);
+        expect(isSelectableModel('gemini-3.7-flash-tiered')).toBe(false);
+        expect(isSelectableModel('MODEL_PLACEHOLDER_M301')).toBe(false);
+        expect(isSelectableModel('gemini-3.5-flash-lite')).toBe(false);
+        expect(isSelectableModel('MODEL_PLACEHOLDER_M198')).toBe(false);
+        expect(isSelectableModel('gemini-3.1-flash-image')).toBe(false);
+        expect(isSelectableModel('MODEL_PLACEHOLDER_M21')).toBe(false);
+        expect(isSelectableModel('gemini-3.1-flash-lite')).toBe(false);
+        expect(isSelectableModel('MODEL_PLACEHOLDER_M50')).toBe(false);
+        expect(isSelectableModel('gemini-3.6-flash-high')).toBe(false);
+        expect(isSelectableModel('claude-sonnet-4-6')).toBe(false);
+
+        // Active models in IDE should be included
+        expect(isSelectableModel('gemini-4-argon')).toBe(true);
+        expect(isSelectableModel('gemini-4-argon-medium')).toBe(true);
+        expect(isSelectableModel('MODEL_PLACEHOLDER_M418')).toBe(true);
+        expect(isSelectableModel('gemini-3.8-flash')).toBe(true);
+        expect(isSelectableModel('gemini-3.8-flash-tiered')).toBe(true);
+        expect(isSelectableModel('MODEL_PLACEHOLDER_M322')).toBe(true);
+        expect(isSelectableModel('claude-opus-5-5-medium')).toBe(true);
+        expect(isSelectableModel('claude-sonnet-5-5-medium')).toBe(true);
+        expect(isSelectableModel('gpt-oss-120b-medium')).toBe(true);
+        expect(isSelectableModel('MODEL_OPENAI_GPT_OSS_120B_MEDIUM')).toBe(true);
+    });
+
+    it('should decouple Gemini 4 Argon from Flash and assign independent weekly quota', () => {
+        const reactor = new ReactorCore();
+        const mockAuthData = {
+            models: {
+                'gemini-3.8-flash-tiered': {
+                    model: 'MODEL_PLACEHOLDER_M322',
+                    displayName: 'Gemini 3.8 Flash',
+                    quotaInfo: {
+                        remainingFraction: 0.65,
+                        resetTime: '2026-10-26T14:00:00Z',
+                    },
+                },
+            },
+        };
+
+        const mockWeeklyData = {
+            response: {
+                groups: [
+                    {
+                        displayName: 'Gemini Models',
+                        buckets: [
+                            {
+                                bucketId: 'gemini-weekly',
+                                window: 'weekly',
+                                remainingFraction: 0.89,
+                                resetTime: '2026-11-02T14:00:00Z',
+                                timeUntilResetFormatted: '6d 20h',
+                            },
+                        ],
+                    },
+                    {
+                        displayName: 'Gemini 4 Argon',
+                        buckets: [
+                            {
+                                bucketId: 'argon-weekly',
+                                window: 'weekly',
+                                remainingFraction: 0.90,
+                                resetTime: '2026-11-02T13:00:00Z',
+                                timeUntilResetFormatted: '6d 19h',
+                            },
+                        ],
+                    },
+                ],
+            },
+        };
+
+        const snapshot = reactor.buildAuthorizedSnapshotFromResponse(mockAuthData);
+        reactor.attachWeeklyLimitsToSnapshot(snapshot, mockWeeklyData as any);
+
+        const flashModel = snapshot.models.find(m => m.modelId === 'MODEL_PLACEHOLDER_M322');
+        const argonModel = snapshot.models.find(m => m.modelId === 'MODEL_PLACEHOLDER_M418');
+
+        expect(flashModel).toBeDefined();
+        expect(argonModel).toBeDefined();
+
+        // Flash retains its 5-hour quota and its own weekly quota (89%)
+        expect(flashModel?.remainingPercentage).toBeCloseTo(65);
+        expect(flashModel?.weeklyLimit?.remainingPercentage).toBeCloseTo(89);
+
+        // Argon has its own independent weekly quota (90%) and does NOT mirror Flash's 65%
+        expect(argonModel?.remainingPercentage).toBeCloseTo(90);
+        expect(argonModel?.weeklyLimit?.remainingPercentage).toBeCloseTo(90);
+
+        // Check group separation
+        const flashGroup = snapshot.groups?.find(g => g.groupName.includes('Flash') || g.groupId.includes('flash'));
+        const argonGroup = snapshot.groups?.find(g => g.groupName.includes('Argon') || g.groupId.includes('argon'));
+
+        if (flashGroup) {
+            expect(flashGroup.remainingPercentage).toBeCloseTo(65);
+            expect(flashGroup.weeklyLimit?.remainingPercentage).toBeCloseTo(89);
+        }
+        if (argonGroup) {
+            expect(argonGroup.remainingPercentage).toBeCloseTo(90);
+            expect(argonGroup.weeklyLimit?.remainingPercentage).toBeCloseTo(90);
+        }
     });
 });
 

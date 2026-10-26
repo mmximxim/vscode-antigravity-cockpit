@@ -160,40 +160,15 @@ const AUTO_GROUP_GEMINI_PRO_ID_SET = new Set(
 
 const AUTO_GROUP_GEMINI_FLASH_ID_SET = new Set(
     [
-        'MODEL_PLACEHOLDER_M18',
         'MODEL_PLACEHOLDER_M322',
         'MODEL_PLACEHOLDER_M318',
         'MODEL_PLACEHOLDER_M319',
         'MODEL_PLACEHOLDER_M320',
-        'MODEL_PLACEHOLDER_M301',
-        'MODEL_PLACEHOLDER_M71',
-        'MODEL_PLACEHOLDER_M72',
-        'MODEL_PLACEHOLDER_M73',
-        'MODEL_PLACEHOLDER_M196',
-        'MODEL_PLACEHOLDER_M84',
-        'MODEL_PLACEHOLDER_M20',
-        'MODEL_PLACEHOLDER_M187',
-        'MODEL_PLACEHOLDER_M198',
-        'MODEL_PLACEHOLDER_M21',
-        'MODEL_PLACEHOLDER_M50',
-        'gemini-3.5-flash-lite',
-        'gemini-3.1-flash-image',
-        'gemini-3.1-flash-lite',
         'gemini-3.8-flash',
         'gemini-3.8-flash-tiered',
         'gemini-3.8-flash-high',
         'gemini-3.8-flash-medium',
         'gemini-3.8-flash-low',
-        'gemini-3.7-flash',
-        'gemini-3.7-flash-tiered',
-        'gemini-3.7-flash-high',
-        'gemini-3.7-flash-medium',
-        'gemini-3.7-flash-low',
-        'gemini-3.6-flash',
-        'gemini-3.6-flash-tiered',
-        'gemini-3.6-flash-high',
-        'gemini-3.6-flash-medium',
-        'gemini-3.6-flash-low',
     ].map(id => id.toLowerCase()),
 );
 
@@ -1547,20 +1522,6 @@ export class ReactorCore {
                     recommended: true,
                 };
             }
-            const has37 = Boolean(
-                data.models['gemini-3.7-flash']
-                || data.models['gemini-3.7-flash-tiered']
-                || data.models['MODEL_PLACEHOLDER_M301']
-                || Object.values(data.models).some(m => m?.model === 'MODEL_PLACEHOLDER_M301'),
-            );
-            if (!has37) {
-                data.models['gemini-3.7-flash-tiered'] = {
-                    ...flashTemplate,
-                    displayName: 'Gemini 3.7 Flash',
-                    model: 'MODEL_PLACEHOLDER_M301',
-                    recommended: true,
-                };
-            }
         }
 
         const hasArgon = Boolean(
@@ -1581,14 +1542,30 @@ export class ReactorCore {
             ),
         );
         if (!hasArgon) {
-            const argonTemplate = data.models['gemini-2.5-pro'] || flashTemplate;
-            if (argonTemplate && argonTemplate.quotaInfo) {
-                data.models['gemini-4-argon-medium'] = {
-                    ...argonTemplate,
-                    displayName: 'Gemini 4 Argon (Medium)',
-                    model: 'MODEL_PLACEHOLDER_M418',
-                    recommended: true,
-                };
+            // Gemini 4 Argon 在 Antigravity 中仅有独立周配额（无 5 小时配额限制）
+            // 默认初始化为健康状态，后续由 attachWeeklyLimitsToSnapshot 注入准确的周配额
+            data.models['gemini-4-argon-medium'] = {
+                displayName: 'Gemini 4 Argon (Medium)',
+                model: 'MODEL_PLACEHOLDER_M418',
+                recommended: true,
+                quotaInfo: {
+                    remainingFraction: 1.0,
+                    resetTime: new Date(now + 7 * 24 * 3600 * 1000).toISOString(),
+                },
+            };
+        } else {
+            // 如果已有 Argon 模型（如来自旧缓存），确保其配额不与 Flash 5 小时配额混用
+            const argonModel = data.models['gemini-4-argon-medium']
+                || data.models['gemini-4-argon']
+                || data.models['gemini-4-argon-tiered'];
+            if (argonModel && argonModel.quotaInfo && flashTemplate && flashTemplate.quotaInfo) {
+                if (argonModel.quotaInfo.resetTime === flashTemplate.quotaInfo.resetTime &&
+                    argonModel.quotaInfo.remainingFraction === flashTemplate.quotaInfo.remainingFraction) {
+                    argonModel.quotaInfo = {
+                        remainingFraction: 1.0,
+                        resetTime: new Date(now + 7 * 24 * 3600 * 1000).toISOString(),
+                    };
+                }
             }
         }
 
@@ -1660,7 +1637,7 @@ export class ReactorCore {
         const orderedKeys: string[] = [];
         const added = new Set<string>();
 
-        // 1. 优先将最新的 Gemini 4 Argon, Gemini 3.8 Flash, Claude 5.5, Gemini 3.7 Flash 放入排序列表前面
+        // 1. 优先将最新的 Gemini 4 Argon, Gemini 3.8 Flash, Claude 5.5, GPT-OSS 放入排序列表前面
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-4-argon', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-4-argon-tiered', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-4-argon-medium', added, orderedKeys);
@@ -1677,15 +1654,6 @@ export class ReactorCore {
         this.pushAuthorizedModelKeyIfExists(data.models, 'claude-sonnet-5-5-medium', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'gpt-oss-120b-medium', added, orderedKeys);
         this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_OPENAI_GPT_OSS_120B_MEDIUM', added, orderedKeys);
-        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.7-flash', added, orderedKeys);
-        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.7-flash-tiered', added, orderedKeys);
-        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M301', added, orderedKeys);
-        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.5-flash-lite', added, orderedKeys);
-        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M198', added, orderedKeys);
-        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.1-flash-image', added, orderedKeys);
-        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M21', added, orderedKeys);
-        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.1-flash-lite', added, orderedKeys);
-        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M50', added, orderedKeys);
 
         // 2. 遍历官方 agentModelSorts，仅添加在当前 Antigravity 中可被用户选择的活跃模型
         for (const sort of data.agentModelSorts ?? []) {
@@ -1921,12 +1889,20 @@ export class ReactorCore {
 
             const groupNameLower = (group.displayName || '').toLowerCase();
             const groupDescLower = (group.description || '').toLowerCase();
+            const bucketIdLower = (weeklyBucket.bucketId || '').toLowerCase();
 
-            if (groupNameLower.includes('gemini') || weeklyBucket.bucketId.includes('gemini') || groupDescLower.includes('gemini')) {
+            // 优先匹配 Gemini 4 Argon，确保不与 Flash 混淆
+            if (groupNameLower.includes('argon') || bucketIdLower.includes('argon') || groupDescLower.includes('argon')) {
+                result.set('argon', weeklyInfo);
+                result.set('gemini-argon', weeklyInfo);
+                result.set('gemini_argon', weeklyInfo);
+            } else if (groupNameLower.includes('gemini') || bucketIdLower.includes('gemini') || groupDescLower.includes('gemini')) {
                 result.set('gemini', weeklyInfo);
+                result.set('gemini-weekly', weeklyInfo);
             }
-            if (groupNameLower.includes('claude') || groupNameLower.includes('gpt') || weeklyBucket.bucketId.includes('3p') || groupDescLower.includes('claude')) {
+            if (groupNameLower.includes('claude') || groupNameLower.includes('gpt') || bucketIdLower.includes('3p') || groupDescLower.includes('claude')) {
                 result.set('3p', weeklyInfo);
+                result.set('3p-weekly', weeklyInfo);
             }
             result.set(weeklyBucket.bucketId, weeklyInfo);
         }
@@ -1949,6 +1925,11 @@ export class ReactorCore {
         const idLower = modelId.toLowerCase();
         const labelLower = label.toLowerCase();
         const family = resolveAutoGroupFamily(modelId, label);
+
+        // 优先独立匹配 Gemini 4 Argon，避免与 Flash 混用
+        if (family === 'gemini_argon' || idLower.includes('argon') || labelLower.includes('argon')) {
+            return weeklyLimits.get('argon') || weeklyLimits.get('gemini_argon') || weeklyLimits.get('gemini-argon');
+        }
 
         if (family?.startsWith('gemini') || idLower.includes('gemini') || labelLower.includes('gemini')) {
             return weeklyLimits.get('gemini') || weeklyLimits.get('gemini-weekly');
@@ -1997,6 +1978,33 @@ export class ReactorCore {
                     weeklyLimits,
                 );
             }
+            // Gemini 4 Argon 在 Antigravity 中仅有周配额（无 5 小时配额限制）
+            // 将其主配额指标对齐为其真实的独立周配额，彻底解耦与 Flash 的 5 小时额度
+            const family = resolveAutoGroupFamily(model.modelId, model.label);
+            const isArgon = family === 'gemini_argon'
+                || model.modelId.toLowerCase().includes('argon')
+                || model.label.toLowerCase().includes('argon');
+            if (isArgon && model.weeklyLimit) {
+                if (typeof model.weeklyLimit.remainingFraction === 'number') {
+                    model.remainingFraction = model.weeklyLimit.remainingFraction;
+                }
+                if (typeof model.weeklyLimit.remainingPercentage === 'number') {
+                    model.remainingPercentage = model.weeklyLimit.remainingPercentage;
+                }
+                if (model.weeklyLimit.resetTime) {
+                    model.resetTime = model.weeklyLimit.resetTime instanceof Date
+                        ? model.weeklyLimit.resetTime
+                        : new Date(model.weeklyLimit.resetTime);
+                }
+                if (model.weeklyLimit.resetTimeDisplay) {
+                    model.resetTimeDisplay = model.weeklyLimit.resetTimeDisplay;
+                }
+                if (model.weeklyLimit.timeUntilResetFormatted) {
+                    model.timeUntilResetFormatted = model.weeklyLimit.timeUntilResetFormatted;
+                }
+                model.resetTimeValid = true;
+                model.isExhausted = (model.remainingFraction ?? 0) <= 0;
+            }
         };
 
         if (snapshot.models) {
@@ -2020,6 +2028,27 @@ export class ReactorCore {
                         group.groupName,
                         weeklyLimits,
                     );
+                }
+                // 如果是 Argon 分组，同步组的主指标为 weeklyLimit 指标，确保与 Flash 5 小时额度彻底解耦
+                const isArgonGroup = group.groupId?.toLowerCase().includes('argon')
+                    || group.groupName?.toLowerCase().includes('argon')
+                    || group.models.some(m => m.modelId.toLowerCase().includes('argon') || m.label.toLowerCase().includes('argon'));
+                if (isArgonGroup && group.weeklyLimit) {
+                    if (typeof group.weeklyLimit.remainingPercentage === 'number') {
+                        group.remainingPercentage = group.weeklyLimit.remainingPercentage;
+                    }
+                    if (group.weeklyLimit.resetTime) {
+                        group.resetTime = group.weeklyLimit.resetTime instanceof Date
+                            ? group.weeklyLimit.resetTime
+                            : new Date(group.weeklyLimit.resetTime);
+                    }
+                    if (group.weeklyLimit.resetTimeDisplay) {
+                        group.resetTimeDisplay = group.weeklyLimit.resetTimeDisplay;
+                    }
+                    if (group.weeklyLimit.timeUntilResetFormatted) {
+                        group.timeUntilResetFormatted = group.weeklyLimit.timeUntilResetFormatted;
+                    }
+                    group.isExhausted = group.remainingPercentage <= 0;
                 }
             }
         }
@@ -2370,17 +2399,40 @@ export class ReactorCore {
                 const bottleneckModel = groupModels.reduce((min, cur) => {
                     return (cur.remainingPercentage ?? 0) < (min.remainingPercentage ?? 0) ? cur : min;
                 }, groupModels[0]);
-                const minPercentage = bottleneckModel.remainingPercentage ?? 0;
+                let minPercentage = bottleneckModel.remainingPercentage ?? 0;
+                let groupResetTime = bottleneckModel.resetTime;
+                let groupResetTimeDisplay = bottleneckModel.resetTimeDisplay;
+                let groupTimeUntilResetFormatted = bottleneckModel.timeUntilResetFormatted;
                 
                 const groupWeeklyLimit = groupModels.find(m => m.weeklyLimit)?.weeklyLimit;
+                const isArgonGroup = groupId.toLowerCase().includes('argon')
+                    || groupName.toLowerCase().includes('argon')
+                    || groupModels.some(m => m.modelId.toLowerCase().includes('argon') || m.label.toLowerCase().includes('argon'));
+                if (isArgonGroup && groupWeeklyLimit) {
+                    if (typeof groupWeeklyLimit.remainingPercentage === 'number') {
+                        minPercentage = groupWeeklyLimit.remainingPercentage;
+                    }
+                    if (groupWeeklyLimit.resetTime) {
+                        groupResetTime = groupWeeklyLimit.resetTime instanceof Date
+                            ? groupWeeklyLimit.resetTime
+                            : new Date(groupWeeklyLimit.resetTime);
+                    }
+                    if (groupWeeklyLimit.resetTimeDisplay) {
+                        groupResetTimeDisplay = groupWeeklyLimit.resetTimeDisplay;
+                    }
+                    if (groupWeeklyLimit.timeUntilResetFormatted) {
+                        groupTimeUntilResetFormatted = groupWeeklyLimit.timeUntilResetFormatted;
+                    }
+                }
+
                 groups.push({
                     groupId,
                     groupName,
                     models: groupModels,
                     remainingPercentage: minPercentage,
-                    resetTime: bottleneckModel.resetTime,
-                    resetTimeDisplay: bottleneckModel.resetTimeDisplay,
-                    timeUntilResetFormatted: bottleneckModel.timeUntilResetFormatted,
+                    resetTime: groupResetTime,
+                    resetTimeDisplay: groupResetTimeDisplay,
+                    timeUntilResetFormatted: groupTimeUntilResetFormatted,
                     isExhausted: groupModels.some(m => m.isExhausted),
                     weeklyLimit: groupWeeklyLimit,
                 });

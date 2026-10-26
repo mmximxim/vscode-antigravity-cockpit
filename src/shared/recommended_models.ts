@@ -16,20 +16,6 @@ export const AUTH_RECOMMENDED_LABELS = [
     'Claude Sonnet 5.5 (Low)',
     'Claude Sonnet 5.5',
     'GPT-OSS 120B (Medium)',
-    'Gemini 3.7 Flash (High)',
-    'Gemini 3.7 Flash (Medium)',
-    'Gemini 3.7 Flash (Low)',
-    'Gemini 3.7 Flash',
-    'Gemini 3.6 Flash (High)',
-    'Gemini 3.6 Flash (Medium)',
-    'Gemini 3.6 Flash (Low)',
-    'Gemini 3.6 Flash',
-    'Gemini 3.1 Pro (High)',
-    'Gemini 3.1 Pro (Low)',
-    'Gemini 3 Flash',
-    'Claude Sonnet 4.6 (Thinking)',
-    'Claude Opus 4.6 (Thinking)',
-    'Gemini 3 Pro Image',
 ];
 
 export const AUTH_RECOMMENDED_MODEL_IDS = [
@@ -75,33 +61,9 @@ export const AUTH_RECOMMENDED_MODEL_IDS = [
     // GPT-OSS
     'MODEL_OPENAI_GPT_OSS_120B_MEDIUM',
     'gpt-oss-120b-medium',
-
-    // Gemini 3.7 Flash
-    'MODEL_PLACEHOLDER_M301', // Gemini 3.7 Flash
-    'gemini-3.7-flash',
-    'gemini-3.7-flash-tiered',
-    'gemini-3.7-flash-high',
-    'gemini-3.7-flash-medium',
-    'gemini-3.7-flash-low',
-
-    // Legacy / older models
-    'MODEL_PLACEHOLDER_M71',  // Gemini 3.6 Flash (High)
-    'MODEL_PLACEHOLDER_M72',  // Gemini 3.6 Flash (Medium)
-    'MODEL_PLACEHOLDER_M73',  // Gemini 3.6 Flash (Low)
-    'gemini-3.6-flash-high',
-    'gemini-3.6-flash-medium',
-    'gemini-3.6-flash-low',
-    'gemini-3.6-flash-tiered',
-    'MODEL_PLACEHOLDER_M196',
-    'MODEL_PLACEHOLDER_M37', // Gemini 3.1 Pro (High)
-    'MODEL_PLACEHOLDER_M36', // Gemini 3.1 Pro (Low)
-    'MODEL_PLACEHOLDER_M18', // Gemini 3 Flash
-    'MODEL_PLACEHOLDER_M35', // Claude Sonnet 4.6 (Thinking)
-    'MODEL_PLACEHOLDER_M26', // Claude Opus 4.6 (Thinking)
-    'MODEL_PLACEHOLDER_M9',  // Gemini 3 Pro Image
 ];
 
-// Authorized 模式黑名单（不显示）
+// Authorized 模式黑名单（不显示，包含已下线或不可选的模型）
 export const AUTH_MODEL_BLACKLIST_IDS = [
     'MODEL_CHAT_20706',
     'MODEL_CHAT_23310',
@@ -125,11 +87,39 @@ export const AUTH_MODEL_BLACKLIST_IDS = [
     'MODEL_PLACEHOLDER_M18',
     'MODEL_PLACEHOLDER_M196',
     'MODEL_PLACEHOLDER_M9',
+    // 明确排除 Antigravity 中已下线或不可选的历史模型
+    'gemini-3.7-flash',
+    'gemini-3.7-flash-tiered',
+    'gemini-3.7-flash-high',
+    'gemini-3.7-flash-medium',
+    'gemini-3.7-flash-low',
+    'MODEL_PLACEHOLDER_M301',
+    'gemini-3.5-flash-lite',
+    'MODEL_PLACEHOLDER_M198',
+    'gemini-3.1-flash-lite',
+    'MODEL_PLACEHOLDER_M50',
+    'gemini-3.1-flash-image',
+    'MODEL_PLACEHOLDER_M21',
+    'gemini-3.6-flash',
+    'gemini-3.6-flash-high',
+    'gemini-3.6-flash-medium',
+    'gemini-3.6-flash-low',
+    'MODEL_PLACEHOLDER_M71',
+    'MODEL_PLACEHOLDER_M72',
+    'MODEL_PLACEHOLDER_M73',
+    'gemini-3.1-pro-high',
+    'gemini-3.1-pro-low',
+    'MODEL_PLACEHOLDER_M37',
+    'MODEL_PLACEHOLDER_M36',
+    'claude-sonnet-4-6',
+    'claude-opus-4-6-thinking',
+    'MODEL_PLACEHOLDER_M35',
+    'MODEL_PLACEHOLDER_M26',
 ];
 
 /**
  * 官方 Antigravity IDE 中当前可供用户选择的活跃模型集合
- * 排除已下线、内部或未分级的旧版模型（如 3.5 Flash 系列、3.1 Flash Lite、3.1 Flash Image 等）
+ * 排除已下线、内部或未分级的旧版模型（如 3.7 Flash, 3.5 Flash 系列、3.1 Flash Lite、3.1 Flash Image 等）
  */
 export const SELECTABLE_MODEL_KEYS = new Set([
     // Gemini 4 Argon
@@ -170,45 +160,9 @@ export const SELECTABLE_MODEL_KEYS = new Set([
     'MODEL_PLACEHOLDER_M404',
     'MODEL_PLACEHOLDER_M405',
 
-    // Gemini 3.7 Flash
-    'gemini-3.7-flash',
-    'gemini-3.7-flash-tiered',
-    'gemini-3.7-flash-high',
-    'gemini-3.7-flash-medium',
-    'gemini-3.7-flash-low',
-    'MODEL_PLACEHOLDER_M301',
-
-    // Gemini 3.6 Flash
-    'gemini-3.6-flash-high',
-    'gemini-3.6-flash-medium',
-    'gemini-3.6-flash-low',
-    'MODEL_PLACEHOLDER_M71',
-    'MODEL_PLACEHOLDER_M72',
-    'MODEL_PLACEHOLDER_M73',
-
-    // Gemini 3.1 Pro
-    'gemini-3.1-pro-high',
-    'gemini-3.1-pro-low',
-    'MODEL_PLACEHOLDER_M37',
-    'MODEL_PLACEHOLDER_M36',
-
-    // Claude 4.6
-    'claude-sonnet-4-6',
-    'claude-opus-4-6-thinking',
-    'MODEL_PLACEHOLDER_M35',
-    'MODEL_PLACEHOLDER_M26',
-
     // GPT-OSS
     'gpt-oss-120b-medium',
     'MODEL_OPENAI_GPT_OSS_120B_MEDIUM',
-
-    // Gemini Flash submodels
-    'gemini-3.5-flash-lite',
-    'gemini-3.1-flash-lite',
-    'gemini-3.1-flash-image',
-    'MODEL_PLACEHOLDER_M198',
-    'MODEL_PLACEHOLDER_M50',
-    'MODEL_PLACEHOLDER_M21',
 ]);
 
 export const SELECTABLE_MODEL_LABELS = new Set([
@@ -220,9 +174,6 @@ export const SELECTABLE_MODEL_LABELS = new Set([
     'Gemini 3.8 Flash (Medium)',
     'Gemini 3.8 Flash (Low)',
     'Gemini 3.8 Flash',
-    'Gemini 3.5 Flash Lite',
-    'Gemini 3.1 Flash Lite',
-    'Gemini 3.1 Flash Image',
     'Claude Opus 5.5 (High)',
     'Claude Opus 5.5 (Medium)',
     'Claude Opus 5.5 (Low)',
@@ -231,44 +182,40 @@ export const SELECTABLE_MODEL_LABELS = new Set([
     'Claude Sonnet 5.5 (Medium)',
     'Claude Sonnet 5.5 (Low)',
     'Claude Sonnet 5.5',
-    'Gemini 3.7 Flash',
-    'Gemini 3.7 Flash (High)',
-    'Gemini 3.7 Flash (Medium)',
-    'Gemini 3.7 Flash (Low)',
-    'Gemini 3.6 Flash (High)',
-    'Gemini 3.6 Flash (Medium)',
-    'Gemini 3.6 Flash (Low)',
-    'Gemini 3.1 Pro (High)',
-    'Gemini 3.1 Pro (Low)',
-    'Claude Sonnet 4.6 (Thinking)',
-    'Claude Opus 4.6 (Thinking)',
     'GPT-OSS 120B (Medium)',
 ]);
 
 export function isSelectableModel(modelId: string, label?: string): boolean {
-    if (SELECTABLE_MODEL_KEYS.has(modelId)) {
-        return true;
-    }
-    if (label && SELECTABLE_MODEL_LABELS.has(label)) {
-        return true;
-    }
-
     const mid = modelId.toLowerCase();
     const lbl = (label || '').toLowerCase();
 
-    // Check blacklist first
-    if (AUTH_MODEL_BLACKLIST_IDS.includes(modelId) || AUTH_MODEL_BLACKLIST_IDS.includes(mid)) {
+    // 1. 黑名单优先排除
+    if (
+        AUTH_MODEL_BLACKLIST_IDS.includes(modelId) ||
+        AUTH_MODEL_BLACKLIST_IDS.includes(mid)
+    ) {
         return false;
     }
 
+    // 2. 匹配白名单 Keys 和 Labels
+    if (SELECTABLE_MODEL_KEYS.has(modelId) || SELECTABLE_MODEL_KEYS.has(mid)) {
+        return true;
+    }
+    if (label && (SELECTABLE_MODEL_LABELS.has(label) || SELECTABLE_MODEL_LABELS.has(lbl))) {
+        return true;
+    }
+
+    // 3. 严格匹配 Antigravity 官方当前支持的模型模式（排除已下线的前代）
     if (
-        /^gemini-\d+(?:\.\d+)?-(argon|flash|pro)(?:-|$)/.test(mid) ||
-        /^claude-(?:opus|sonnet|haiku)-\d+(?:-\d+)?(?:-|$)/.test(mid) ||
-        /^gemini \d+(?:\.\d+)? (argon|flash|pro)\b/.test(lbl) ||
-        /^claude (?:opus|sonnet|haiku) \d+(?:\.\d+)?\b/.test(lbl) ||
-        /^gpt-oss-\d+[a-z]*/.test(mid) ||
-        /^gpt-oss \d+[a-z]*/.test(lbl) ||
-        /gpt[-_]oss/.test(mid)
+        /^gemini-4-argon(?:-|$)/.test(mid) ||
+        /^gemini-3\.8-flash(?:-|$)/.test(mid) ||
+        /^claude-(?:opus|sonnet)-5-5(?:-|$)/.test(mid) ||
+        /^gemini 4 argon\b/.test(lbl) ||
+        /^gemini 3\.8 flash\b/.test(lbl) ||
+        /^claude (?:opus|sonnet) 5\.5\b/.test(lbl) ||
+        /^gpt-oss-120b/.test(mid) ||
+        /^gpt-oss 120b/.test(lbl) ||
+        /gpt[-_]oss.*120b/.test(mid)
     ) {
         return true;
     }
