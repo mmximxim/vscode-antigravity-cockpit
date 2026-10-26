@@ -114,8 +114,6 @@ export const AUTH_MODEL_BLACKLIST_IDS = [
     'gemini-3.5-flash-medium',
     'gemini-3.5-flash-low',
     'gemini-3.5-flash-extra-low',
-    'gemini-3.1-flash-lite',
-    'gemini-3.1-flash-image',
     'gemini-3-flash',
     'gemini-3.6-flash-tiered',
     'gemini-pro-agent',
@@ -203,6 +201,14 @@ export const SELECTABLE_MODEL_KEYS = new Set([
     // GPT-OSS
     'gpt-oss-120b-medium',
     'MODEL_OPENAI_GPT_OSS_120B_MEDIUM',
+
+    // Gemini Flash submodels
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
+    'gemini-3.1-flash-image',
+    'MODEL_PLACEHOLDER_M198',
+    'MODEL_PLACEHOLDER_M50',
+    'MODEL_PLACEHOLDER_M21',
 ]);
 
 export const SELECTABLE_MODEL_LABELS = new Set([
@@ -214,6 +220,9 @@ export const SELECTABLE_MODEL_LABELS = new Set([
     'Gemini 3.8 Flash (Medium)',
     'Gemini 3.8 Flash (Low)',
     'Gemini 3.8 Flash',
+    'Gemini 3.5 Flash Lite',
+    'Gemini 3.1 Flash Lite',
+    'Gemini 3.1 Flash Image',
     'Claude Opus 5.5 (High)',
     'Claude Opus 5.5 (Medium)',
     'Claude Opus 5.5 (Low)',
@@ -258,7 +267,8 @@ export function isSelectableModel(modelId: string, label?: string): boolean {
         /^gemini \d+(?:\.\d+)? (argon|flash|pro)\b/.test(lbl) ||
         /^claude (?:opus|sonnet|haiku) \d+(?:\.\d+)?\b/.test(lbl) ||
         /^gpt-oss-\d+[a-z]*/.test(mid) ||
-        /^gpt-oss \d+[a-z]*/.test(lbl)
+        /^gpt-oss \d+[a-z]*/.test(lbl) ||
+        /gpt[-_]oss/.test(mid)
     ) {
         return true;
     }

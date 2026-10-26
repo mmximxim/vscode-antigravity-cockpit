@@ -145,6 +145,7 @@ const AUTO_GROUP_CLAUDE_ID_SET = new Set(
         'claude-sonnet-5-5-medium',
         'claude-sonnet-5-5-high',
         'MODEL_OPENAI_GPT_OSS_120B_MEDIUM',
+        'gpt-oss-120b-medium',
     ].map(id => id.toLowerCase()),
 );
 
@@ -172,6 +173,12 @@ const AUTO_GROUP_GEMINI_FLASH_ID_SET = new Set(
         'MODEL_PLACEHOLDER_M84',
         'MODEL_PLACEHOLDER_M20',
         'MODEL_PLACEHOLDER_M187',
+        'MODEL_PLACEHOLDER_M198',
+        'MODEL_PLACEHOLDER_M21',
+        'MODEL_PLACEHOLDER_M50',
+        'gemini-3.5-flash-lite',
+        'gemini-3.1-flash-image',
+        'gemini-3.1-flash-lite',
         'gemini-3.8-flash',
         'gemini-3.8-flash-tiered',
         'gemini-3.8-flash-high',
@@ -217,7 +224,12 @@ const KNOWN_MODEL_DISPLAY_NAMES: Record<string, string> = {
     'gemini-3.6-flash-low': 'Gemini 3.6 Flash (Low)',
     'gemini-3.1-pro-high': 'Gemini 3.1 Pro (High)',
     'gemini-3.1-pro-low': 'Gemini 3.1 Pro (Low)',
+    'gemini-3.5-flash-lite': 'Gemini 3.5 Flash Lite',
+    'MODEL_PLACEHOLDER_M198': 'Gemini 3.5 Flash Lite',
+    'gemini-3.1-flash-lite': 'Gemini 3.1 Flash Lite',
+    'MODEL_PLACEHOLDER_M50': 'Gemini 3.1 Flash Lite',
     'gemini-3.1-flash-image': 'Gemini 3.1 Flash Image',
+    'MODEL_PLACEHOLDER_M21': 'Gemini 3.1 Flash Image',
     'MODEL_PLACEHOLDER_M322': 'Gemini 3.8 Flash',
     'MODEL_PLACEHOLDER_M318': 'Gemini 3.8 Flash (High)',
     'MODEL_PLACEHOLDER_M301': 'Gemini 3.7 Flash',
@@ -232,6 +244,8 @@ const KNOWN_MODEL_DISPLAY_NAMES: Record<string, string> = {
     'MODEL_PLACEHOLDER_M26': 'Claude Opus 4.6 (Thinking)',
     'MODEL_PLACEHOLDER_M319': 'Gemini 3.8 Flash (Medium)',
     'MODEL_PLACEHOLDER_M320': 'Gemini 3.8 Flash (Low)',
+    'gpt-oss-120b-medium': 'GPT-OSS 120B (Medium)',
+    'MODEL_OPENAI_GPT_OSS_120B_MEDIUM': 'GPT-OSS 120B (Medium)',
     'claude-opus-5-5': 'Claude Opus 5.5',
     'claude-opus-5-5-high': 'Claude Opus 5.5 (High)',
     'claude-opus-5-5-medium': 'Claude Opus 5.5 (Medium)',
@@ -316,6 +330,10 @@ function resolveAutoGroupFamily(modelId: string, label?: string): AutoGroupFamil
         || normalizedId.startsWith('claude-')
         || normalizedId.startsWith('model_claude')
         || normalizedLabel.startsWith('claude ')
+        || normalizedId.includes('gpt_oss')
+        || normalizedId.includes('gpt-oss')
+        || normalizedLabel.startsWith('gpt-oss')
+        || normalizedLabel.startsWith('gpt oss')
     ) {
         return 'claude';
     }
@@ -1545,6 +1563,35 @@ export class ReactorCore {
             }
         }
 
+        const hasArgon = Boolean(
+            data.models['gemini-4-argon']
+            || data.models['gemini-4-argon-tiered']
+            || data.models['gemini-4-argon-high']
+            || data.models['gemini-4-argon-medium']
+            || data.models['gemini-4-argon-low']
+            || data.models['MODEL_PLACEHOLDER_M416']
+            || data.models['MODEL_PLACEHOLDER_M417']
+            || data.models['MODEL_PLACEHOLDER_M418']
+            || data.models['MODEL_PLACEHOLDER_M419']
+            || Object.values(data.models).some(m =>
+                m?.model === 'MODEL_PLACEHOLDER_M416'
+                || m?.model === 'MODEL_PLACEHOLDER_M417'
+                || m?.model === 'MODEL_PLACEHOLDER_M418'
+                || m?.model === 'MODEL_PLACEHOLDER_M419',
+            ),
+        );
+        if (!hasArgon) {
+            const argonTemplate = data.models['gemini-2.5-pro'] || flashTemplate;
+            if (argonTemplate && argonTemplate.quotaInfo) {
+                data.models['gemini-4-argon-medium'] = {
+                    ...argonTemplate,
+                    displayName: 'Gemini 4 Argon (Medium)',
+                    model: 'MODEL_PLACEHOLDER_M418',
+                    recommended: true,
+                };
+            }
+        }
+
         const orderedKeys = this.resolveAuthorizedOrderedModelKeys(data);
         for (const modelKey of orderedKeys) {
             const info = data.models[modelKey];
@@ -1616,6 +1663,7 @@ export class ReactorCore {
         // 1. 优先将最新的 Gemini 4 Argon, Gemini 3.8 Flash, Claude 5.5, Gemini 3.7 Flash 放入排序列表前面
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-4-argon', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-4-argon-tiered', added, orderedKeys);
+        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-4-argon-medium', added, orderedKeys);
         this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M418', added, orderedKeys);
         this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M417', added, orderedKeys);
         this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M419', added, orderedKeys);
@@ -1627,9 +1675,17 @@ export class ReactorCore {
         this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M320', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'claude-opus-5-5-medium', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'claude-sonnet-5-5-medium', added, orderedKeys);
+        this.pushAuthorizedModelKeyIfExists(data.models, 'gpt-oss-120b-medium', added, orderedKeys);
+        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_OPENAI_GPT_OSS_120B_MEDIUM', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.7-flash', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.7-flash-tiered', added, orderedKeys);
         this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M301', added, orderedKeys);
+        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.5-flash-lite', added, orderedKeys);
+        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M198', added, orderedKeys);
+        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.1-flash-image', added, orderedKeys);
+        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M21', added, orderedKeys);
+        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.1-flash-lite', added, orderedKeys);
+        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M50', added, orderedKeys);
 
         // 2. 遍历官方 agentModelSorts，仅添加在当前 Antigravity 中可被用户选择的活跃模型
         for (const sort of data.agentModelSorts ?? []) {
@@ -2211,7 +2267,7 @@ export class ReactorCore {
         const allModels = [...models];
 
         const visibleModels = config.visibleModels ?? [];
-        if (visibleModels.length > 0) {
+        if (!config.groupingEnabled && visibleModels.length > 0) {
             const visibleSet = new Set(visibleModels);
             const filteredModels = models.filter(model => visibleSet.has(model.modelId));
             
