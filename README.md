@@ -39,6 +39,23 @@ VS Code 扩展，用于监控 Google Antigravity AI 模型配额。
 
 ---
 
+### 🤖 官方全系列最新模型与配额体系适配（Latest Models & Quotas）🔥
+
+全面适配 Google Antigravity 官方全新主力模型矩阵，严格对齐 IDE 原生可选模型与配额规则，彻底剔除已失效的下线模型：
+
+| 模型家族 | 包含模型 | 配额类型 | 刷新周期与特点 |
+|---------|---------|---------|---------------|
+| ⚡ **Gemini Flash** | **Gemini 3.8 Flash**（High / Medium / Low） | **双重配额** | 5 小时高频刷新配额 + 每周累计限额（Weekly Limit） |
+| 🪐 **Gemini Argon** | **Gemini 4 Argon**（Medium / High / Low） | **专属周配额** | 官方独立周限额（Weekly Limit，不与 Flash 共享 5 小时池） |
+| 🧠 **Claude 系列** | **Claude Opus 5.5**、**Claude Sonnet 5.5**（High / Medium / Low） | **双重配额** | 5 小时刷新配额 + 每周累计限额 |
+| 🌐 **开源模型池** | **GPT-OSS 120B**（Medium） | **双重配额** | 与 Claude 共享 3P 模型配额池 |
+
+* **独立周配额体系**：精准识别并展示官方 `Gemini 4 Argon Weekly Limit`，彻底解耦与 Flash 的 5 小时配额混淆，真实还原独立周配额进度；
+* **零抖动渲染**：基于局部增量更新与 GPU 硬件加速层隔离，彻底消除打字输入和高频轮询时的卡片闪烁；
+* **干净对齐**：彻底移除旧版下线的废弃模型（3.7 Flash、3.5 Flash Lite、3.1 Flash Image 等），保持卡片与官方选择器 100% 精确一致。
+
+---
+
 ### 显示模式
 
 提供两种显示模式，可在设置中切换 (`agCockpit.displayMode`)：

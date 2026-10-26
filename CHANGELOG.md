@@ -10,6 +10,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.85] - 2026-10-26
+
+### Fixed & Aligned
+- **Decouple Gemini 4 Argon from Flash Quota**:
+  - Completely severed the fallback copy of Flash's 5-hour quota for Gemini 4 Argon;
+  - Fixed weekly limit parser collision where Argon overwritten Gemini Models group;
+  - Strictly aligned with the official `Gemini 4 Argon Weekly Limit` (90% / 6d 19h dedicated weekly quota) without 5h limit confusion.
+- **Strictly Exclude Retired & Obsolete Models**:
+  - Removed obsolete models (`Gemini 3.7 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Flash Image/Lite`, `Gemini 3.6 Flash`, etc.);
+  - Gemini Flash group card now strictly contains only the officially active `Gemini 3.8 Flash`;
+  - Entire model matrix is 100% identical to the active Antigravity IDE model selector (5 active models: `Gemini 4 Argon`, `Gemini 3.8 Flash`, `Claude Opus 5.5`, `Claude Sonnet 5.5`, `GPT-OSS 120B`).
+
+## [2.1.84] - 2026-10-26
+
+### Fixed & Enhanced
+- **Prevent Grouped Models Truncation**:
+  - Fixed `visibleModels` filtering issue when grouping is enabled, preventing grouped models from disappearing;
+  - Added robust authorized quota synthesis for newly introduced official models.
+
+## [2.1.83] - 2026-10-26
+
+### Performance & Stability
+- **Eliminate Card Flickering During Typing & Polling**:
+  - Removed legacy cull loops caused by floating-point precision mismatches;
+  - Applied GPU hardware compositing layer isolation to dashboard cards, resolving all screen churn.
+
 ## [2.1.77] - 2026-10-03
 
 ### Refined & Simplified

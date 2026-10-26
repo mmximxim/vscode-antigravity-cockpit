@@ -36,6 +36,23 @@ VS Code extension for monitoring Google Antigravity AI model quotas.
 
 > **Data Extraction**: Automatically computed from cached quota history and poll deltas, with deduplicated pools for Gemini and Claude.
 
+### 🤖 Latest Official Model Matrix & Quota System 🔥
+
+Fully supports Google Antigravity's latest flagship models, strictly aligned with IDE selectable models and quota policies with all retired models removed:
+
+| Model Family | Included Models | Quota Type | Characteristics & Reset Cycle |
+|--------------|-----------------|------------|-------------------------------|
+| ⚡ **Gemini Flash** | **Gemini 3.8 Flash** (High / Medium / Low) | **Dual Quota** | 5-hour fast reset + Weekly Limit |
+| 🪐 **Gemini Argon** | **Gemini 4 Argon** (Medium / High / Low) | **Dedicated Weekly** | Official independent Weekly Limit (Does not share 5h quota with Flash) |
+| 🧠 **Claude Series** | **Claude Opus 5.5**, **Claude Sonnet 5.5** (High / Medium / Low) | **Dual Quota** | 5-hour reset quota + Weekly Limit |
+| 🌐 **Open Source Pool** | **GPT-OSS 120B** (Medium) | **Dual Quota** | Shares 3P model quota pool with Claude |
+
+* **Decoupled Independent Quotas**: Accurately recognizes `Gemini 4 Argon Weekly Limit`, completely decoupled from Flash's 5-hour quota;
+* **Flicker-free Rendering**: Employs DOM incremental patch updates and GPU isolation layers, eliminating card flashes during typing and high-frequency polling;
+* **Clean Alignment**: Strictly excludes retired models (3.7 Flash, 3.5 Flash Lite, 3.1 Flash Image, etc.), perfectly matching the official Antigravity model picker.
+
+---
+
 ### Display Modes
 
 Two display modes available, configurable via `agCockpit.displayMode`:
