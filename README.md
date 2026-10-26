@@ -244,6 +244,10 @@ npm run package
 - [CHANGELOG.md](CHANGELOG.md)（英文）
 - [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)（中文）
 
+## 致谢
+
+本项目基于 [jlcodes99/vscode-antigravity-cockpit](https://github.com/jlcodes99/vscode-antigravity-cockpit) 进行二次开发与功能增强，感谢原作者的开源贡献。
+
 ## 许可证
 
 [MIT](LICENSE)

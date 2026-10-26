@@ -241,6 +241,10 @@ Requirements: Node.js v18+, npm v9+
 - [CHANGELOG.md](CHANGELOG.md) (English)
 - [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md) (Chinese)
 
+## Acknowledgments
+
+This project is based on and extends [jlcodes99/vscode-antigravity-cockpit](https://github.com/jlcodes99/vscode-antigravity-cockpit). Thanks to the original author for their open-source contributions.
+
 ## License
 
 [MIT](LICENSE)

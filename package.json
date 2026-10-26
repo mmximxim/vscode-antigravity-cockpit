@@ -373,5 +373,14 @@
   "dependencies": {
     "cron-parser": "^5.4.0",
     "sql.js": "^1.13.0"
-  }
+  },
+  "author": {
+    "name": "mmxmxm"
+  },
+  "contributors": [
+    {
+      "name": "jlcodes99",
+      "url": "https://github.com/jlcodes99"
+    }
+  ]
 }
