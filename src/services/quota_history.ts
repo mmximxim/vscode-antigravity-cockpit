@@ -77,6 +77,10 @@ const isGeminiFlash = ({ modelIdLower, labelText }: HistoryGroupMatchInput): boo
     /^gemini-\d+(?:\.\d+)?-flash(?:-|$)/.test(modelIdLower) ||
     /^gemini \d+(?:\.\d+)? flash\b/.test(labelText);
 
+const isGeminiArgon = ({ modelIdLower, labelText }: HistoryGroupMatchInput): boolean =>
+    /^gemini-\d+(?:\.\d+)?-argon(?:-|$)/.test(modelIdLower) ||
+    /^gemini \d+(?:\.\d+)? argon\b/.test(labelText);
+
 const isGeminiImage = ({ modelIdLower, labelText }: HistoryGroupMatchInput): boolean =>
     /^gemini-\d+(?:\.\d+)?-pro-image(?:-|$)/.test(modelIdLower) ||
     /^gemini \d+(?:\.\d+)? pro image\b/.test(labelText);
@@ -88,6 +92,22 @@ const isClaudeFamily = ({ modelIdLower, labelText }: HistoryGroupMatchInput): bo
 
 const HISTORY_GROUPS: HistoryGroupDefinition[] = [
     {
+        groupId: 'g4-argon',
+        label: 'Gemini Argon',
+        modelIds: [
+            'MODEL_PLACEHOLDER_M416',
+            'MODEL_PLACEHOLDER_M417',
+            'MODEL_PLACEHOLDER_M418',
+            'MODEL_PLACEHOLDER_M419',
+            'gemini-4-argon',
+            'gemini-4-argon-tiered',
+            'gemini-4-argon-high',
+            'gemini-4-argon-medium',
+            'gemini-4-argon-low',
+        ],
+        matcher: isGeminiArgon,
+    },
+    {
         groupId: 'claude-4-5',
         label: 'Claude',
         modelIds: [
@@ -97,6 +117,20 @@ const HISTORY_GROUPS: HistoryGroupDefinition[] = [
             'MODEL_PLACEHOLDER_M26',
             'MODEL_PLACEHOLDER_M35',
             'MODEL_OPENAI_GPT_OSS_120B_MEDIUM',
+            'MODEL_PLACEHOLDER_M400',
+            'MODEL_PLACEHOLDER_M401',
+            'MODEL_PLACEHOLDER_M402',
+            'MODEL_PLACEHOLDER_M403',
+            'MODEL_PLACEHOLDER_M404',
+            'MODEL_PLACEHOLDER_M405',
+            'claude-opus-5-5',
+            'claude-opus-5-5-low',
+            'claude-opus-5-5-medium',
+            'claude-opus-5-5-high',
+            'claude-sonnet-5-5',
+            'claude-sonnet-5-5-low',
+            'claude-sonnet-5-5-medium',
+            'claude-sonnet-5-5-high',
         ],
         matcher: isClaudeFamily,
     },
@@ -118,6 +152,8 @@ const HISTORY_GROUPS: HistoryGroupDefinition[] = [
             'MODEL_PLACEHOLDER_M18',
             'MODEL_PLACEHOLDER_M322',
             'MODEL_PLACEHOLDER_M318',
+            'MODEL_PLACEHOLDER_M319',
+            'MODEL_PLACEHOLDER_M320',
             'MODEL_PLACEHOLDER_M301',
             'MODEL_PLACEHOLDER_M71',
             'MODEL_PLACEHOLDER_M72',

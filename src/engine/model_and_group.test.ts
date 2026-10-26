@@ -72,6 +72,109 @@ describe('Gemini 3.8 Flash and Grouping Verification', () => {
         expect(grouping.groupMappings['MODEL_PLACEHOLDER_M71']).toBe(gid);
     });
 
+    it('should include Gemini 4 Argon and Claude 5.5 in recommended and selectable keys', () => {
+        // Gemini 4 Argon
+        expect(AUTH_RECOMMENDED_MODEL_IDS).toContain('MODEL_PLACEHOLDER_M418');
+        expect(AUTH_RECOMMENDED_MODEL_IDS).toContain('gemini-4-argon');
+        expect(SELECTABLE_MODEL_KEYS.has('MODEL_PLACEHOLDER_M418')).toBe(true);
+        expect(isSelectableModel('MODEL_PLACEHOLDER_M418')).toBe(true);
+        expect(isSelectableModel('MODEL_PLACEHOLDER_M417')).toBe(true);
+        expect(isSelectableModel('MODEL_PLACEHOLDER_M419')).toBe(true);
+        expect(isSelectableModel('any-key', 'Gemini 4 Argon (Medium)')).toBe(true);
+
+        // Claude 5.5
+        expect(AUTH_RECOMMENDED_MODEL_IDS).toContain('MODEL_PLACEHOLDER_M401');
+        expect(AUTH_RECOMMENDED_MODEL_IDS).toContain('MODEL_PLACEHOLDER_M404');
+        expect(SELECTABLE_MODEL_KEYS.has('MODEL_PLACEHOLDER_M401')).toBe(true);
+        expect(SELECTABLE_MODEL_KEYS.has('claude-opus-5-5-medium')).toBe(true);
+        expect(isSelectableModel('MODEL_PLACEHOLDER_M401')).toBe(true);
+        expect(isSelectableModel('MODEL_PLACEHOLDER_M404')).toBe(true);
+        expect(isSelectableModel('any-key', 'Claude Opus 5.5 (Medium)')).toBe(true);
+        expect(isSelectableModel('any-key', 'Claude Sonnet 5.5 (Medium)')).toBe(true);
+    });
+
+    it('should correctly auto-group Gemini 4 Argon into Gemini Argon family', () => {
+        const models: ModelQuotaInfo[] = [
+            {
+                label: 'Gemini 4 Argon (Medium)',
+                modelId: 'MODEL_PLACEHOLDER_M418',
+                remainingFraction: 0.9,
+                remainingPercentage: 90,
+                isExhausted: false,
+                resetTime: new Date(Date.now() + 3600000),
+                resetTimeDisplay: '1h',
+                timeUntilReset: 3600000,
+                timeUntilResetFormatted: '1h',
+                resetTimeValid: true,
+            },
+            {
+                label: 'Gemini 4 Argon (High)',
+                modelId: 'MODEL_PLACEHOLDER_M417',
+                remainingFraction: 0.9,
+                remainingPercentage: 90,
+                isExhausted: false,
+                resetTime: new Date(Date.now() + 3600000),
+                resetTimeDisplay: '1h',
+                timeUntilReset: 3600000,
+                timeUntilResetFormatted: '1h',
+                resetTimeValid: true,
+            },
+        ];
+
+        const grouping = ReactorCore.calculateSmartGrouping(models);
+        expect(grouping.groupNames['MODEL_PLACEHOLDER_M418']).toBe('Gemini Argon');
+        expect(grouping.groupNames['MODEL_PLACEHOLDER_M417']).toBe('Gemini Argon');
+        expect(grouping.groupMappings['MODEL_PLACEHOLDER_M418']).toBe(grouping.groupMappings['MODEL_PLACEHOLDER_M417']);
+    });
+
+    it('should correctly auto-group Claude 5.5 models and GPT-OSS into Claude family', () => {
+        const models: ModelQuotaInfo[] = [
+            {
+                label: 'Claude Opus 5.5 (Medium)',
+                modelId: 'MODEL_PLACEHOLDER_M401',
+                remainingFraction: 1,
+                remainingPercentage: 100,
+                isExhausted: false,
+                resetTime: new Date(Date.now() + 3600000),
+                resetTimeDisplay: '1h',
+                timeUntilReset: 3600000,
+                timeUntilResetFormatted: '1h',
+                resetTimeValid: true,
+            },
+            {
+                label: 'Claude Sonnet 5.5 (Medium)',
+                modelId: 'MODEL_PLACEHOLDER_M404',
+                remainingFraction: 1,
+                remainingPercentage: 100,
+                isExhausted: false,
+                resetTime: new Date(Date.now() + 3600000),
+                resetTimeDisplay: '1h',
+                timeUntilReset: 3600000,
+                timeUntilResetFormatted: '1h',
+                resetTimeValid: true,
+            },
+            {
+                label: 'GPT-OSS 120B (Medium)',
+                modelId: 'MODEL_OPENAI_GPT_OSS_120B_MEDIUM',
+                remainingFraction: 1,
+                remainingPercentage: 100,
+                isExhausted: false,
+                resetTime: new Date(Date.now() + 3600000),
+                resetTimeDisplay: '1h',
+                timeUntilReset: 3600000,
+                timeUntilResetFormatted: '1h',
+                resetTimeValid: true,
+            },
+        ];
+
+        const grouping = ReactorCore.calculateSmartGrouping(models);
+        expect(grouping.groupNames['MODEL_PLACEHOLDER_M401']).toBe('Claude');
+        expect(grouping.groupNames['MODEL_PLACEHOLDER_M404']).toBe('Claude');
+        expect(grouping.groupNames['MODEL_OPENAI_GPT_OSS_120B_MEDIUM']).toBe('Claude');
+        expect(grouping.groupMappings['MODEL_PLACEHOLDER_M401']).toBe(grouping.groupMappings['MODEL_PLACEHOLDER_M404']);
+        expect(grouping.groupMappings['MODEL_PLACEHOLDER_M401']).toBe(grouping.groupMappings['MODEL_OPENAI_GPT_OSS_120B_MEDIUM']);
+    });
+
     it('should correctly parse authorized response containing gemini-3.8-flash-tiered', () => {
         const reactor = new ReactorCore();
         const mockAuthResponse = {

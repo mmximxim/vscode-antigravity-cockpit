@@ -97,15 +97,31 @@ const AUTH_RECOMMENDED_LABEL_KEY_RANK = new Map(
     AUTH_RECOMMENDED_LABELS.map((label, index) => [normalizeRecommendedKey(label), index]),
 );
 
-type AutoGroupFamily = 'claude' | 'gemini_pro' | 'gemini_flash' | 'gemini_image';
+type AutoGroupFamily = 'claude' | 'gemini_argon' | 'gemini_pro' | 'gemini_flash' | 'gemini_image';
 
+const AUTO_GROUP_GEMINI_ARGON_ID_PATTERN = /^gemini-\d+(?:\.\d+)?-argon(?:-|$)/;
 const AUTO_GROUP_GEMINI_PRO_ID_PATTERN = /^gemini-\d+(?:\.\d+)?-pro-(high|low)(?:-|$)/;
 const AUTO_GROUP_GEMINI_FLASH_ID_PATTERN = /^gemini-\d+(?:\.\d+)?-flash(?:-|$)/;
 const AUTO_GROUP_GEMINI_IMAGE_ID_PATTERN = /^gemini-\d+(?:\.\d+)?-pro-image(?:-|$)/;
 
+const AUTO_GROUP_GEMINI_ARGON_LABEL_PATTERN = /^gemini \d+(?:\.\d+)? argon\b/;
 const AUTO_GROUP_GEMINI_PRO_LABEL_PATTERN = /^gemini \d+(?:\.\d+)? pro(?: \((high|low)\)| (high|low))\b/;
 const AUTO_GROUP_GEMINI_FLASH_LABEL_PATTERN = /^gemini \d+(?:\.\d+)? flash\b/;
 const AUTO_GROUP_GEMINI_IMAGE_LABEL_PATTERN = /^gemini \d+(?:\.\d+)? pro image\b/;
+
+const AUTO_GROUP_GEMINI_ARGON_ID_SET = new Set(
+    [
+        'MODEL_PLACEHOLDER_M416',
+        'MODEL_PLACEHOLDER_M417',
+        'MODEL_PLACEHOLDER_M418',
+        'MODEL_PLACEHOLDER_M419',
+        'gemini-4-argon',
+        'gemini-4-argon-tiered',
+        'gemini-4-argon-high',
+        'gemini-4-argon-medium',
+        'gemini-4-argon-low',
+    ].map(id => id.toLowerCase()),
+);
 
 const AUTO_GROUP_CLAUDE_ID_SET = new Set(
     [
@@ -114,6 +130,20 @@ const AUTO_GROUP_CLAUDE_ID_SET = new Set(
         'MODEL_PLACEHOLDER_M12',
         'MODEL_PLACEHOLDER_M26',
         'MODEL_PLACEHOLDER_M35',
+        'MODEL_PLACEHOLDER_M400',
+        'MODEL_PLACEHOLDER_M401',
+        'MODEL_PLACEHOLDER_M402',
+        'MODEL_PLACEHOLDER_M403',
+        'MODEL_PLACEHOLDER_M404',
+        'MODEL_PLACEHOLDER_M405',
+        'claude-opus-5-5',
+        'claude-opus-5-5-low',
+        'claude-opus-5-5-medium',
+        'claude-opus-5-5-high',
+        'claude-sonnet-5-5',
+        'claude-sonnet-5-5-low',
+        'claude-sonnet-5-5-medium',
+        'claude-sonnet-5-5-high',
         'MODEL_OPENAI_GPT_OSS_120B_MEDIUM',
     ].map(id => id.toLowerCase()),
 );
@@ -132,6 +162,8 @@ const AUTO_GROUP_GEMINI_FLASH_ID_SET = new Set(
         'MODEL_PLACEHOLDER_M18',
         'MODEL_PLACEHOLDER_M322',
         'MODEL_PLACEHOLDER_M318',
+        'MODEL_PLACEHOLDER_M319',
+        'MODEL_PLACEHOLDER_M320',
         'MODEL_PLACEHOLDER_M301',
         'MODEL_PLACEHOLDER_M71',
         'MODEL_PLACEHOLDER_M72',
@@ -159,6 +191,15 @@ const AUTO_GROUP_GEMINI_FLASH_ID_SET = new Set(
 );
 
 const KNOWN_MODEL_DISPLAY_NAMES: Record<string, string> = {
+    'gemini-4-argon': 'Gemini 4 Argon',
+    'gemini-4-argon-tiered': 'Gemini 4 Argon',
+    'gemini-4-argon-high': 'Gemini 4 Argon (High)',
+    'gemini-4-argon-medium': 'Gemini 4 Argon (Medium)',
+    'gemini-4-argon-low': 'Gemini 4 Argon (Low)',
+    'MODEL_PLACEHOLDER_M416': 'Gemini 4 Argon (Low)',
+    'MODEL_PLACEHOLDER_M417': 'Gemini 4 Argon (High)',
+    'MODEL_PLACEHOLDER_M418': 'Gemini 4 Argon (Medium)',
+    'MODEL_PLACEHOLDER_M419': 'Gemini 4 Argon (Low)',
     'gemini-3.8-flash': 'Gemini 3.8 Flash (High)',
     'gemini-3.8-flash-tiered': 'Gemini 3.8 Flash',
     'gemini-3.8-flash-high': 'Gemini 3.8 Flash (High)',
@@ -189,6 +230,22 @@ const KNOWN_MODEL_DISPLAY_NAMES: Record<string, string> = {
     'MODEL_PLACEHOLDER_M18': 'Gemini 3 Flash',
     'MODEL_PLACEHOLDER_M35': 'Claude Sonnet 4.6 (Thinking)',
     'MODEL_PLACEHOLDER_M26': 'Claude Opus 4.6 (Thinking)',
+    'MODEL_PLACEHOLDER_M319': 'Gemini 3.8 Flash (Medium)',
+    'MODEL_PLACEHOLDER_M320': 'Gemini 3.8 Flash (Low)',
+    'claude-opus-5-5': 'Claude Opus 5.5',
+    'claude-opus-5-5-high': 'Claude Opus 5.5 (High)',
+    'claude-opus-5-5-medium': 'Claude Opus 5.5 (Medium)',
+    'claude-opus-5-5-low': 'Claude Opus 5.5 (Low)',
+    'MODEL_PLACEHOLDER_M400': 'Claude Opus 5.5 (Low)',
+    'MODEL_PLACEHOLDER_M401': 'Claude Opus 5.5 (Medium)',
+    'MODEL_PLACEHOLDER_M402': 'Claude Opus 5.5 (High)',
+    'claude-sonnet-5-5': 'Claude Sonnet 5.5',
+    'claude-sonnet-5-5-high': 'Claude Sonnet 5.5 (High)',
+    'claude-sonnet-5-5-medium': 'Claude Sonnet 5.5 (Medium)',
+    'claude-sonnet-5-5-low': 'Claude Sonnet 5.5 (Low)',
+    'MODEL_PLACEHOLDER_M403': 'Claude Sonnet 5.5 (Low)',
+    'MODEL_PLACEHOLDER_M404': 'Claude Sonnet 5.5 (Medium)',
+    'MODEL_PLACEHOLDER_M405': 'Claude Sonnet 5.5 (High)',
 };
 
 const AUTO_GROUP_GEMINI_IMAGE_ID_SET = new Set(
@@ -199,12 +256,13 @@ const AUTO_GROUP_GEMINI_IMAGE_ID_SET = new Set(
 
 const AUTO_GROUP_FAMILY_DISPLAY_NAMES: Record<AutoGroupFamily, string> = {
     claude: 'Claude',
+    gemini_argon: 'Gemini Argon',
     gemini_pro: 'Gemini Pro',
     gemini_flash: 'Gemini Flash',
     gemini_image: 'Gemini Image',
 };
 
-const AUTO_GROUP_FAMILY_ORDER: AutoGroupFamily[] = ['claude', 'gemini_pro', 'gemini_flash', 'gemini_image'];
+const AUTO_GROUP_FAMILY_ORDER: AutoGroupFamily[] = ['claude', 'gemini_argon', 'gemini_pro', 'gemini_flash', 'gemini_image'];
 
 function normalizeAutoGroupMatchText(value: string | undefined): string {
     return (value || '')
@@ -227,6 +285,14 @@ function resolveAutoGroupFamily(modelId: string, label?: string): AutoGroupFamil
         || AUTO_GROUP_GEMINI_IMAGE_LABEL_PATTERN.test(normalizedLabel)
     ) {
         return 'gemini_image';
+    }
+
+    if (
+        AUTO_GROUP_GEMINI_ARGON_ID_SET.has(normalizedId)
+        || AUTO_GROUP_GEMINI_ARGON_ID_PATTERN.test(normalizedId)
+        || AUTO_GROUP_GEMINI_ARGON_LABEL_PATTERN.test(normalizedLabel)
+    ) {
+        return 'gemini_argon';
     }
 
     if (
@@ -1108,26 +1174,34 @@ export class ReactorCore {
             // 递归重试，获取新账号的配额
             return this.fetchAuthorizedTelemetry(retryCount + 1, forceRefresh);
         }
+        const localSnapshot = await this.tryFetchLocalTelemetry();
+        if (localSnapshot?.models) {
+            for (const localModel of localSnapshot.models) {
+                if (!isSelectableModel(localModel.modelId, localModel.label)) {
+                    continue;
+                }
+                const exists = models.some(m =>
+                    m.modelId === localModel.modelId ||
+                    (m.label && localModel.label && m.label.toLowerCase() === localModel.label.toLowerCase()),
+                );
+                if (!exists) {
+                    models.push(localModel);
+                }
+            }
+        }
         this.lastAuthorizedModels = models;
 
         const snapshot = this.buildSnapshot(
             models,
-            undefined,
-            undefined,
+            localSnapshot?.promptCredits,
+            localSnapshot?.userInfo ? {
+                ...localSnapshot.userInfo,
+                email: activeAccount || localSnapshot.userInfo.email,
+            } : undefined,
             Number.isFinite(availableAICredits)
                 ? Math.max(0, Number(availableAICredits))
                 : this.getCachedAuthorizedAvailableAICredits(),
         );
-        const localSnapshot = await this.tryFetchLocalTelemetry();
-        if (localSnapshot?.promptCredits) {
-            snapshot.promptCredits = localSnapshot.promptCredits;
-        }
-        if (localSnapshot?.userInfo) {
-            snapshot.userInfo = {
-                ...localSnapshot.userInfo,
-                email: activeAccount || localSnapshot.userInfo.email,
-            };
-        }
         if (localSnapshot) {
             for (const model of snapshot.models) {
                 const match = localSnapshot.models.find(lm =>
@@ -1212,7 +1286,7 @@ export class ReactorCore {
         }
 
         const familyGroupMap: Partial<Record<AutoGroupFamily, string>> = {};
-        for (const family of ['claude', 'gemini_pro', 'gemini_flash', 'gemini_image'] as AutoGroupFamily[]) {
+        for (const family of ['claude', 'gemini_argon', 'gemini_pro', 'gemini_flash', 'gemini_image'] as AutoGroupFamily[]) {
             const groupCounter = familyStats.get(family);
             if (!groupCounter || groupCounter.size === 0) {
                 continue;
@@ -1293,9 +1367,10 @@ export class ReactorCore {
             if (!family) {
                 continue;
             }
-            const targetGroupId = familyGroupMap[family];
+            let targetGroupId = familyGroupMap[family];
             if (!targetGroupId) {
-                continue;
+                targetGroupId = `group_${family}`;
+                familyGroupMap[family] = targetGroupId;
             }
             nextMappings[model.modelId] = targetGroupId;
             changedCount++;
@@ -1530,11 +1605,20 @@ export class ReactorCore {
         const orderedKeys: string[] = [];
         const added = new Set<string>();
 
-        // 1. 优先将最新的 Gemini 3.8 Flash 和 3.7 Flash 放入排序列表前面
+        // 1. 优先将最新的 Gemini 4 Argon, Gemini 3.8 Flash, Claude 5.5, Gemini 3.7 Flash 放入排序列表前面
+        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-4-argon', added, orderedKeys);
+        this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-4-argon-tiered', added, orderedKeys);
+        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M418', added, orderedKeys);
+        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M417', added, orderedKeys);
+        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M419', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.8-flash', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.8-flash-tiered', added, orderedKeys);
         this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M322', added, orderedKeys);
         this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M318', added, orderedKeys);
+        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M319', added, orderedKeys);
+        this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M320', added, orderedKeys);
+        this.pushAuthorizedModelKeyIfExists(data.models, 'claude-opus-5-5-medium', added, orderedKeys);
+        this.pushAuthorizedModelKeyIfExists(data.models, 'claude-sonnet-5-5-medium', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.7-flash', added, orderedKeys);
         this.pushAuthorizedModelKeyIfExists(data.models, 'gemini-3.7-flash-tiered', added, orderedKeys);
         this.pushAuthorizedModelKeyByModelIdIfExists(data.models, 'MODEL_PLACEHOLDER_M301', added, orderedKeys);
@@ -1997,7 +2081,7 @@ export class ReactorCore {
 
                 return {
                     label: m.label,
-                    modelId: m.modelOrAlias?.model || 'unknown',
+                    modelId: m.modelOrAlias?.model || m.modelId || 'unknown',
                     remainingFraction: m.quotaInfo.remainingFraction,
                     remainingPercentage: m.quotaInfo.remainingFraction !== undefined 
                         ? m.quotaInfo.remainingFraction * 100 
@@ -2071,6 +2155,13 @@ export class ReactorCore {
             // 都不在排序列表中，按 label 字母排序
             return a.label.localeCompare(b.label);
         });
+
+        const config = configService.getConfig();
+        if (config.groupingEnabled && Object.keys(config.groupMappings || {}).length > 0) {
+            void this.autoAssignNewModelsToExistingGroups(null, models).catch(err => {
+                logger.debug(`[AutoGroup] Local auto-assign skipped: ${err}`);
+            });
+        }
 
         this.logModelList('local', models);
         return this.buildSnapshot(models, promptCredits, userInfo);
@@ -2150,6 +2241,11 @@ export class ReactorCore {
                                     break;
                                 }
                             }
+                            if (!groupId) {
+                                groupId = `group_${family}`;
+                            }
+                        } else {
+                            groupId = `group_model_${model.modelId}`;
                         }
                     }
                     if (groupId) {
@@ -2265,7 +2361,10 @@ export class ReactorCore {
                 
                 // 如果没有自定义名称，使用默认名称
                 if (!groupName) {
-                    if (groupModels.length === 1) {
+                    const firstFamily = resolveAutoGroupFamily(groupModels[0].modelId, groupModels[0].label);
+                    if (firstFamily && AUTO_GROUP_FAMILY_DISPLAY_NAMES[firstFamily]) {
+                        groupName = AUTO_GROUP_FAMILY_DISPLAY_NAMES[firstFamily];
+                    } else if (groupModels.length === 1) {
                         groupName = groupModels[0].label;
                     } else {
                         groupName = `Group ${groupIndex}`;

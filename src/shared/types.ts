@@ -169,6 +169,7 @@ export interface QuotaInfo {
 export interface ClientModelConfig {
     label: string;
     modelOrAlias?: ModelOrAlias;
+    modelId?: string;
     quotaInfo?: QuotaInfo;
     supportsImages?: boolean;
     isRecommended?: boolean;
