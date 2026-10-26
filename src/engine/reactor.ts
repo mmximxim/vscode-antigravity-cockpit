@@ -1180,10 +1180,18 @@ export class ReactorCore {
                 if (!isSelectableModel(localModel.modelId, localModel.label)) {
                     continue;
                 }
-                const exists = models.some(m =>
-                    m.modelId === localModel.modelId ||
-                    (m.label && localModel.label && m.label.toLowerCase() === localModel.label.toLowerCase()),
-                );
+                const normalizeLabel = (label: string): string =>
+                    label.replace(/\s*\((?:High|Medium|Low|Tiered)\)/gi, '').trim().toLowerCase();
+                const cleanLocalLabel = normalizeLabel(localModel.label);
+                const exists = models.some(m => {
+                    if (m.modelId.toLowerCase() === localModel.modelId.toLowerCase()) {
+                        return true;
+                    }
+                    if (m.label && localModel.label && normalizeLabel(m.label) === cleanLocalLabel) {
+                        return true;
+                    }
+                    return false;
+                });
                 if (!exists) {
                     models.push(localModel);
                 }
@@ -2256,75 +2264,6 @@ export class ReactorCore {
                     }
                 }
                 
-                // 自动分组检查：检查每个分组内模型的配额是否一致
-                // 如果不一致，只将不一致的模型移出分组（保留用户自定义设置）
-                const modelsToRemove: string[] = [];
-                
-                for (const [groupId, groupModels] of groupMap) {
-                    if (groupModels.length <= 1) {
-                        continue; // 单模型组无需检查
-                    }
-                    
-                    // 检查组内所有模型的配额签名（remainingFraction + resetTime）是否一致
-                    // 使用多数派原则：找出最常见的配额签名，将不符合的模型移除
-                    const signatureCount = new Map<string, { count: number; fraction: number; resetTime: number }>();
-                    
-                    for (const model of groupModels) {
-                        const fraction = model.remainingFraction ?? 0;
-                        const resetTime = model.resetTime.getTime();
-                        const signature = `${fraction.toFixed(6)}_${resetTime}`;
-                        
-                        if (!signatureCount.has(signature)) {
-                            signatureCount.set(signature, { count: 0, fraction, resetTime });
-                        }
-                        signatureCount.get(signature)!.count++;
-                    }
-                    
-                    // 找出最常见的签名（多数派）
-                    let majoritySignature = '';
-                    let maxCount = 0;
-                    for (const [sig, data] of signatureCount) {
-                        if (data.count > maxCount) {
-                            maxCount = data.count;
-                            majoritySignature = sig;
-                        }
-                    }
-                    
-                    // 标记不符合多数派的模型移出分组
-                    for (const model of groupModels) {
-                        const fraction = model.remainingFraction ?? 0;
-                        const resetTime = model.resetTime.getTime();
-                        const signature = `${fraction.toFixed(6)}_${resetTime}`;
-                        
-                        if (signature !== majoritySignature) {
-                            logger.info(`[GroupCheck] Removing model "${model.label}" from group "${groupId}" due to quota mismatch`);
-                            modelsToRemove.push(model.modelId);
-                        }
-                    }
-                }
-                
-                // 在当前快照的呈现层隔离不一致模型（避免向 configService 触发配置写回引发重绘死循环）
-                if (modelsToRemove.length > 0) {
-                    // 从 groupMap 中移除这些模型（未分组模型在分组视图中隐藏）
-                    for (const modelId of modelsToRemove) {
-                        for (const [_gid, gModels] of groupMap) {
-                            const idx = gModels.findIndex(m => m.modelId === modelId);
-                            if (idx !== -1) {
-                                gModels.splice(idx, 1);
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // 清理空的分组
-                    for (const [gid, gModels] of groupMap) {
-                        if (gModels.length === 0) {
-                            groupMap.delete(gid);
-                        }
-                    }
-                    
-                    logger.info(`[GroupCheck] Removed ${modelsToRemove.length} models from groups due to quota mismatch (hidden in grouped view)`);
-                }
             } else {
                 // 没有存储映射时，不展示未分组模型
                 logger.debug('Grouping enabled but no saved mappings; ungrouped models are hidden');
@@ -2371,9 +2310,11 @@ export class ReactorCore {
                     }
                 }
                 
-                const firstModel = groupModels[0];
-                // 计算组内所有模型的平均/最低配额
-                const minPercentage = Math.min(...groupModels.map(m => m.remainingPercentage ?? 0));
+                // 找出组内配额最低的模型（瓶颈模型），作为组的核心指标锚点
+                const bottleneckModel = groupModels.reduce((min, cur) => {
+                    return (cur.remainingPercentage ?? 0) < (min.remainingPercentage ?? 0) ? cur : min;
+                }, groupModels[0]);
+                const minPercentage = bottleneckModel.remainingPercentage ?? 0;
                 
                 const groupWeeklyLimit = groupModels.find(m => m.weeklyLimit)?.weeklyLimit;
                 groups.push({
@@ -2381,9 +2322,9 @@ export class ReactorCore {
                     groupName,
                     models: groupModels,
                     remainingPercentage: minPercentage,
-                    resetTime: firstModel.resetTime,
-                    resetTimeDisplay: firstModel.resetTimeDisplay,
-                    timeUntilResetFormatted: firstModel.timeUntilResetFormatted,
+                    resetTime: bottleneckModel.resetTime,
+                    resetTimeDisplay: bottleneckModel.resetTimeDisplay,
+                    timeUntilResetFormatted: bottleneckModel.timeUntilResetFormatted,
                     isExhausted: groupModels.some(m => m.isExhausted),
                     weeklyLimit: groupWeeklyLimit,
                 });

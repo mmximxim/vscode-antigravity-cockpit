@@ -2660,12 +2660,25 @@ import { createAnnouncementModule } from './dashboard_announcements';
             });
 
             const activeGroupIds = new Set();
+            const currentGroupCards = Array.from(dashboard.querySelectorAll('.group-card'));
+            let currentCardOrderMatches = (currentGroupCards.length === groups.length);
+            if (currentCardOrderMatches) {
+                for (let i = 0; i < groups.length; i++) {
+                    if (currentGroupCards[i].getAttribute('data-group-id') !== groups[i].groupId) {
+                        currentCardOrderMatches = false;
+                        break;
+                    }
+                }
+            }
+
             groups.forEach(group => {
                 activeGroupIds.add(group.groupId);
                 const existing = existingCardMap.get(group.groupId);
                 if (existing) {
                     updateGroupCard(existing, group, config?.pinnedGroups || []);
-                    dashboard.appendChild(existing); // 确保与排序顺序一致
+                    if (!currentCardOrderMatches) {
+                        dashboard.appendChild(existing); // 仅在顺序变化时重新排布
+                    }
                 } else {
                     renderGroupCard(group, config?.pinnedGroups || []);
                 }
@@ -2707,12 +2720,25 @@ import { createAnnouncementModule } from './dashboard_announcements';
         });
 
         const activeModelIds = new Set();
+        const currentModelCards = Array.from(dashboard.querySelectorAll('.card.draggable:not(.group-card)'));
+        let currentModelOrderMatches = (currentModelCards.length === models.length);
+        if (currentModelOrderMatches) {
+            for (let i = 0; i < models.length; i++) {
+                if (currentModelCards[i].getAttribute('data-id') !== models[i].modelId) {
+                    currentModelOrderMatches = false;
+                    break;
+                }
+            }
+        }
+
         models.forEach(model => {
             activeModelIds.add(model.modelId);
             const existing = existingModelMap.get(model.modelId);
             if (existing) {
                 updateModelCard(existing, model, config?.pinnedModels || [], config?.modelCustomNames || {});
-                dashboard.appendChild(existing);
+                if (!currentModelOrderMatches) {
+                    dashboard.appendChild(existing); // 仅在顺序变化时重新排布
+                }
             } else {
                 renderModelCard(model, config?.pinnedModels || [], config?.modelCustomNames || {});
             }
